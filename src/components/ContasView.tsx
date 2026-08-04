@@ -205,7 +205,7 @@ export function ContasView({
                     lista.map((c) => ({
                       Descrição: c.descricao,
                       Categoria: nomeCategoria(c.categoria_id),
-                      [config.rotuloParceiro]: nomeParceiro(c[config.campoParceiro]),
+                      [config.rotuloParceiro]: nomeParceiro((c as Record<string, unknown>)[config.campoParceiro]),
                       Vencimento: dataBR(c.data_vencimento),
                       Valor: Number(c.valor).toFixed(2).replace(".", ","),
                       Situação: c.situacao,
@@ -348,7 +348,7 @@ export function ContasView({
                     <TableRow key={c.id}>
                       <TableCell className="font-medium">{c.descricao}</TableCell>
                       <TableCell>{nomeCategoria(c.categoria_id)}</TableCell>
-                      <TableCell>{nomeParceiro(c[config.campoParceiro])}</TableCell>
+                      <TableCell>{nomeParceiro((c as Record<string, unknown>)[config.campoParceiro])}</TableCell>
                       <TableCell>{dataBR(c.data_vencimento)}</TableCell>
                       <TableCell className="text-right tabular-nums">{brl(Number(c.valor))}</TableCell>
                       <TableCell>
