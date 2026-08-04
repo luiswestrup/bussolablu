@@ -125,6 +125,16 @@ export const useMovimentos = (empresaId?: string) =>
   );
 
 /** Situação real considerando vencimento (contas vencidas destacadas). */
+type Erro = { message: string } | null;
+type LooseTable = {
+  insert: (v: Record<string, unknown>) => Promise<{ error: Erro }>;
+  update: (v: Record<string, unknown>) => { eq: (k: string, val: string) => Promise<{ error: Erro }> };
+  delete: () => { eq: (k: string, val: string) => Promise<{ error: Erro }> };
+};
+
+/** Acesso simples de escrita a uma tabela da empresa ativa. */
+export const tabela = (nome: string) => supabase.from(nome as never) as unknown as LooseTable;
+
 export function situacao(
   status: string,
   vencimento: string,
