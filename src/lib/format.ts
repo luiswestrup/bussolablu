@@ -6,7 +6,7 @@ export const num = (v: number | null | undefined) =>
 
 export function dataBR(iso: string | null | undefined) {
   if (!iso) return "—";
-  const [y, m, d] = iso.slice(0, 10).split("-");
+  const [y = "", m = "", d = ""] = iso.slice(0, 10).split("-");
   return `${d}/${m}/${y}`;
 }
 
@@ -28,7 +28,7 @@ export function mesesAtras(n: number) {
 }
 
 export function rotuloMes(iso: string) {
-  const [y, m] = iso.slice(0, 7).split("-");
+  const [y = "", m = ""] = iso.slice(0, 7).split("-");
   return `${m}/${y.slice(2)}`;
 }
 
