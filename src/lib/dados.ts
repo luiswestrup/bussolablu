@@ -56,16 +56,28 @@ export type Movimento = {
 };
 
 function useTabela<T>(tabela: string, empresaId: string | undefined, colunas: string, ordem: string) {
+  type Loose = {
+    select: (c: string) => {
+      eq: (
+        k: string,
+        v: string,
+      ) => {
+        order: (
+          c: string,
+          o: { ascending: boolean },
+        ) => Promise<{ data: unknown; error: { message: string } | null }>;
+      };
+    };
+  };
   return useQuery({
     queryKey: [tabela, empresaId],
     enabled: !!empresaId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from(tabela)
+      const { data, error } = await (supabase.from(tabela as never) as unknown as Loose)
         .select(colunas)
         .eq("empresa_id", empresaId!)
         .order(ordem, { ascending: false });
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return (data ?? []) as unknown as T[];
     },
   });
