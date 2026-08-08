@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<NFe>
+  <infNFe Id="NFe98765432109876543210987654321098765432109876">
+    <ide>
+      <nNF>2002</nNF>
+      <dEmi>2026-07-15</dEmi>
+    </ide>
+    <emit>
+      <CNPJ>98765432000155</CNPJ>
+      <xNome>Outro Fornecedor SA</xNome>
+    </emit>
+    <det>
+      <prod>
+        <cProd>XYZ999</cProd>
+        <xProd>Produto B</xProd>
+        <qCom>2</qCom>
+        <vUnCom>100.00</vUnCom>
+        <vProd>200.00</vProd>
+      </prod>
+    </det>
+    <total>
+      <ICMSTot>
+        <vNF>200.00</vNF>
+      </ICMSTot>
+    </total>
+    <!-- sem duplicatas -->
+  </infNFe>
+</NFe>
