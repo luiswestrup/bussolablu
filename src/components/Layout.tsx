@@ -1,22 +1,39 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useEmpresa } from "@/context/EmpresaContext";
+import { useEmpresaPapel } from "@/hooks/useEmpresaPapel";
 import Link from "next/link";
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { empresaAtiva, empresas, setEmpresaAtiva } = useEmpresa();
+  const papel = useEmpresaPapel();
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="min-h-screen flex">
-      <aside className="w-64 bg-[#0b2035] text-white p-4">
+      {/* Mobile header */}
+      <div className="md:hidden flex items-center justify-between bg-white p-2 border-b">
+        <button onClick={() => setOpen(!open)} className="p-2">
+          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h16" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <div className="font-bold">FlowMaster</div>
+        <div></div>
+      </div>
+
+      {/* Sidebar */}
+      <aside className={`bg-[#0b2035] text-white p-4 md:w-64 ${open ? 'block' : 'hidden'} md:block`}>
         <div className="mb-6 font-bold text-xl">FlowMaster</div>
         <nav className="space-y-2">
           <Link className="block py-2 px-3 rounded hover:bg-[#0f2a41]" href="/app/dashboard">Dashboard</Link>
-          <Link className="block py-2 px-3 rounded hover:bg-[#0f2a41]" href="/app/pagamentos">Pagamentos</Link>
-          <Link className="block py-2 px-3 rounded hover:bg-[#0f2a41]" href="/app/recebimentos">Recebimentos</Link>
+          {papel !== 'estoque' && (
+            <>
+              <Link className="block py-2 px-3 rounded hover:bg-[#0f2a41]" href="/app/pagamentos">Pagamentos</Link>
+              <Link className="block py-2 px-3 rounded hover:bg-[#0f2a41]" href="/app/recebimentos">Recebimentos</Link>
+              <Link className="block py-2 px-3 rounded hover:bg-[#0f2a41]" href="/app/relatorios">Relatórios</Link>
+            </>
+          )}
           <Link className="block py-2 px-3 rounded hover:bg-[#0f2a41]" href="/app/estoque">Estoque</Link>
-          <Link className="block py-2 px-3 rounded hover:bg-[#0f2a41]" href="/app/relatorios">Relatórios</Link>
           <Link className="block py-2 px-3 rounded hover:bg-[#0f2a41]" href="/app/configuracoes">Configurações</Link>
         </nav>
       </aside>
