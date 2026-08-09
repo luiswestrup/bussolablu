@@ -50,11 +50,11 @@ export const Route = createFileRoute("/_authenticated/estoque")({
 });
 
 function EstoquePage() {
-  const { empresa } = useEmpresa();
+  const { empresa, escopo, consolidado, nomeEmpresa } = useEmpresa();
   const queryClient = useQueryClient();
-  const { data: produtos = [], isLoading } = useProdutos(empresa?.id);
-  const { data: movimentos = [] } = useMovimentos(empresa?.id);
-  const { data: categorias = [] } = useCategorias(empresa?.id);
+  const { data: produtos = [], isLoading } = useProdutos(escopo);
+  const { data: movimentos = [] } = useMovimentos(escopo);
+  const { data: categorias = [] } = useCategorias(escopo);
 
   const [busca, setBusca] = useState("");
   const [abertoProduto, setAbertoProduto] = useState(false);
@@ -70,8 +70,8 @@ function EstoquePage() {
   const [mov, setMov] = useState({ produto_id: "", tipo: "entrada", quantidade: "", custo_unitario: "", observacao: "" });
 
   const invalidar = () => {
-    queryClient.invalidateQueries({ queryKey: ["produto", empresa?.id] });
-    queryClient.invalidateQueries({ queryKey: ["movimento_estoque", empresa?.id] });
+    queryClient.invalidateQueries({ queryKey: ["produto"] });
+    queryClient.invalidateQueries({ queryKey: ["movimento_estoque"] });
   };
 
   const criarProduto = useMutation({
@@ -163,6 +163,7 @@ function EstoquePage() {
                 exportarCSV(
                   "estoque",
                   lista.map((p) => ({
+                    ...(consolidado ? { Empresa: nomeEmpresa(p.empresa_id) } : {}),
                     Produto: p.nome,
                     SKU: p.sku ?? "",
                     Categoria: nomeCategoria(p.categoria_id),
@@ -179,7 +180,7 @@ function EstoquePage() {
 
             <Dialog open={abertoMov} onOpenChange={setAbertoMov}>
               <DialogTrigger asChild>
-                <Button variant="secondary" disabled={!produtos.length}>
+                <Button variant="secondary" disabled={!empresa || !produtos.length}>
                   <ArrowUpRight className="mr-2 h-4 w-4" /> Movimentar
                 </Button>
               </DialogTrigger>
@@ -261,7 +262,8 @@ function EstoquePage() {
             <Dialog open={abertoProduto} onOpenChange={setAbertoProduto}>
               <DialogTrigger asChild>
                 <Button disabled={!empresa}>
-                  <Plus className="mr-2 h-4 w-4" /> Novo produto
+                  <Plus className="mr-2 h-4 w-4" />
+                  {consolidado ? "Selecione uma empresa para cadastrar" : "Novo produto"}
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -371,6 +373,7 @@ function EstoquePage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        {consolidado && <TableHead>Empresa</TableHead>}
                         <TableHead>Produto</TableHead>
                         <TableHead>SKU</TableHead>
                         <TableHead>Categoria</TableHead>
@@ -385,6 +388,11 @@ function EstoquePage() {
                         const baixo = Number(p.quantidade) <= Number(p.estoque_minimo);
                         return (
                           <TableRow key={p.id}>
+                            {consolidado && (
+                              <TableCell className="whitespace-nowrap text-muted-foreground">
+                                {nomeEmpresa(p.empresa_id)}
+                              </TableCell>
+                            )}
                             <TableCell className="font-medium">
                               <span className="flex items-center gap-2">
                                 {p.nome}
@@ -421,6 +429,7 @@ function EstoquePage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      {consolidado && <TableHead>Empresa</TableHead>}
                       <TableHead>Data</TableHead>
                       <TableHead>Produto</TableHead>
                       <TableHead>Tipo</TableHead>
@@ -432,6 +441,11 @@ function EstoquePage() {
                   <TableBody>
                     {movimentos.map((m) => (
                       <TableRow key={m.id}>
+                        {consolidado && (
+                          <TableCell className="whitespace-nowrap text-muted-foreground">
+                            {nomeEmpresa(m.empresa_id)}
+                          </TableCell>
+                        )}
                         <TableCell>{dataBR(m.data)}</TableCell>
                         <TableCell className="font-medium">{nomeProduto(m.produto_id)}</TableCell>
                         <TableCell>

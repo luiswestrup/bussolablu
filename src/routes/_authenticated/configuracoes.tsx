@@ -51,7 +51,7 @@ function ListaParceiros({
   const { empresa } = useEmpresa();
   const queryClient = useQueryClient();
   const [form, setForm] = useState({ nome: "", contato: "", documento: "" });
-  const invalidar = () => queryClient.invalidateQueries({ queryKey: [chave, empresa?.id] });
+  const invalidar = () => queryClient.invalidateQueries({ queryKey: [chave] });
 
   const criar = useMutation({
     mutationFn: async () => {
@@ -170,7 +170,7 @@ function ConfiguracoesPage() {
     },
     onSuccess: () => {
       setCat({ nome: "", tipo: "despesa" });
-      queryClient.invalidateQueries({ queryKey: ["categoria", empresa?.id] });
+      queryClient.invalidateQueries({ queryKey: ["categoria"] });
       toast.success("Categoria criada.");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -182,7 +182,7 @@ function ConfiguracoesPage() {
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categoria", empresa?.id] });
+      queryClient.invalidateQueries({ queryKey: ["categoria"] });
       toast.success("Categoria removida.");
     },
     onError: (e: Error) => toast.error(e.message),

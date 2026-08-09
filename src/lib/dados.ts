@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type ContaPagar = {
   id: string;
+  empresa_id: string;
   descricao: string;
   valor: number;
   categoria_id: string | null;
@@ -15,6 +16,7 @@ export type ContaPagar = {
 
 export type ContaReceber = {
   id: string;
+  empresa_id: string;
   descricao: string;
   valor: number;
   categoria_id: string | null;
@@ -27,6 +29,7 @@ export type ContaReceber = {
 
 export type Produto = {
   id: string;
+  empresa_id: string;
   nome: string;
   sku: string | null;
   categoria_id: string | null;
@@ -39,14 +42,22 @@ export type Produto = {
 
 export type Categoria = {
   id: string;
+  empresa_id: string;
   nome: string;
   tipo: "despesa" | "receita" | "produto";
 };
 
-export type Parceiro = { id: string; nome: string; contato: string | null; documento: string | null };
+export type Parceiro = {
+  id: string;
+  empresa_id: string;
+  nome: string;
+  contato: string | null;
+  documento: string | null;
+};
 
 export type Movimento = {
   id: string;
+  empresa_id: string;
   produto_id: string;
   tipo: "entrada" | "saida";
   quantidade: number;
@@ -55,12 +66,18 @@ export type Movimento = {
   data: string;
 };
 
-function useTabela<T>(tabela: string, empresaId: string | undefined, colunas: string, ordem: string) {
+/** Escopo de consulta: uma empresa ou várias (visão consolidada). */
+export type Escopo = string | string[] | undefined;
+
+const ids = (escopo: Escopo): string[] =>
+  escopo === undefined ? [] : Array.isArray(escopo) ? escopo : [escopo];
+
+function useTabela<T>(tabela: string, escopo: Escopo, colunas: string, ordem: string) {
   type Loose = {
     select: (c: string) => {
-      eq: (
+      in: (
         k: string,
-        v: string,
+        v: string[],
       ) => {
         order: (
           c: string,
@@ -69,13 +86,14 @@ function useTabela<T>(tabela: string, empresaId: string | undefined, colunas: st
       };
     };
   };
+  const alvo = ids(escopo);
   return useQuery({
-    queryKey: [tabela, empresaId],
-    enabled: !!empresaId,
+    queryKey: [tabela, alvo.join(",")],
+    enabled: alvo.length > 0,
     queryFn: async () => {
       const { data, error } = await (supabase.from(tabela as never) as unknown as Loose)
-        .select(colunas)
-        .eq("empresa_id", empresaId!)
+        .select(colunas.includes("empresa_id") ? colunas : `empresa_id, ${colunas}`)
+        .in("empresa_id", alvo)
         .order(ordem, { ascending: false });
       if (error) throw new Error(error.message);
       return (data ?? []) as unknown as T[];
@@ -83,43 +101,43 @@ function useTabela<T>(tabela: string, empresaId: string | undefined, colunas: st
   });
 }
 
-export const usePagar = (empresaId?: string) =>
+export const usePagar = (escopo?: Escopo) =>
   useTabela<ContaPagar>(
     "conta_pagar",
-    empresaId,
+    escopo,
     "id, descricao, valor, categoria_id, fornecedor_id, forma_pagamento, data_vencimento, data_pagamento, status",
     "data_vencimento",
   );
 
-export const useReceber = (empresaId?: string) =>
+export const useReceber = (escopo?: Escopo) =>
   useTabela<ContaReceber>(
     "conta_receber",
-    empresaId,
+    escopo,
     "id, descricao, valor, categoria_id, cliente_id, forma_recebimento, data_vencimento, data_recebimento, status",
     "data_vencimento",
   );
 
-export const useProdutos = (empresaId?: string) =>
+export const useProdutos = (escopo?: Escopo) =>
   useTabela<Produto>(
     "produto",
-    empresaId,
+    escopo,
     "id, nome, sku, categoria_id, custo, preco_venda, quantidade, estoque_minimo, ativo",
     "nome",
   );
 
-export const useCategorias = (empresaId?: string) =>
-  useTabela<Categoria>("categoria", empresaId, "id, nome, tipo", "nome");
+export const useCategorias = (escopo?: Escopo) =>
+  useTabela<Categoria>("categoria", escopo, "id, nome, tipo", "nome");
 
-export const useFornecedores = (empresaId?: string) =>
-  useTabela<Parceiro>("fornecedor", empresaId, "id, nome, contato, documento", "nome");
+export const useFornecedores = (escopo?: Escopo) =>
+  useTabela<Parceiro>("fornecedor", escopo, "id, nome, contato, documento", "nome");
 
-export const useClientes = (empresaId?: string) =>
-  useTabela<Parceiro>("cliente", empresaId, "id, nome, contato, documento", "nome");
+export const useClientes = (escopo?: Escopo) =>
+  useTabela<Parceiro>("cliente", escopo, "id, nome, contato, documento", "nome");
 
-export const useMovimentos = (empresaId?: string) =>
+export const useMovimentos = (escopo?: Escopo) =>
   useTabela<Movimento>(
     "movimento_estoque",
-    empresaId,
+    escopo,
     "id, produto_id, tipo, quantidade, custo_unitario, observacao, data",
     "data",
   );

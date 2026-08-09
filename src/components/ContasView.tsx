@@ -37,6 +37,7 @@ import { situacao, tabela, useCategorias, type Categoria, type Parceiro } from "
 
 export type Conta = {
   id: string;
+  empresa_id: string;
   descricao: string;
   valor: number;
   categoria_id: string | null;
@@ -69,8 +70,8 @@ export function ContasView({
   parceiros: Parceiro[];
   carregando: boolean;
 }) {
-  const { empresa } = useEmpresa();
-  const { data: categorias = [] } = useCategorias(empresa?.id);
+  const { empresa, escopo, consolidado, nomeEmpresa } = useEmpresa();
+  const { data: categorias = [] } = useCategorias(escopo);
   const queryClient = useQueryClient();
   const hj = hoje();
 
@@ -86,7 +87,7 @@ export function ContasView({
     data_vencimento: hj,
   });
 
-  const invalidar = () => queryClient.invalidateQueries({ queryKey: [config.tabelaNome, empresa?.id] });
+  const invalidar = () => queryClient.invalidateQueries({ queryKey: [config.tabelaNome] });
 
   const criar = useMutation({
     mutationFn: async () => {
@@ -203,6 +204,7 @@ export function ContasView({
                   exportarCSV(
                     config.tabelaNome,
                     lista.map((c) => ({
+                      ...(consolidado ? { Empresa: nomeEmpresa(c.empresa_id) } : {}),
                       Descrição: c.descricao,
                       Categoria: nomeCategoria(c.categoria_id),
                       [config.rotuloParceiro]: nomeParceiro((c as Record<string, unknown>)[config.campoParceiro]),
@@ -218,8 +220,16 @@ export function ContasView({
 
               <Dialog open={aberto} onOpenChange={setAberto}>
                 <DialogTrigger asChild>
-                  <Button disabled={!empresa}>
-                    <Plus className="mr-2 h-4 w-4" /> Novo lançamento
+                  <Button
+                    disabled={!empresa}
+                    title={
+                      consolidado
+                        ? "Selecione uma empresa específica para lançar"
+                        : "Novo lançamento"
+                    }
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    {consolidado ? "Selecione uma empresa para lançar" : "Novo lançamento"}
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -334,6 +344,7 @@ export function ContasView({
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {consolidado && <TableHead>Empresa</TableHead>}
                     <TableHead>Descrição</TableHead>
                     <TableHead>Categoria</TableHead>
                     <TableHead>{config.rotuloParceiro}</TableHead>
@@ -346,6 +357,11 @@ export function ContasView({
                 <TableBody>
                   {lista.map((c) => (
                     <TableRow key={c.id}>
+                      {consolidado && (
+                        <TableCell className="whitespace-nowrap text-muted-foreground">
+                          {nomeEmpresa(c.empresa_id)}
+                        </TableCell>
+                      )}
                       <TableCell className="font-medium">{c.descricao}</TableCell>
                       <TableCell>{nomeCategoria(c.categoria_id)}</TableCell>
                       <TableCell>{nomeParceiro((c as Record<string, unknown>)[config.campoParceiro])}</TableCell>

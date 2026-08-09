@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -18,6 +18,7 @@ import {
 import { AlertTriangle, Boxes, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Kpi } from "@/components/ui-kit";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEmpresa } from "@/lib/empresa";
 import { brl, hoje, num, rotuloMes } from "@/lib/format";
@@ -46,12 +47,22 @@ function ultimosMeses(qtd: number) {
 }
 
 function DashboardPage() {
-  const { empresa } = useEmpresa();
-  const { data: pagar = [] } = usePagar(empresa?.id);
-  const { data: receber = [] } = useReceber(empresa?.id);
-  const { data: produtos = [] } = useProdutos(empresa?.id);
-  const { data: categorias = [] } = useCategorias(empresa?.id);
+  const { escopo, consolidado, empresas, nomeEmpresa } = useEmpresa();
+  const { data: pagarTodos = [] } = usePagar(escopo);
+  const { data: receberTodos = [] } = useReceber(escopo);
+  const { data: produtosTodos = [] } = useProdutos(escopo);
+  const { data: categorias = [] } = useCategorias(escopo);
   const hj = hoje();
+
+  // Filtro rápido da visão consolidada: "todas" soma os totais, sem misturar registros.
+  const [foco, setFoco] = useState<string>("todas");
+  const focoAtivo = consolidado && foco !== "todas" ? foco : null;
+  const porFoco = <T extends { empresa_id: string }>(linhas: T[]) =>
+    focoAtivo ? linhas.filter((l) => l.empresa_id === focoAtivo) : linhas;
+
+  const pagar = useMemo(() => porFoco(pagarTodos), [pagarTodos, focoAtivo]);
+  const receber = useMemo(() => porFoco(receberTodos), [receberTodos, focoAtivo]);
+  const produtos = useMemo(() => porFoco(produtosTodos), [produtosTodos, focoAtivo]);
 
   const resumo = useMemo(() => {
     const pago = pagar.filter((c) => c.status === "pago");
@@ -109,6 +120,21 @@ function DashboardPage() {
 
   return (
     <AppShell titulo="Dashboard">
+      {consolidado && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="text-sm text-muted-foreground">Filtro rápido:</span>
+          {[{ id: "todas", nome: "Todas" }, ...empresas].map((op) => (
+            <Button
+              key={op.id}
+              size="sm"
+              variant={foco === op.id ? "default" : "outline"}
+              onClick={() => setFoco(op.id)}
+            >
+              {op.id === "todas" ? "Todas" : nomeEmpresa(op.id)}
+            </Button>
+          ))}
+        </div>
+      )}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi
           titulo="Saldo de caixa"

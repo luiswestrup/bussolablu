@@ -44,11 +44,11 @@ export const Route = createFileRoute("/_authenticated/relatorios")({
 });
 
 function RelatoriosPage() {
-  const { empresa } = useEmpresa();
-  const { data: pagar = [] } = usePagar(empresa?.id);
-  const { data: receber = [] } = useReceber(empresa?.id);
-  const { data: produtos = [] } = useProdutos(empresa?.id);
-  const { data: categorias = [] } = useCategorias(empresa?.id);
+  const { escopo } = useEmpresa();
+  const { data: pagar = [] } = usePagar(escopo);
+  const { data: receber = [] } = useReceber(escopo);
+  const { data: produtos = [] } = useProdutos(escopo);
+  const { data: categorias = [] } = useCategorias(escopo);
 
   const [inicio, setInicio] = useState(mesesAtras(5));
   const [fim, setFim] = useState(fimDoMes());

@@ -14,6 +14,8 @@ import {
 import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresa } from "@/lib/empresa";
+import { TODAS } from "@/lib/empresa";
+import { Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -36,7 +38,7 @@ const itens = [
 ] as const;
 
 export function AppShell({ titulo, children }: { titulo: string; children: ReactNode }) {
-  const { empresas, empresa, setEmpresaId } = useEmpresa();
+  const { empresas, empresaId, setEmpresaId, podeConsolidar, consolidado } = useEmpresa();
   const [aberto, setAberto] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -119,11 +121,14 @@ export function AppShell({ titulo, children }: { titulo: string; children: React
           </Button>
           <h1 className="truncate text-base font-semibold lg:text-lg">{titulo}</h1>
           <div className="ml-auto">
-            <Select value={empresa?.id ?? ""} onValueChange={setEmpresaId}>
+            <Select value={empresaId ?? ""} onValueChange={setEmpresaId}>
               <SelectTrigger className="w-[190px] sm:w-[240px]">
                 <SelectValue placeholder="Selecione a empresa" />
               </SelectTrigger>
               <SelectContent>
+                {podeConsolidar && (
+                  <SelectItem value={TODAS}>Todas as empresas (consolidado)</SelectItem>
+                )}
                 {empresas.map((e) => (
                   <SelectItem key={e.id} value={e.id}>
                     {e.nome}
@@ -133,6 +138,16 @@ export function AppShell({ titulo, children }: { titulo: string; children: React
             </Select>
           </div>
         </header>
+        {consolidado && (
+          <div className="flex items-center gap-2 border-b bg-primary/10 px-4 py-2 text-sm text-primary lg:px-6">
+            <Layers className="h-4 w-4 shrink-0" />
+            <span className="font-medium">Visão consolidada</span>
+            <span className="truncate text-primary/80">
+              — {empresas.map((e) => e.nome).join(" + ")}. Os totais são somados apenas para
+              exibição; cada lançamento continua registrado na sua empresa.
+            </span>
+          </div>
+        )}
         <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>
     </div>

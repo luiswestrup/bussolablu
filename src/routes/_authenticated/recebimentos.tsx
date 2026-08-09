@@ -16,9 +16,9 @@ export const Route = createFileRoute("/_authenticated/recebimentos")({
 });
 
 function RecebimentosPage() {
-  const { empresa } = useEmpresa();
-  const { data: contas = [], isLoading } = useReceber(empresa?.id);
-  const { data: clientes = [] } = useClientes(empresa?.id);
+  const { escopo } = useEmpresa();
+  const { data: contas = [], isLoading } = useReceber(escopo);
+  const { data: clientes = [] } = useClientes(escopo);
 
   return (
     <ContasView
