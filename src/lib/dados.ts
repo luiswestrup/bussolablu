@@ -45,6 +45,17 @@ export type Categoria = {
   empresa_id: string;
   nome: string;
   tipo: "despesa" | "receita" | "produto";
+  natureza: "mercadoria" | "servico" | "outro" | null;
+};
+
+export type ContaBancaria = {
+  id: string;
+  empresa_id: string;
+  banco: string;
+  agencia: string | null;
+  conta: string | null;
+  tipo: string;
+  saldo_inicial: number;
 };
 
 export type Parceiro = {
@@ -126,7 +137,15 @@ export const useProdutos = (escopo?: Escopo) =>
   );
 
 export const useCategorias = (escopo?: Escopo) =>
-  useTabela<Categoria>("categoria", escopo, "id, nome, tipo", "nome");
+  useTabela<Categoria>("categoria", escopo, "id, nome, tipo, natureza", "nome");
+
+export const useContasBancarias = (escopo?: Escopo) =>
+  useTabela<ContaBancaria>(
+    "conta_bancaria",
+    escopo,
+    "id, banco, agencia, conta, tipo, saldo_inicial",
+    "banco",
+  );
 
 export const useFornecedores = (escopo?: Escopo) =>
   useTabela<Parceiro>("fornecedor", escopo, "id, nome, contato, documento", "nome");
