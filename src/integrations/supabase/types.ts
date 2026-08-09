@@ -131,6 +131,8 @@ export type Database = {
       conta_pagar: {
         Row: {
           categoria_id: string | null
+          conciliado: boolean
+          conciliado_em: string | null
           conta_bancaria_id: string | null
           criado_em: string
           data_pagamento: string | null
@@ -147,6 +149,8 @@ export type Database = {
         }
         Insert: {
           categoria_id?: string | null
+          conciliado?: boolean
+          conciliado_em?: string | null
           conta_bancaria_id?: string | null
           criado_em?: string
           data_pagamento?: string | null
@@ -163,6 +167,8 @@ export type Database = {
         }
         Update: {
           categoria_id?: string | null
+          conciliado?: boolean
+          conciliado_em?: string | null
           conta_bancaria_id?: string | null
           criado_em?: string
           data_pagamento?: string | null
@@ -212,6 +218,8 @@ export type Database = {
         Row: {
           categoria_id: string | null
           cliente_id: string | null
+          conciliado: boolean
+          conciliado_em: string | null
           conta_bancaria_id: string | null
           criado_em: string
           data_recebimento: string | null
@@ -227,6 +235,8 @@ export type Database = {
         Insert: {
           categoria_id?: string | null
           cliente_id?: string | null
+          conciliado?: boolean
+          conciliado_em?: string | null
           conta_bancaria_id?: string | null
           criado_em?: string
           data_recebimento?: string | null
@@ -242,6 +252,8 @@ export type Database = {
         Update: {
           categoria_id?: string | null
           cliente_id?: string | null
+          conciliado?: boolean
+          conciliado_em?: string | null
           conta_bancaria_id?: string | null
           criado_em?: string
           data_recebimento?: string | null

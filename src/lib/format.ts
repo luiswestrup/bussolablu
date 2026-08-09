@@ -48,3 +48,19 @@ export function exportarCSV(nome: string, linhas: Record<string, unknown>[]) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+/** Exporta uma ou mais abas para um arquivo Excel (.xlsx). */
+export async function exportarXLSX(
+  nome: string,
+  abas: { nome: string; linhas: Record<string, unknown>[] }[],
+) {
+  const comDados = abas.filter((a) => a.linhas.length);
+  if (!comDados.length) return;
+  const XLSX = await import("xlsx");
+  const wb = XLSX.utils.book_new();
+  for (const aba of comDados) {
+    const ws = XLSX.utils.json_to_sheet(aba.linhas);
+    XLSX.utils.book_append_sheet(wb, ws, aba.nome.slice(0, 31));
+  }
+  XLSX.writeFile(wb, `${nome}-${hoje()}.xlsx`);
+}
