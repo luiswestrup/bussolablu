@@ -5,6 +5,7 @@ import { AlertTriangle, CheckCircle2, FileUp, Loader2, Upload } from "lucide-rea
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Kpi, SecaoVazia } from "@/components/ui-kit";
+import { SeletorCategoria } from "@/components/SeletorCategoria";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -402,21 +403,13 @@ function ImportarNotasPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Select
+                        <SeletorCategoria
+                          categorias={categorias}
                           value={p.categoriaId}
-                          onValueChange={(v) => atualizar(p.chave, { categoriaId: v })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Obrigatório" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categoriasProduto.map((c) => (
-                              <SelectItem key={c.id} value={c.id}>
-                                {c.nome}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          onChange={(v: string) => atualizar(p.chave, { categoriaId: v })}
+                          tipo="produto"
+                          empresaId={empresa?.id}
+                        />
                         {categoriasProduto.length === 0 && (
                           <p className="mt-1 text-xs text-muted-foreground">
                             Cadastre categorias do tipo “produto” em Cadastros.
