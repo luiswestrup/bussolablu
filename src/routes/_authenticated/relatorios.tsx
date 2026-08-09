@@ -12,13 +12,15 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Download } from "lucide-react";
+import { Download, FileSpreadsheet } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { Indicadores } from "@/components/Indicadores";
 import { Kpi, SecaoVazia } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -28,8 +30,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useEmpresa } from "@/lib/empresa";
-import { brl, exportarCSV, fimDoMes, mesesAtras, rotuloMes } from "@/lib/format";
-import { rotuloNatureza, useCategorias, usePagar, useProdutos, useReceber } from "@/lib/dados";
+import { brl, exportarCSV, exportarXLSX, fimDoMes, hoje, mesesAtras, rotuloMes } from "@/lib/format";
+import {
+  rotuloNatureza,
+  useCategorias,
+  useContasBancarias,
+  usePagar,
+  useProdutos,
+  useReceber,
+} from "@/lib/dados";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
   head: () => ({
@@ -49,6 +58,7 @@ function RelatoriosPage() {
   const { data: receber = [] } = useReceber(escopo);
   const { data: produtos = [] } = useProdutos(escopo);
   const { data: categorias = [] } = useCategorias(escopo);
+  const { data: contasBancarias = [] } = useContasBancarias(escopo);
 
   const [inicio, setInicio] = useState(mesesAtras(5));
   const [fim, setFim] = useState(fimDoMes());
@@ -120,8 +130,49 @@ function RelatoriosPage() {
     return [...mapa.entries()].map(([nome, despesa]) => ({ nome, despesa })).sort((a, b) => b.despesa - a.despesa);
   }, [saidas, categorias]);
 
+  const saldoAtual = useMemo(() => {
+    const inicial = contasBancarias.reduce((s, c) => s + Number(c.saldo_inicial), 0);
+    const entrou = receber
+      .filter((c) => c.status === "recebido")
+      .reduce((s, c) => s + Number(c.valor), 0);
+    const saiu = pagar.filter((c) => c.status === "pago").reduce((s, c) => s + Number(c.valor), 0);
+    return inicial + entrou - saiu;
+  }, [contasBancarias, receber, pagar]);
+
+  const linhasFluxo = porMes.map((m) => ({
+    Mês: m.rotulo,
+    Entradas: Number(m.entradas.toFixed(2)),
+    Saídas: Number(m.saidas.toFixed(2)),
+    Resultado: Number(m.resultado.toFixed(2)),
+  }));
+  const linhasCategoria = porCategoria.map((c) => ({
+    Categoria: c.nome,
+    Receita: Number(c.receita.toFixed(2)),
+    Despesa: Number(c.despesa.toFixed(2)),
+  }));
+  const linhasNatureza = porNatureza.map((n) => ({
+    Natureza: n.nome,
+    Despesa: Number(n.despesa.toFixed(2)),
+  }));
+  const linhasEstoque = margemEstoque.map((m) => ({
+    Produto: m.nome,
+    "Lucro potencial": Number(m.lucro.toFixed(2)),
+    "Margem %": Number(m.perc.toFixed(1)),
+  }));
+
   return (
     <AppShell titulo="Relatórios">
+      <Tabs defaultValue="analises">
+        <TabsList className="mb-4">
+          <TabsTrigger value="analises">Análises</TabsTrigger>
+          <TabsTrigger value="indicadores">Indicadores</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="indicadores">
+          <Indicadores pagar={pagar} receber={receber} saldoAtual={saldoAtual} hojeISO={hoje()} />
+        </TabsContent>
+
+        <TabsContent value="analises">
       <Card>
         <CardContent className="flex flex-wrap items-end gap-4 p-4">
           <div>
@@ -132,23 +183,40 @@ function RelatoriosPage() {
             <Label htmlFor="fim">Fim</Label>
             <Input id="fim" type="date" value={fim} onChange={(e) => setFim(e.target.value)} />
           </div>
-          <Button
-            variant="outline"
-            className="ml-auto"
-            onClick={() =>
-              exportarCSV(
-                "fluxo-de-caixa",
-                porMes.map((m) => ({
-                  Mês: m.rotulo,
-                  Entradas: m.entradas.toFixed(2).replace(".", ","),
-                  Saídas: m.saidas.toFixed(2).replace(".", ","),
-                  Resultado: m.resultado.toFixed(2).replace(".", ","),
-                })),
-              )
-            }
-          >
-            <Download className="mr-2 h-4 w-4" /> Exportar fluxo
-          </Button>
+          <div className="ml-auto flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() =>
+                exportarCSV(
+                  "fluxo-de-caixa",
+                  porMes.map((m) => ({
+                    Mês: m.rotulo,
+                    Entradas: m.entradas.toFixed(2).replace(".", ","),
+                    Saídas: m.saidas.toFixed(2).replace(".", ","),
+                    Resultado: m.resultado.toFixed(2).replace(".", ","),
+                  })),
+                )
+              }
+            >
+              <Download className="mr-2 h-4 w-4" /> CSV do fluxo
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() =>
+                exportarXLSX("relatorios", [
+                  { nome: "Fluxo de caixa", linhas: linhasFluxo },
+                  { nome: "Por categoria", linhas: linhasCategoria },
+                  { nome: "Por natureza", linhas: linhasNatureza },
+                  { nome: "Estoque", linhas: linhasEstoque },
+                ])
+              }
+            >
+              <FileSpreadsheet className="mr-2 h-4 w-4" /> Excel (.xlsx)
+            </Button>
+            <Button variant="outline" onClick={() => window.print()}>
+              <Download className="mr-2 h-4 w-4" /> PDF
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -233,25 +301,38 @@ function RelatoriosPage() {
         </CardContent>
       </Card>
 
-      <Card className="mt-4">
+          <Card className="mt-4">
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-base">Lucratividade potencial do estoque</CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              exportarCSV(
-                "lucratividade-estoque",
-                margemEstoque.map((m) => ({
-                  Produto: m.nome,
-                  "Lucro potencial": m.lucro.toFixed(2).replace(".", ","),
-                  "Margem %": m.perc.toFixed(1).replace(".", ","),
-                })),
-              )
-            }
-          >
-            <Download className="mr-2 h-4 w-4" /> CSV
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                exportarCSV(
+                  "lucratividade-estoque",
+                  margemEstoque.map((m) => ({
+                    Produto: m.nome,
+                    "Lucro potencial": m.lucro.toFixed(2).replace(".", ","),
+                    "Margem %": m.perc.toFixed(1).replace(".", ","),
+                  })),
+                )
+              }
+            >
+              <Download className="mr-2 h-4 w-4" /> CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                exportarXLSX("lucratividade-estoque", [
+                  { nome: "Estoque", linhas: linhasEstoque },
+                ])
+              }
+            >
+              <FileSpreadsheet className="mr-2 h-4 w-4" /> Excel
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {margemEstoque.length === 0 ? (
@@ -278,6 +359,8 @@ function RelatoriosPage() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </AppShell>
   );
 }
