@@ -189,6 +189,22 @@ type LooseTable = {
 /** Acesso simples de escrita a uma tabela da empresa ativa. */
 export const tabela = (nome: string) => supabase.from(nome as never) as unknown as LooseTable;
 
+/** UPDATE em lote por lista de ids. */
+export async function atualizarEmLote(
+  nome: string,
+  ids: string[],
+  valores: Record<string, unknown>,
+): Promise<void> {
+  if (!ids.length) return;
+  const alvo = supabase.from(nome as never) as unknown as {
+    update: (v: Record<string, unknown>) => {
+      in: (k: string, v: string[]) => PromiseLike<{ error: Erro }>;
+    };
+  };
+  const { error } = await alvo.update(valores).in("id", ids);
+  if (error) throw new Error(error.message);
+}
+
 type Resultado = { data: unknown; error: Erro };
 type Filtravel = { eq: (coluna: string, valor: string) => Filtravel } & PromiseLike<Resultado>;
 
