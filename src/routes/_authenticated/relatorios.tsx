@@ -213,6 +213,27 @@ function RelatoriosPage() {
       </div>
 
       <Card className="mt-4">
+        <CardHeader>
+          <CardTitle className="text-base">Despesas por natureza (mercadoria x serviço x outro)</CardTitle>
+        </CardHeader>
+        <CardContent className="h-72">
+          {porNatureza.length === 0 ? (
+            <SecaoVazia texto="Sem despesas liquidadas no período." />
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={porNatureza}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                <XAxis dataKey="nome" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis fontSize={12} width={70} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(v: number | string) => brl(Number(v))} />
+                <Bar dataKey="despesa" name="Despesa" fill="#2f4f86" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="mt-4">
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-base">Lucratividade potencial do estoque</CardTitle>
           <Button
