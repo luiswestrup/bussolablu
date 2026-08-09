@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      auditoria: {
+        Row: {
+          acao: Database["public"]["Enums"]["acao_auditoria"]
+          criado_em: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          empresa_id: string
+          id: string
+          registro_id: string | null
+          tabela_afetada: string
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: Database["public"]["Enums"]["acao_auditoria"]
+          criado_em?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          empresa_id: string
+          id?: string
+          registro_id?: string | null
+          tabela_afetada: string
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: Database["public"]["Enums"]["acao_auditoria"]
+          criado_em?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          empresa_id?: string
+          id?: string
+          registro_id?: string | null
+          tabela_afetada?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auditoria_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categoria: {
         Row: {
           criado_em: string
@@ -290,6 +334,50 @@ export type Database = {
           },
           {
             foreignKeyName: "conta_receber_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      convite: {
+        Row: {
+          aceito_em: string | null
+          convidado_por: string | null
+          criado_em: string
+          email: string
+          empresa_id: string
+          id: string
+          papel: Database["public"]["Enums"]["papel_usuario"]
+          pode_ver_consolidado: boolean
+          status: string
+        }
+        Insert: {
+          aceito_em?: string | null
+          convidado_por?: string | null
+          criado_em?: string
+          email: string
+          empresa_id: string
+          id?: string
+          papel?: Database["public"]["Enums"]["papel_usuario"]
+          pode_ver_consolidado?: boolean
+          status?: string
+        }
+        Update: {
+          aceito_em?: string | null
+          convidado_por?: string | null
+          criado_em?: string
+          email?: string
+          empresa_id?: string
+          id?: string
+          papel?: Database["public"]["Enums"]["papel_usuario"]
+          pode_ver_consolidado?: boolean
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "convite_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresa"
@@ -607,10 +695,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      e_admin: { Args: never; Returns: boolean }
+      e_admin_empresa: { Args: { _empresa_id: string }; Returns: boolean }
+      meus_papeis: {
+        Args: never
+        Returns: {
+          empresa_id: string
+          papel: Database["public"]["Enums"]["papel_usuario"]
+        }[]
+      }
       pertence_empresa: { Args: { _empresa_id: string }; Returns: boolean }
       pode_consolidar: { Args: never; Returns: boolean }
+      usuarios_da_empresa: {
+        Args: never
+        Returns: {
+          criado_em: string
+          email: string
+          empresa_id: string
+          papel: Database["public"]["Enums"]["papel_usuario"]
+          pode_ver_consolidado: boolean
+          user_id: string
+          vinculo_id: string
+        }[]
+      }
     }
     Enums: {
+      acao_auditoria: "criado" | "editado" | "excluido"
       natureza_categoria: "mercadoria" | "servico" | "outro"
       papel_usuario: "admin" | "financeiro" | "estoque"
       status_pagar: "pendente" | "pago" | "vencido"
@@ -744,6 +854,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      acao_auditoria: ["criado", "editado", "excluido"],
       natureza_categoria: ["mercadoria", "servico", "outro"],
       papel_usuario: ["admin", "financeiro", "estoque"],
       status_pagar: ["pendente", "pago", "vencido"],
