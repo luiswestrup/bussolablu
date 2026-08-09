@@ -25,7 +25,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useEmpresa } from "@/lib/empresa";
-import { tabela, useCategorias, useClientes, useFornecedores } from "@/lib/dados";
+import { brl } from "@/lib/format";
+import {
+  NATUREZAS,
+  tabela,
+  useCategorias,
+  useClientes,
+  useContasBancarias,
+  useFornecedores,
+} from "@/lib/dados";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -157,7 +165,7 @@ function ConfiguracoesPage() {
   const { data: categorias = [] } = useCategorias(empresa?.id);
   const { data: fornecedores = [] } = useFornecedores(empresa?.id);
   const { data: clientes = [] } = useClientes(empresa?.id);
-  const [cat, setCat] = useState({ nome: "", tipo: "despesa" });
+  const [cat, setCat] = useState({ nome: "", tipo: "despesa", natureza: "mercadoria" });
 
   const criarCategoria = useMutation({
     mutationFn: async () => {
@@ -165,13 +173,26 @@ function ConfiguracoesPage() {
         empresa_id: empresa!.id,
         nome: cat.nome.trim(),
         tipo: cat.tipo,
+        natureza: cat.tipo === "despesa" ? cat.natureza : null,
       });
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      setCat({ nome: "", tipo: "despesa" });
+      setCat({ nome: "", tipo: "despesa", natureza: "mercadoria" });
       queryClient.invalidateQueries({ queryKey: ["categoria"] });
       toast.success("Categoria criada.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const alterarNatureza = useMutation({
+    mutationFn: async ({ id, natureza }: { id: string; natureza: string }) => {
+      const { error } = await tabela("categoria").update({ natureza }).eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categoria"] });
+      toast.success("Natureza atualizada.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -195,6 +216,7 @@ function ConfiguracoesPage() {
           <TabsTrigger value="categorias">Categorias</TabsTrigger>
           <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
           <TabsTrigger value="clientes">Clientes</TabsTrigger>
+          <TabsTrigger value="contas">Contas bancárias</TabsTrigger>
         </TabsList>
 
         <TabsContent value="categorias" className="mt-4">
@@ -221,9 +243,23 @@ function ConfiguracoesPage() {
                     <SelectItem value="produto">Produto</SelectItem>
                   </SelectContent>
                 </Select>
+                {cat.tipo === "despesa" && (
+                  <Select value={cat.natureza} onValueChange={(v) => setCat({ ...cat, natureza: v })}>
+                    <SelectTrigger className="w-[210px]">
+                      <SelectValue placeholder="Natureza" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {NATUREZAS.map((n) => (
+                        <SelectItem key={n.valor} value={n.valor}>
+                          {n.rotulo}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 <Button
                   onClick={() => criarCategoria.mutate()}
-                  disabled={!cat.nome.trim() || criarCategoria.isPending}
+                  disabled={!empresa || !cat.nome.trim() || criarCategoria.isPending}
                 >
                   <Plus className="mr-2 h-4 w-4" /> Adicionar
                 </Button>
@@ -238,6 +274,7 @@ function ConfiguracoesPage() {
                       <TableRow>
                         <TableHead>Nome</TableHead>
                         <TableHead>Tipo</TableHead>
+                        <TableHead>Natureza</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -246,6 +283,27 @@ function ConfiguracoesPage() {
                         <TableRow key={c.id}>
                           <TableCell className="font-medium">{c.nome}</TableCell>
                           <TableCell className="capitalize">{c.tipo}</TableCell>
+                          <TableCell>
+                            {c.tipo === "despesa" ? (
+                              <Select
+                                value={c.natureza ?? "outro"}
+                                onValueChange={(v) => alterarNatureza.mutate({ id: c.id, natureza: v })}
+                              >
+                                <SelectTrigger className="w-[200px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {NATUREZAS.map((n) => (
+                                    <SelectItem key={n.valor} value={n.valor}>
+                                      {n.rotulo}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-right">
                             <Button
                               size="icon"
@@ -273,7 +331,151 @@ function ConfiguracoesPage() {
         <TabsContent value="clientes" className="mt-4">
           <ListaParceiros chave="cliente" titulo="Cliente" itens={clientes} />
         </TabsContent>
+
+        <TabsContent value="contas" className="mt-4">
+          <ContasBancarias />
+        </TabsContent>
       </Tabs>
     </AppShell>
+  );
+}
+
+const TIPOS_CONTA = ["corrente", "poupanca", "caixa", "investimento"];
+
+function ContasBancarias() {
+  const { empresa } = useEmpresa();
+  const queryClient = useQueryClient();
+  const { data: contas = [] } = useContasBancarias(empresa?.id);
+  const [form, setForm] = useState({
+    banco: "",
+    agencia: "",
+    conta: "",
+    tipo: "corrente",
+    saldo_inicial: "",
+  });
+
+  const invalidar = () => queryClient.invalidateQueries({ queryKey: ["conta_bancaria"] });
+
+  const criar = useMutation({
+    mutationFn: async () => {
+      const { error } = await tabela("conta_bancaria").insert({
+        empresa_id: empresa!.id,
+        banco: form.banco.trim(),
+        agencia: form.agencia.trim() || null,
+        conta: form.conta.trim() || null,
+        tipo: form.tipo,
+        saldo_inicial: Number(form.saldo_inicial) || 0,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      setForm({ banco: "", agencia: "", conta: "", tipo: "corrente", saldo_inicial: "" });
+      invalidar();
+      toast.success("Conta bancária cadastrada.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const excluir = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await tabela("conta_bancaria").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      invalidar();
+      toast.success("Conta removida.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Contas bancárias de {empresa?.nome ?? "—"}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-2">
+          <Input
+            placeholder="Banco"
+            maxLength={80}
+            className="max-w-[200px]"
+            value={form.banco}
+            onChange={(e) => setForm({ ...form, banco: e.target.value })}
+          />
+          <Input
+            placeholder="Agência"
+            maxLength={20}
+            className="max-w-[130px]"
+            value={form.agencia}
+            onChange={(e) => setForm({ ...form, agencia: e.target.value })}
+          />
+          <Input
+            placeholder="Conta"
+            maxLength={30}
+            className="max-w-[160px]"
+            value={form.conta}
+            onChange={(e) => setForm({ ...form, conta: e.target.value })}
+          />
+          <Select value={form.tipo} onValueChange={(v) => setForm({ ...form, tipo: v })}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TIPOS_CONTA.map((t) => (
+                <SelectItem key={t} value={t} className="capitalize">
+                  {t}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            placeholder="Saldo inicial"
+            type="number"
+            step="0.01"
+            className="max-w-[150px]"
+            value={form.saldo_inicial}
+            onChange={(e) => setForm({ ...form, saldo_inicial: e.target.value })}
+          />
+          <Button onClick={() => criar.mutate()} disabled={!empresa || !form.banco.trim() || criar.isPending}>
+            <Plus className="mr-2 h-4 w-4" /> Adicionar
+          </Button>
+        </div>
+
+        <div className="mt-4">
+          {contas.length === 0 ? (
+            <SecaoVazia texto="Nenhuma conta bancária cadastrada." />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Banco</TableHead>
+                  <TableHead>Agência</TableHead>
+                  <TableHead>Conta</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead className="text-right">Saldo inicial</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {contas.map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell className="font-medium">{c.banco}</TableCell>
+                    <TableCell>{c.agencia ?? "—"}</TableCell>
+                    <TableCell>{c.conta ?? "—"}</TableCell>
+                    <TableCell className="capitalize">{c.tipo}</TableCell>
+                    <TableCell className="text-right tabular-nums">{brl(Number(c.saldo_inicial))}</TableCell>
+                    <TableCell className="text-right">
+                      <Button size="icon" variant="ghost" title="Excluir" onClick={() => excluir.mutate(c.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

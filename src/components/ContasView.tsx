@@ -33,7 +33,15 @@ import {
 } from "@/components/ui/table";
 import { useEmpresa } from "@/lib/empresa";
 import { brl, dataBR, exportarCSV, hoje } from "@/lib/format";
-import { situacao, tabela, useCategorias, type Categoria, type Parceiro } from "@/lib/dados";
+import {
+  situacao,
+  tabela,
+  useCategorias,
+  useContasBancarias,
+  rotuloNatureza,
+  type Categoria,
+  type Parceiro,
+} from "@/lib/dados";
 
 export type Conta = {
   id: string;
@@ -72,6 +80,7 @@ export function ContasView({
 }) {
   const { empresa, escopo, consolidado, nomeEmpresa } = useEmpresa();
   const { data: categorias = [] } = useCategorias(escopo);
+  const { data: contasBancarias = [] } = useContasBancarias(escopo);
   const queryClient = useQueryClient();
   const hj = hoje();
 
@@ -84,6 +93,7 @@ export function ContasView({
     categoria_id: "",
     parceiro_id: "",
     forma: "",
+    conta_bancaria_id: "",
     data_vencimento: hj,
   });
 
@@ -98,6 +108,7 @@ export function ContasView({
         categoria_id: form.categoria_id || null,
         [config.campoParceiro]: form.parceiro_id || null,
         [config.campoForma]: form.forma || null,
+        conta_bancaria_id: form.conta_bancaria_id || null,
         data_vencimento: form.data_vencimento,
         status: "pendente",
       });
@@ -105,7 +116,15 @@ export function ContasView({
     },
     onSuccess: () => {
       setAberto(false);
-      setForm({ descricao: "", valor: "", categoria_id: "", parceiro_id: "", forma: "", data_vencimento: hj });
+      setForm({
+        descricao: "",
+        valor: "",
+        categoria_id: "",
+        parceiro_id: "",
+        forma: "",
+        conta_bancaria_id: "",
+        data_vencimento: hj,
+      });
       invalidar();
       toast.success("Lançamento registrado.");
     },
@@ -269,13 +288,15 @@ export function ContasView({
                       />
                     </div>
                     <div>
-                      <Label>Categoria</Label>
+                      <Label>
+                        Categoria <span className="text-destructive">*</span>
+                      </Label>
                       <Select
                         value={form.categoria_id}
                         onValueChange={(v) => setForm({ ...form, categoria_id: v })}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
+                          <SelectValue placeholder="Obrigatório" />
                         </SelectTrigger>
                         <SelectContent>
                           {categorias
@@ -283,10 +304,16 @@ export function ContasView({
                             .map((c) => (
                               <SelectItem key={c.id} value={c.id}>
                                 {c.nome}
+                                {c.natureza ? ` · ${rotuloNatureza(c.natureza)}` : ""}
                               </SelectItem>
                             ))}
                         </SelectContent>
                       </Select>
+                      {!form.categoria_id && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Todo lançamento precisa de categoria — inclusive prestadores de serviço.
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Label>{config.rotuloParceiro}</Label>
@@ -321,11 +348,40 @@ export function ContasView({
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="sm:col-span-2">
+                      <Label>
+                        Conta bancária{" "}
+                        <span className="text-muted-foreground">
+                          (opcional — {config.tipo === "pagar" ? "de onde saiu" : "onde entrou"})
+                        </span>
+                      </Label>
+                      <Select
+                        value={form.conta_bancaria_id}
+                        onValueChange={(v) => setForm({ ...form, conta_bancaria_id: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sem conta definida" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {contasBancarias.map((cb) => (
+                            <SelectItem key={cb.id} value={cb.id}>
+                              {cb.banco}
+                              {cb.conta ? ` · ${cb.conta}` : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button
                       onClick={() => criar.mutate()}
-                      disabled={!form.descricao.trim() || Number(form.valor) <= 0 || criar.isPending}
+                      disabled={
+                        !form.descricao.trim() ||
+                        Number(form.valor) <= 0 ||
+                        !form.categoria_id ||
+                        criar.isPending
+                      }
                     >
                       Salvar
                     </Button>

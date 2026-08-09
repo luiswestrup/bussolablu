@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/table";
 import { useEmpresa } from "@/lib/empresa";
 import { brl, exportarCSV, fimDoMes, mesesAtras, rotuloMes } from "@/lib/format";
-import { useCategorias, usePagar, useProdutos, useReceber } from "@/lib/dados";
+import { rotuloNatureza, useCategorias, usePagar, useProdutos, useReceber } from "@/lib/dados";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
   head: () => ({
@@ -109,6 +109,16 @@ function RelatoriosPage() {
         .sort((a, b) => b.lucro - a.lucro),
     [produtos],
   );
+
+  const porNatureza = useMemo(() => {
+    const mapa = new Map<string, number>();
+    saidas.forEach((c) => {
+      const cat = categorias.find((k) => k.id === c.categoria_id);
+      const nome = rotuloNatureza(cat?.natureza ?? null);
+      mapa.set(nome, (mapa.get(nome) ?? 0) + Number(c.valor));
+    });
+    return [...mapa.entries()].map(([nome, despesa]) => ({ nome, despesa })).sort((a, b) => b.despesa - a.despesa);
+  }, [saidas, categorias]);
 
   return (
     <AppShell titulo="Relatórios">
@@ -201,6 +211,27 @@ function RelatoriosPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle className="text-base">Despesas por natureza (mercadoria x serviço x outro)</CardTitle>
+        </CardHeader>
+        <CardContent className="h-72">
+          {porNatureza.length === 0 ? (
+            <SecaoVazia texto="Sem despesas liquidadas no período." />
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={porNatureza}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                <XAxis dataKey="nome" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis fontSize={12} width={70} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(v: number | string) => brl(Number(v))} />
+                <Bar dataKey="despesa" name="Despesa" fill="#2f4f86" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="mt-4">
         <CardHeader className="flex-row items-center justify-between">

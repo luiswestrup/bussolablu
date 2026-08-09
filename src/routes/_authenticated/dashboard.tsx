@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEmpresa } from "@/lib/empresa";
 import { brl, hoje, num, rotuloMes } from "@/lib/format";
-import { useCategorias, usePagar, useProdutos, useReceber } from "@/lib/dados";
+import { rotuloNatureza, useCategorias, usePagar, useProdutos, useReceber } from "@/lib/dados";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -106,6 +106,20 @@ function DashboardPage() {
     });
     return [...mapa.entries()].map(([nome, valor]) => ({ nome, valor })).sort((a, b) => b.valor - a.valor);
   }, [pagar, categorias]);
+
+  const [agrupamento, setAgrupamento] = useState<"categoria" | "natureza">("categoria");
+
+  const despesasPorNatureza = useMemo(() => {
+    const mapa = new Map<string, number>();
+    pagar.forEach((c) => {
+      const cat = categorias.find((k) => k.id === c.categoria_id);
+      const nome = rotuloNatureza(cat?.natureza ?? null);
+      mapa.set(nome, (mapa.get(nome) ?? 0) + Number(c.valor));
+    });
+    return [...mapa.entries()].map(([nome, valor]) => ({ nome, valor })).sort((a, b) => b.valor - a.valor);
+  }, [pagar, categorias]);
+
+  const despesasGrafico = agrupamento === "categoria" ? despesasPorCategoria : despesasPorNatureza;
 
   const estoquePorCategoria = useMemo(() => {
     const mapa = new Map<string, number>();
@@ -222,23 +236,43 @@ function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Despesas por categoria</CardTitle>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="text-base">
+                Despesas por {agrupamento === "categoria" ? "categoria" : "natureza"}
+              </CardTitle>
+              <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant={agrupamento === "categoria" ? "default" : "outline"}
+                  onClick={() => setAgrupamento("categoria")}
+                >
+                  Categoria
+                </Button>
+                <Button
+                  size="sm"
+                  variant={agrupamento === "natureza" ? "default" : "outline"}
+                  onClick={() => setAgrupamento("natureza")}
+                >
+                  Natureza
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="h-72">
-            {despesasPorCategoria.length === 0 ? (
+            {despesasGrafico.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhuma despesa lançada ainda.</p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={despesasPorCategoria}
+                    data={despesasGrafico}
                     dataKey="valor"
                     nameKey="nome"
                     innerRadius={50}
                     outerRadius={90}
                     paddingAngle={2}
                   >
-                    {despesasPorCategoria.map((_, i) => (
+                    {despesasGrafico.map((_, i) => (
                       <Cell key={i} fill={CORES[i % CORES.length]} />
                     ))}
                   </Pie>
