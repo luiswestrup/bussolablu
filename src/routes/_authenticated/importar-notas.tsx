@@ -78,10 +78,10 @@ function ImportarNotasPage() {
   const [salvandoPendente, setSalvandoPendente] = useState<string | null>(null);
 
   const invalidar = () => {
-    queryClient.invalidateQueries({ queryKey: ["produto", empresa?.id] });
-    queryClient.invalidateQueries({ queryKey: ["movimento_estoque", empresa?.id] });
-    queryClient.invalidateQueries({ queryKey: ["conta_pagar", empresa?.id] });
-    queryClient.invalidateQueries({ queryKey: ["fornecedor", empresa?.id] });
+    queryClient.invalidateQueries({ queryKey: ["produto"] });
+    queryClient.invalidateQueries({ queryKey: ["movimento_estoque"] });
+    queryClient.invalidateQueries({ queryKey: ["conta_pagar"] });
+    queryClient.invalidateQueries({ queryKey: ["fornecedor"] });
   };
 
   async function acharOuCriarFornecedor(nota: NotaFiscal, empresaId: string) {

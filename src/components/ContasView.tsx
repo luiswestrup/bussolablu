@@ -86,7 +86,7 @@ export function ContasView({
     data_vencimento: hj,
   });
 
-  const invalidar = () => queryClient.invalidateQueries({ queryKey: [config.tabelaNome, empresa?.id] });
+  const invalidar = () => queryClient.invalidateQueries({ queryKey: [config.tabelaNome] });
 
   const criar = useMutation({
     mutationFn: async () => {

@@ -70,8 +70,8 @@ function EstoquePage() {
   const [mov, setMov] = useState({ produto_id: "", tipo: "entrada", quantidade: "", custo_unitario: "", observacao: "" });
 
   const invalidar = () => {
-    queryClient.invalidateQueries({ queryKey: ["produto", empresa?.id] });
-    queryClient.invalidateQueries({ queryKey: ["movimento_estoque", empresa?.id] });
+    queryClient.invalidateQueries({ queryKey: ["produto"] });
+    queryClient.invalidateQueries({ queryKey: ["movimento_estoque"] });
   };
 
   const criarProduto = useMutation({
