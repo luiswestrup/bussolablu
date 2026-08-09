@@ -9,9 +9,8 @@ import {
   Building2,
   CheckCircle2,
   Clock,
-  Cloud,
-  Compass,
   CreditCard,
+  Cloud,
   FileText,
   Home,
   Package,
@@ -22,6 +21,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import iconeAsset from "@/assets/bussola-blu-icone.png.asset.json";
+import iconeNegativoAsset from "@/assets/bussola-blu-icone-negativo.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -332,10 +332,11 @@ function Index() {
 
       <main>
         <section className="relative overflow-hidden bg-mist">
-          <Compass
-            className="pointer-events-none absolute -right-10 top-10 h-[420px] w-[420px] text-navy/[0.05]"
-            strokeWidth={0.6}
+          <img
+            src={iconeAsset.url}
+            alt=""
             aria-hidden
+            className="pointer-events-none absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-[95%] -translate-y-1/2 object-contain opacity-[0.07]"
           />
           <div className="relative mx-auto grid max-w-6xl gap-12 px-6 pb-16 pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center">
             <div>
@@ -352,7 +353,7 @@ function Index() {
                 to={logado ? "/dashboard" : "/auth"}
                 className="mt-8 inline-flex items-center gap-3 rounded-full bg-navy px-7 py-4 text-base font-semibold text-white transition-colors hover:bg-navy-soft"
               >
-                <Compass className="h-5 w-5 text-gold" />
+                <img src={iconeNegativoAsset.url} alt="" aria-hidden className="h-5 w-5 object-contain" />
                 Acessar o painel
                 <ArrowRight className="h-4 w-4" />
               </Link>
