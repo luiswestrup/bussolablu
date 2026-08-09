@@ -38,6 +38,7 @@ import {
   tabela,
   useCategorias,
   useContasBancarias,
+  rotuloNatureza,
   type Categoria,
   type Parceiro,
 } from "@/lib/dados";
