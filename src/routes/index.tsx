@@ -238,10 +238,10 @@ function PreviewPainel() {
             </div>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid gap-3">
             <div className="rounded-xl bg-white p-3 ring-1 ring-navy/5">
               <p className="font-display text-xs font-bold text-navy">Despesas por categoria</p>
-              <div className="mt-2 flex flex-wrap items-center gap-3">
+              <div className="mt-2 flex items-center gap-4">
                 <Donut />
                 <ul className="space-y-1 text-[10px] text-slate-500">
                   {despesas.map((d) => (
@@ -335,7 +335,7 @@ function Index() {
             strokeWidth={0.6}
             aria-hidden
           />
-          <div className="relative mx-auto grid max-w-6xl gap-12 px-6 pb-28 pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center">
+          <div className="relative mx-auto grid max-w-6xl gap-12 px-6 pb-16 pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-ocean">
                 Gestão financeira e operacional
@@ -370,7 +370,7 @@ function Index() {
               </ul>
             </div>
 
-            <div className="lg:-mb-32">
+            <div>
               <PreviewPainel />
             </div>
           </div>
@@ -392,7 +392,7 @@ function Index() {
         </section>
 
         <section className="bg-navy">
-          <div className="mx-auto grid max-w-6xl gap-6 px-6 pb-20 pt-16 sm:grid-cols-3 lg:pt-44">
+          <div className="mx-auto grid max-w-6xl gap-6 px-6 pb-20 pt-16 sm:grid-cols-3">
             {destaques.map((d) => (
               <div
                 key={d.titulo}
