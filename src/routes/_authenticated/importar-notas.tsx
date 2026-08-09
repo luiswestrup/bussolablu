@@ -417,7 +417,7 @@ function hoje() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function NotasImportadas({ empresaId }: { empresaId?: string }) {
+function NotasImportadas({ empresaId }: { empresaId: string | undefined }) {
   const [notas, setNotas] = useState<
     { id: string; chave_acesso: string; numero_nota: string | null; data_emissao: string | null; valor_total: number }[]
   >([]);
