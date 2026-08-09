@@ -9,6 +9,7 @@ import {
   Building2,
   LogOut,
   Menu,
+  FileUp,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +30,7 @@ const itens = [
   { to: "/pagamentos", label: "Pagamentos", icon: ArrowDownCircle },
   { to: "/recebimentos", label: "Recebimentos", icon: ArrowUpCircle },
   { to: "/estoque", label: "Estoque", icon: Boxes },
+  { to: "/importar-notas", label: "Importar NF-e", icon: FileUp },
   { to: "/relatorios", label: "Relatórios", icon: FileBarChart },
   { to: "/configuracoes", label: "Configurações", icon: Building2 },
 ] as const;
