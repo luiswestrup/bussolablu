@@ -25,6 +25,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useEmpresa } from "@/lib/empresa";
+import { usePapel } from "@/lib/papel";
+import { Usuarios } from "@/components/Usuarios";
+import { Auditoria } from "@/components/Auditoria";
 import { brl } from "@/lib/format";
 import {
   NATUREZAS,
@@ -161,6 +164,7 @@ function ListaParceiros({
 
 function ConfiguracoesPage() {
   const { empresa } = useEmpresa();
+  const { eAdmin } = usePapel();
   const queryClient = useQueryClient();
   const { data: categorias = [] } = useCategorias(empresa?.id);
   const { data: fornecedores = [] } = useFornecedores(empresa?.id);
@@ -217,6 +221,8 @@ function ConfiguracoesPage() {
           <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
           <TabsTrigger value="clientes">Clientes</TabsTrigger>
           <TabsTrigger value="contas">Contas bancárias</TabsTrigger>
+          {eAdmin && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
+          {eAdmin && <TabsTrigger value="auditoria">Auditoria</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="categorias" className="mt-4">
@@ -335,6 +341,18 @@ function ConfiguracoesPage() {
         <TabsContent value="contas" className="mt-4">
           <ContasBancarias />
         </TabsContent>
+
+        {eAdmin && (
+          <TabsContent value="usuarios" className="mt-4">
+            <Usuarios />
+          </TabsContent>
+        )}
+
+        {eAdmin && (
+          <TabsContent value="auditoria" className="mt-4">
+            <Auditoria />
+          </TabsContent>
+        )}
       </Tabs>
     </AppShell>
   );
