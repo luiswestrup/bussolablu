@@ -151,7 +151,7 @@ function Donut() {
   const raio = 42;
   const circ = 2 * Math.PI * raio;
   return (
-    <svg viewBox="0 0 110 110" className="h-28 w-28 shrink-0 -rotate-90">
+    <svg viewBox="0 0 110 110" className="h-24 w-24 shrink-0 -rotate-90">
       {despesas.map((d) => {
         const dash = (d.pct / 100) * circ;
         const offset = -(acumulado / 100) * circ;
@@ -238,10 +238,10 @@ function PreviewPainel() {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 lg:grid-cols-2">
             <div className="rounded-xl bg-white p-3 ring-1 ring-navy/5">
               <p className="font-display text-xs font-bold text-navy">Despesas por categoria</p>
-              <div className="mt-2 flex items-center gap-3">
+              <div className="mt-2 flex flex-wrap items-center gap-3">
                 <Donut />
                 <ul className="space-y-1 text-[10px] text-slate-500">
                   {despesas.map((d) => (
@@ -250,7 +250,7 @@ function PreviewPainel() {
                         className="h-2 w-2 rounded-full"
                         style={{ background: d.cor }}
                       />
-                      <span className="min-w-[74px]">{d.nome}</span>
+                      <span className="min-w-[66px]">{d.nome}</span>
                       <span className="font-mono text-navy">{d.pct}%</span>
                     </li>
                   ))}
@@ -370,7 +370,7 @@ function Index() {
               </ul>
             </div>
 
-            <div className="lg:-mb-40">
+            <div className="lg:-mb-32">
               <PreviewPainel />
             </div>
           </div>
@@ -392,7 +392,7 @@ function Index() {
         </section>
 
         <section className="bg-navy">
-          <div className="mx-auto grid max-w-6xl gap-6 px-6 pb-24 pt-28 sm:grid-cols-3 lg:pt-48">
+          <div className="mx-auto grid max-w-6xl gap-6 px-6 pb-20 pt-16 sm:grid-cols-3 lg:pt-44">
             {destaques.map((d) => (
               <div
                 key={d.titulo}
