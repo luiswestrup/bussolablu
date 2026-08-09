@@ -95,6 +95,7 @@ export type Database = {
           status: Database["public"]["Enums"]["status_pagar"]
           updated_at: string
           valor: number
+          vencimento_estimado: boolean
         }
         Insert: {
           categoria_id?: string | null
@@ -109,6 +110,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["status_pagar"]
           updated_at?: string
           valor: number
+          vencimento_estimado?: boolean
         }
         Update: {
           categoria_id?: string | null
@@ -123,6 +125,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["status_pagar"]
           updated_at?: string
           valor?: number
+          vencimento_estimado?: boolean
         }
         Relationships: [
           {
@@ -322,6 +325,60 @@ export type Database = {
           },
         ]
       }
+      nota_fiscal_importada: {
+        Row: {
+          chave_acesso: string
+          criado_em: string
+          data_emissao: string | null
+          empresa_id: string
+          fornecedor_id: string | null
+          id: string
+          numero_nota: string | null
+          observacao: string | null
+          status: string
+          valor_total: number
+        }
+        Insert: {
+          chave_acesso: string
+          criado_em?: string
+          data_emissao?: string | null
+          empresa_id: string
+          fornecedor_id?: string | null
+          id?: string
+          numero_nota?: string | null
+          observacao?: string | null
+          status?: string
+          valor_total?: number
+        }
+        Update: {
+          chave_acesso?: string
+          criado_em?: string
+          data_emissao?: string | null
+          empresa_id?: string
+          fornecedor_id?: string | null
+          id?: string
+          numero_nota?: string | null
+          observacao?: string | null
+          status?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nota_fiscal_importada_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nota_fiscal_importada_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedor"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produto: {
         Row: {
           ativo: boolean
@@ -378,6 +435,55 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produto_fornecedor_map: {
+        Row: {
+          codigo_produto_fornecedor: string
+          criado_em: string
+          empresa_id: string
+          fornecedor_id: string
+          id: string
+          produto_id: string
+        }
+        Insert: {
+          codigo_produto_fornecedor: string
+          criado_em?: string
+          empresa_id: string
+          fornecedor_id: string
+          id?: string
+          produto_id: string
+        }
+        Update: {
+          codigo_produto_fornecedor?: string
+          criado_em?: string
+          empresa_id?: string
+          fornecedor_id?: string
+          id?: string
+          produto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_fornecedor_map_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_fornecedor_map_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedor"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_fornecedor_map_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produto"
             referencedColumns: ["id"]
           },
         ]
