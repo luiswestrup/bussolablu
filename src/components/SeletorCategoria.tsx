@@ -107,7 +107,7 @@ export function SeletorCategoria({
     <>
       <Select
         value={value}
-        disabled={disabled}
+        disabled={disabled ?? false}
         onValueChange={(v) => {
           if (v === NOVA) abrirModal();
           else onChange(v);

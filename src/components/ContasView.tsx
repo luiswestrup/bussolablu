@@ -4,6 +4,7 @@ import { CheckCircle2, Download, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Kpi, SecaoVazia, StatusBadge } from "@/components/ui-kit";
+import { SeletorCategoria } from "@/components/SeletorCategoria";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -294,7 +295,7 @@ export function ContasView({
                       <SeletorCategoria
                         categorias={categorias}
                         value={form.categoria_id}
-                        onChange={(v) => setForm((f) => ({ ...f, categoria_id: v }))}
+                        onChange={(v: string) => setForm((f) => ({ ...f, categoria_id: v }))}
                         tipo={config.tipoCategoria}
                         empresaId={empresa?.id}
                       />
