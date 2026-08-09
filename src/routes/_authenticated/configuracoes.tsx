@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useEmpresa } from "@/lib/empresa";
+import { brl } from "@/lib/format";
 import {
   NATUREZAS,
   rotuloNatureza,
@@ -331,7 +332,151 @@ function ConfiguracoesPage() {
         <TabsContent value="clientes" className="mt-4">
           <ListaParceiros chave="cliente" titulo="Cliente" itens={clientes} />
         </TabsContent>
+
+        <TabsContent value="contas" className="mt-4">
+          <ContasBancarias />
+        </TabsContent>
       </Tabs>
     </AppShell>
+  );
+}
+
+const TIPOS_CONTA = ["corrente", "poupanca", "caixa", "investimento"];
+
+function ContasBancarias() {
+  const { empresa } = useEmpresa();
+  const queryClient = useQueryClient();
+  const { data: contas = [] } = useContasBancarias(empresa?.id);
+  const [form, setForm] = useState({
+    banco: "",
+    agencia: "",
+    conta: "",
+    tipo: "corrente",
+    saldo_inicial: "",
+  });
+
+  const invalidar = () => queryClient.invalidateQueries({ queryKey: ["conta_bancaria"] });
+
+  const criar = useMutation({
+    mutationFn: async () => {
+      const { error } = await tabela("conta_bancaria").insert({
+        empresa_id: empresa!.id,
+        banco: form.banco.trim(),
+        agencia: form.agencia.trim() || null,
+        conta: form.conta.trim() || null,
+        tipo: form.tipo,
+        saldo_inicial: Number(form.saldo_inicial) || 0,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      setForm({ banco: "", agencia: "", conta: "", tipo: "corrente", saldo_inicial: "" });
+      invalidar();
+      toast.success("Conta bancária cadastrada.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const excluir = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await tabela("conta_bancaria").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      invalidar();
+      toast.success("Conta removida.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Contas bancárias de {empresa?.nome ?? "—"}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-2">
+          <Input
+            placeholder="Banco"
+            maxLength={80}
+            className="max-w-[200px]"
+            value={form.banco}
+            onChange={(e) => setForm({ ...form, banco: e.target.value })}
+          />
+          <Input
+            placeholder="Agência"
+            maxLength={20}
+            className="max-w-[130px]"
+            value={form.agencia}
+            onChange={(e) => setForm({ ...form, agencia: e.target.value })}
+          />
+          <Input
+            placeholder="Conta"
+            maxLength={30}
+            className="max-w-[160px]"
+            value={form.conta}
+            onChange={(e) => setForm({ ...form, conta: e.target.value })}
+          />
+          <Select value={form.tipo} onValueChange={(v) => setForm({ ...form, tipo: v })}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TIPOS_CONTA.map((t) => (
+                <SelectItem key={t} value={t} className="capitalize">
+                  {t}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            placeholder="Saldo inicial"
+            type="number"
+            step="0.01"
+            className="max-w-[150px]"
+            value={form.saldo_inicial}
+            onChange={(e) => setForm({ ...form, saldo_inicial: e.target.value })}
+          />
+          <Button onClick={() => criar.mutate()} disabled={!empresa || !form.banco.trim() || criar.isPending}>
+            <Plus className="mr-2 h-4 w-4" /> Adicionar
+          </Button>
+        </div>
+
+        <div className="mt-4">
+          {contas.length === 0 ? (
+            <SecaoVazia texto="Nenhuma conta bancária cadastrada." />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Banco</TableHead>
+                  <TableHead>Agência</TableHead>
+                  <TableHead>Conta</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead className="text-right">Saldo inicial</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {contas.map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell className="font-medium">{c.banco}</TableCell>
+                    <TableCell>{c.agencia ?? "—"}</TableCell>
+                    <TableCell>{c.conta ?? "—"}</TableCell>
+                    <TableCell className="capitalize">{c.tipo}</TableCell>
+                    <TableCell className="text-right tabular-nums">{brl(Number(c.saldo_inicial))}</TableCell>
+                    <TableCell className="text-right">
+                      <Button size="icon" variant="ghost" title="Excluir" onClick={() => excluir.mutate(c.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
