@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { podeAcessar, usePapel, ROTULO_PAPEL } from "@/lib/papel";
 import iconeAsset from "@/assets/bussola-blu-icone.png.asset.json";
 
 const itens = [
@@ -43,10 +44,13 @@ const itens = [
 
 export function AppShell({ titulo, children }: { titulo: string; children: ReactNode }) {
   const { empresas, empresaId, setEmpresaId, podeConsolidar, consolidado } = useEmpresa();
+  const { papel, carregando: carregandoPapel } = usePapel();
   const [aberto, setAberto] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const itensVisiveis = itens.filter((i) => podeAcessar(i.to, papel));
+  const liberado = podeAcessar(pathname, papel);
 
   async function sair() {
     await queryClient.cancelQueries();
@@ -74,7 +78,7 @@ export function AppShell({ titulo, children }: { titulo: string; children: React
           <span className="text-sm font-semibold tracking-tight">Bussola Blu</span>
         </div>
         <nav className="flex-1 space-y-1 p-3">
-          {itens.map((i) => {
+          {itensVisiveis.map((i) => {
             const ativo = pathname.startsWith(i.to);
             return (
               <Link
@@ -124,7 +128,12 @@ export function AppShell({ titulo, children }: { titulo: string; children: React
             <Menu className="h-5 w-5" />
           </Button>
           <h1 className="truncate text-base font-semibold lg:text-lg">{titulo}</h1>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-3">
+            {papel && (
+              <span className="hidden rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground sm:inline">
+                {ROTULO_PAPEL[papel]}
+              </span>
+            )}
             <Select value={empresaId ?? ""} onValueChange={setEmpresaId}>
               <SelectTrigger className="w-[190px] sm:w-[240px]">
                 <SelectValue placeholder="Selecione a empresa" />
@@ -152,7 +161,19 @@ export function AppShell({ titulo, children }: { titulo: string; children: React
             </span>
           </div>
         )}
-        <main className="flex-1 p-4 lg:p-6">{children}</main>
+        <main className="flex-1 p-4 lg:p-6">
+          {carregandoPapel ? null : liberado ? (
+            children
+          ) : (
+            <div className="mx-auto mt-10 max-w-md rounded-lg border bg-card p-6 text-center">
+              <h2 className="text-base font-semibold">Acesso restrito</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Seu papel {papel ? `(${ROTULO_PAPEL[papel]})` : ""} não tem permissão para esta
+                tela. Fale com um administrador se precisar de acesso.
+              </p>
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );
