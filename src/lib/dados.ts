@@ -135,6 +135,40 @@ type LooseTable = {
 /** Acesso simples de escrita a uma tabela da empresa ativa. */
 export const tabela = (nome: string) => supabase.from(nome as never) as unknown as LooseTable;
 
+type Resultado = { data: unknown; error: Erro };
+type Filtravel = { eq: (coluna: string, valor: string) => Filtravel } & PromiseLike<Resultado>;
+
+/** SELECT genérico com filtros de igualdade. */
+export async function selecionar<T>(
+  nome: string,
+  colunas: string,
+  filtros: Record<string, string>,
+): Promise<T[]> {
+  let consulta = (
+    supabase.from(nome as never) as unknown as { select: (c: string) => Filtravel }
+  ).select(colunas);
+  for (const [coluna, valor] of Object.entries(filtros)) consulta = consulta.eq(coluna, valor);
+  const { data, error } = await consulta;
+  if (error) throw new Error(error.message);
+  return (data ?? []) as T[];
+}
+
+/** INSERT retornando o registro criado. */
+export async function inserirRetornando<T>(
+  nome: string,
+  valores: Record<string, unknown>,
+  colunas = "id",
+): Promise<T> {
+  const alvo = supabase.from(nome as never) as unknown as {
+    insert: (v: Record<string, unknown>) => {
+      select: (c: string) => { single: () => PromiseLike<Resultado> };
+    };
+  };
+  const { data, error } = await alvo.insert(valores).select(colunas).single();
+  if (error) throw new Error(error.message);
+  return data as T;
+}
+
 export function situacao(
   status: string,
   vencimento: string,
