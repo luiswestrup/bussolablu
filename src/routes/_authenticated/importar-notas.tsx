@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/table";
 import { useEmpresa } from "@/lib/empresa";
 import { brl, dataBR, num } from "@/lib/format";
-import { inserirRetornando, selecionar, tabela, useProdutos } from "@/lib/dados";
+import { inserirRetornando, selecionar, tabela, useCategorias, useProdutos } from "@/lib/dados";
 import { adicionarDias, parseNFe, type ItemNFe, type NotaFiscal } from "@/lib/nfe";
 
 export const Route = createFileRoute("/_authenticated/importar-notas")({
@@ -53,6 +53,7 @@ type Pendente = {
   item: ItemNFe;
   escolha: string;
   nomeNovo: string;
+  categoriaId: string;
 };
 
 type Resumo = {
@@ -69,6 +70,8 @@ function ImportarNotasPage() {
   const { empresa } = useEmpresa();
   const queryClient = useQueryClient();
   const { data: produtos = [] } = useProdutos(empresa?.id);
+  const { data: categorias = [] } = useCategorias(empresa?.id);
+  const categoriasProduto = categorias.filter((c) => c.tipo === "produto");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [arquivos, setArquivos] = useState<File[]>([]);
@@ -155,6 +158,7 @@ function ImportarNotasPage() {
           item,
           escolha: "",
           nomeNovo: item.descricao,
+          categoriaId: "",
         });
       }
     }
@@ -215,7 +219,7 @@ function ImportarNotasPage() {
   }
 
   async function resolverPendente(p: Pendente) {
-    if (!empresa || !p.escolha) return;
+    if (!empresa || !p.escolha || !p.categoriaId) return;
     setSalvandoPendente(p.chave);
     try {
       let produtoId = p.escolha;
@@ -224,10 +228,16 @@ function ImportarNotasPage() {
           empresa_id: empresa.id,
           nome: p.nomeNovo.trim() || p.item.descricao,
           sku: p.item.codigo,
+          categoria_id: p.categoriaId,
           custo: p.item.valorUnitario,
           preco_venda: 0,
         });
         produtoId = criado.id;
+      } else {
+        const { error } = await tabela("produto")
+          .update({ categoria_id: p.categoriaId })
+          .eq("id", produtoId);
+        if (error) throw new Error(error.message);
       }
 
       await tabela("produto_fornecedor_map").insert({
@@ -350,6 +360,7 @@ function ImportarNotasPage() {
                     <TableHead className="text-right">Qtd.</TableHead>
                     <TableHead className="text-right">Custo unit.</TableHead>
                     <TableHead className="min-w-[240px]">Produto do sistema</TableHead>
+                    <TableHead className="min-w-[200px]">Categoria do produto</TableHead>
                     <TableHead />
                   </TableRow>
                 </TableHeader>
@@ -391,9 +402,31 @@ function ImportarNotasPage() {
                         </div>
                       </TableCell>
                       <TableCell>
+                        <Select
+                          value={p.categoriaId}
+                          onValueChange={(v) => atualizar(p.chave, { categoriaId: v })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Obrigatório" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categoriasProduto.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>
+                                {c.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {categoriasProduto.length === 0 && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Cadastre categorias do tipo “produto” em Cadastros.
+                          </p>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <Button
                           size="sm"
-                          disabled={!p.escolha || salvandoPendente === p.chave}
+                          disabled={!p.escolha || !p.categoriaId || salvandoPendente === p.chave}
                           onClick={() => void resolverPendente(p)}
                         >
                           <CheckCircle2 className="mr-2 h-4 w-4" /> Confirmar

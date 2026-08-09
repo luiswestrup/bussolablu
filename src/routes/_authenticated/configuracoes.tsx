@@ -28,7 +28,6 @@ import { useEmpresa } from "@/lib/empresa";
 import { brl } from "@/lib/format";
 import {
   NATUREZAS,
-  rotuloNatureza,
   tabela,
   useCategorias,
   useClientes,
