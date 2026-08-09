@@ -51,9 +51,9 @@ export function SeletorCategoria({
   value: string;
   onChange: (id: string) => void;
   tipo: Categoria["tipo"];
-  empresaId?: string;
-  placeholder?: string;
-  disabled?: boolean;
+  empresaId?: string | undefined;
+  placeholder?: string | undefined;
+  disabled?: boolean | undefined;
 }) {
   const queryClient = useQueryClient();
   const [aberto, setAberto] = useState(false);
