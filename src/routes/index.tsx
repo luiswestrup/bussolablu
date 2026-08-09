@@ -198,7 +198,9 @@ function PreviewPainel() {
               </div>
             ))}
           </nav>
-          <BussolaMarca className="mx-auto mt-6 h-12 w-12 opacity-60" />
+          <span className="mx-auto mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 p-1 opacity-70">
+            <BussolaMarca className="h-full w-full" />
+          </span>
         </div>
 
         <div className="min-w-0 space-y-3 bg-mist p-4">
@@ -210,7 +212,7 @@ function PreviewPainel() {
                   <k.icone className="h-3.5 w-3.5 text-ocean" />
                   {k.titulo}
                 </div>
-                <p className="mt-1 font-mono text-sm font-semibold text-navy">{k.valor}</p>
+                <p className="mt-1 whitespace-nowrap font-mono text-[13px] font-semibold text-navy">{k.valor}</p>
                 <p className="mt-0.5 text-[10px] text-slate-400">{k.detalhe}</p>
               </div>
             ))}
