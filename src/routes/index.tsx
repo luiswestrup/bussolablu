@@ -127,7 +127,7 @@ function LinhaFluxo() {
     { cor: "#D6A84F", pontos: "0,116 60,112 120,118 180,108 240,112 300,104 360,110 420,102" },
   ];
   return (
-    <svg viewBox="0 0 440 140" className="h-40 w-full" role="img" aria-label="Fluxo de caixa">
+    <svg viewBox="0 0 440 140" className="h-40 lg:h-24 w-full" role="img" aria-label="Fluxo de caixa">
       {[0, 34, 68, 102, 136].map((y) => (
         <line key={y} x1="0" x2="440" y1={y} y2={y} stroke="#E4E9EF" strokeWidth="1" />
       ))}
@@ -151,7 +151,7 @@ function Donut() {
   const raio = 42;
   const circ = 2 * Math.PI * raio;
   return (
-    <svg viewBox="0 0 110 110" className="h-24 w-24 shrink-0 -rotate-90">
+    <svg viewBox="0 0 110 110" className="h-24 w-24 lg:h-12 lg:w-12 shrink-0 -rotate-90">
       {despesas.map((d) => {
         const dash = (d.pct / 100) * circ;
         const offset = -(acumulado / 100) * circ;
@@ -178,7 +178,7 @@ function PreviewPainel() {
   return (
     <div className="overflow-hidden rounded-2xl bg-white shadow-[0_30px_70px_-25px_rgba(11,31,58,0.45)] ring-1 ring-navy/10">
       <div className="grid grid-cols-1 sm:grid-cols-[190px_minmax(0,1fr)]">
-        <div className="hidden flex-col bg-navy p-3 sm:flex">
+        <div className="hidden flex-col bg-navy p-3 lg:p-2.5 sm:flex">
           <div className="mb-4 flex items-center gap-2 px-1 pt-1">
             <span className="flex h-8 w-8 items-center justify-center rounded-md bg-white p-0.5">
               <BussolaMarca className="h-full w-full" />
@@ -189,7 +189,7 @@ function PreviewPainel() {
             {menuPreview.map((m, i) => (
               <div
                 key={m.label}
-                className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-[11px] ${
+                className={`flex items-center gap-2 rounded-md px-2 py-1.5 lg:py-1 text-[11px] ${
                   i === 0 ? "bg-white font-semibold text-navy" : "text-white/70"
                 }`}
               >
@@ -198,16 +198,16 @@ function PreviewPainel() {
               </div>
             ))}
           </nav>
-          <span className="mx-auto mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 p-1 opacity-70">
+          <span className="mx-auto mt-6 lg:mt-3 flex h-12 w-12 lg:h-10 lg:w-10 items-center justify-center rounded-full bg-white/90 p-1 opacity-70">
             <BussolaMarca className="h-full w-full" />
           </span>
         </div>
 
-        <div className="min-w-0 space-y-3 bg-mist p-4">
+        <div className="min-w-0 space-y-3 lg:space-y-2 bg-mist p-4 lg:p-3">
           <h3 className="font-display text-sm font-bold text-navy">Resumo financeiro</h3>
           <div className="grid gap-3 sm:grid-cols-3">
             {kpis.map((k) => (
-              <div key={k.titulo} className="rounded-xl bg-white p-3 ring-1 ring-navy/5">
+              <div key={k.titulo} className="rounded-xl bg-white p-3 lg:p-2.5 ring-1 ring-navy/5">
                 <div className="flex items-center gap-2 text-[11px] text-slate-500">
                   <k.icone className="h-3.5 w-3.5 text-ocean" />
                   {k.titulo}
@@ -218,7 +218,7 @@ function PreviewPainel() {
             ))}
           </div>
 
-          <div className="rounded-xl bg-white p-3 ring-1 ring-navy/5">
+          <div className="rounded-xl bg-white p-3 lg:p-2.5 ring-1 ring-navy/5">
             <p className="font-display text-xs font-bold text-navy">Fluxo de caixa</p>
             <div className="mt-1 flex gap-4 text-[10px] text-slate-500">
               {[
@@ -240,26 +240,26 @@ function PreviewPainel() {
             </div>
           </div>
 
-          <div className="grid gap-3">
-            <div className="rounded-xl bg-white p-3 ring-1 ring-navy/5">
+          <div className="grid gap-3 lg:grid-cols-[1.25fr_1fr] lg:gap-2">
+            <div className="rounded-xl bg-white p-3 lg:p-2.5 ring-1 ring-navy/5">
               <p className="font-display text-xs font-bold text-navy">Despesas por categoria</p>
-              <div className="mt-2 flex items-center gap-4">
+              <div className="mt-2 flex items-center gap-4 lg:gap-2">
                 <Donut />
-                <ul className="space-y-1 text-[10px] text-slate-500">
+                <ul className="min-w-0 flex-1 space-y-1 text-[10px] text-slate-500">
                   {despesas.map((d) => (
                     <li key={d.nome} className="flex items-center gap-1.5">
                       <span
                         className="h-2 w-2 rounded-full"
                         style={{ background: d.cor }}
                       />
-                      <span className="min-w-[66px]">{d.nome}</span>
-                      <span className="font-mono text-navy">{d.pct}%</span>
+                      <span className="min-w-0 flex-1 truncate pr-1">{d.nome}</span>
+                      <span className="shrink-0 font-mono text-navy">{d.pct}%</span>
                     </li>
                   ))}
                 </ul>
               </div>
             </div>
-            <div className="rounded-xl bg-white p-3 ring-1 ring-navy/5">
+            <div className="rounded-xl bg-white p-3 lg:p-2.5 ring-1 ring-navy/5">
               <p className="font-display text-xs font-bold text-navy">Estoque</p>
               <ul className="mt-2 space-y-2 text-[11px] text-slate-600">
                 {estoquePreview.map((e) => (
@@ -305,7 +305,7 @@ function Index() {
   return (
     <div className="min-h-screen bg-white font-body">
       <header className="border-b border-slate-100 bg-white">
-        <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-6 py-5">
+        <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-6 py-5 lg:py-3">
           <div className="flex min-w-0 items-center gap-3">
             <BussolaMarca className="h-12 w-12 shrink-0" />
             <div className="min-w-0">
@@ -338,7 +338,7 @@ function Index() {
             aria-hidden
             className="pointer-events-none absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-[95%] -translate-y-1/2 object-contain opacity-[0.07]"
           />
-          <div className="relative mx-auto grid max-w-6xl gap-12 px-6 pb-16 pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center">
+          <div className="relative mx-auto grid max-w-6xl gap-12 px-6 pb-16 pt-14 lg:gap-6 lg:pb-5 lg:pt-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-ocean">
                 Gestão financeira e operacional
@@ -351,14 +351,14 @@ function Index() {
               </p>
               <Link
                 to={logado ? "/dashboard" : "/auth"}
-                className="mt-8 inline-flex items-center gap-3 rounded-full bg-navy px-7 py-4 text-base font-semibold text-white transition-colors hover:bg-navy-soft"
+                className="mt-8 lg:mt-6 inline-flex items-center gap-3 rounded-full bg-navy px-7 py-4 lg:py-3 text-base font-semibold text-white transition-colors hover:bg-navy-soft"
               >
                 <img src={iconeNegativoAsset.url} alt="" aria-hidden className="h-5 w-5 object-contain" />
                 Acessar o painel
                 <ArrowRight className="h-4 w-4" />
               </Link>
 
-              <ul className="mt-10 grid gap-5 sm:grid-cols-3">
+              <ul className="mt-10 lg:mt-7 grid gap-5 sm:grid-cols-3">
                 {beneficios.map((b) => (
                   <li key={b.titulo} className="flex items-center gap-3">
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky/15">
@@ -379,7 +379,7 @@ function Index() {
           </div>
 
           <div className="relative -mb-px">
-            <svg viewBox="0 0 1440 120" className="block h-16 w-full sm:h-24" preserveAspectRatio="none">
+            <svg viewBox="0 0 1440 120" className="block h-16 w-full sm:h-24 lg:h-10" preserveAspectRatio="none">
               <path
                 d="M0,64 C240,120 480,10 720,42 C960,74 1200,120 1440,72 L1440,120 L0,120 Z"
                 fill="#0B1F3A"
@@ -395,18 +395,18 @@ function Index() {
         </section>
 
         <section className="bg-navy">
-          <div className="mx-auto grid max-w-6xl gap-6 px-6 pb-20 pt-16 sm:grid-cols-3">
+          <div className="mx-auto grid max-w-6xl gap-6 px-6 pb-20 pt-16 lg:pb-6 lg:pt-5 sm:grid-cols-3">
             {destaques.map((d) => (
               <div
                 key={d.titulo}
-                className="rounded-2xl border border-white/10 bg-white/[0.03] p-7"
+                className="rounded-2xl border border-white/10 bg-white/[0.03] p-7 lg:p-4"
               >
-                <span className="flex h-14 w-14 items-center justify-center rounded-full border border-sky/30 bg-ocean/25">
+                <span className="flex h-14 w-14 lg:h-12 lg:w-12 items-center justify-center rounded-full border border-sky/30 bg-ocean/25">
                   <d.icone className="h-6 w-6 text-sky" />
                 </span>
-                <h2 className="mt-5 font-display text-xl font-bold text-white">{d.titulo}</h2>
+                <h2 className="mt-4 lg:mt-3 font-display text-xl font-bold text-white">{d.titulo}</h2>
                 <p className="mt-2 text-sm leading-relaxed text-slate-300">{d.texto}</p>
-                <span className="mt-6 block h-0.5 w-12 rounded bg-gold" />
+                <span className="mt-6 lg:mt-3 block h-0.5 w-12 rounded bg-gold" />
               </div>
             ))}
           </div>
