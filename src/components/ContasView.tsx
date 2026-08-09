@@ -291,24 +291,13 @@ export function ContasView({
                       <Label>
                         Categoria <span className="text-destructive">*</span>
                       </Label>
-                      <Select
+                      <SeletorCategoria
+                        categorias={categorias}
                         value={form.categoria_id}
-                        onValueChange={(v) => setForm({ ...form, categoria_id: v })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Obrigatório" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categorias
-                            .filter((c) => c.tipo === config.tipoCategoria)
-                            .map((c) => (
-                              <SelectItem key={c.id} value={c.id}>
-                                {c.nome}
-                                {c.natureza ? ` · ${rotuloNatureza(c.natureza)}` : ""}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
+                        onChange={(v) => setForm((f) => ({ ...f, categoria_id: v }))}
+                        tipo={config.tipoCategoria}
+                        empresaId={empresa?.id}
+                      />
                       {!form.categoria_id && (
                         <p className="mt-1 text-xs text-muted-foreground">
                           Todo lançamento precisa de categoria — inclusive prestadores de serviço.
