@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, BarChart3, Boxes, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import iconeAsset from "@/assets/bussola-blu-icone.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -68,11 +69,11 @@ function Index() {
   return (
     <div className="min-h-screen bg-sidebar text-sidebar-foreground">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-primary font-bold text-sidebar-primary-foreground">
-            F
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-md bg-white p-0.5">
+            <img src={iconeAsset.url} alt="Bussola Blu" className="h-full w-full object-contain" />
           </div>
-          <span className="font-semibold">Fluxo Gestão</span>
+          <span className="font-semibold">Bussola Blu</span>
         </div>
         <Button asChild variant="secondary">
           <Link to={logado ? "/dashboard" : "/auth"}>{logado ? "Ir para o painel" : "Entrar"}</Link>
