@@ -1,6 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { ArrowRight, BarChart3, Boxes, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -41,6 +43,28 @@ const destaques = [
 ];
 
 function Index() {
+  const navigate = useNavigate();
+  const [logado, setLogado] = useState(false);
+
+  // Após o login social o provedor devolve o usuário para "/"; leva ao painel.
+  useEffect(() => {
+    let ativo = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!ativo || !data.session) return;
+      setLogado(true);
+      navigate({ to: "/dashboard", replace: true });
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_evento, sessao) => {
+      if (!sessao) return;
+      setLogado(true);
+      navigate({ to: "/dashboard", replace: true });
+    });
+    return () => {
+      ativo = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [navigate]);
+
   return (
     <div className="min-h-screen bg-sidebar text-sidebar-foreground">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
@@ -51,7 +75,7 @@ function Index() {
           <span className="font-semibold">Fluxo Gestão</span>
         </div>
         <Button asChild variant="secondary">
-          <Link to="/auth">Entrar</Link>
+          <Link to={logado ? "/dashboard" : "/auth"}>{logado ? "Ir para o painel" : "Entrar"}</Link>
         </Button>
       </header>
 
@@ -69,7 +93,7 @@ function Index() {
           </p>
           <div className="mt-8">
             <Button asChild size="lg">
-              <Link to="/auth">
+              <Link to={logado ? "/dashboard" : "/auth"}>
                 Acessar o painel <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
