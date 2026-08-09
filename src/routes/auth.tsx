@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import logoAsset from "@/assets/bussola-blu-logo.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -90,7 +91,14 @@ function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-sidebar px-4 py-10">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Fluxo Gestão</CardTitle>
+          <div className="mb-4 flex justify-center rounded-lg bg-white px-6 py-5">
+            <img
+              src={logoAsset.url}
+              alt="Bussola Blu — Sistema Financeiro"
+              className="h-16 w-auto object-contain"
+            />
+          </div>
+          <CardTitle className="sr-only">Bussola Blu</CardTitle>
           <CardDescription>
             Painel financeiro e operacional para pequenas e médias empresas.
           </CardDescription>
