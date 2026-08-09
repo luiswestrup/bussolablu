@@ -120,21 +120,6 @@ function RelatoriosPage() {
     return [...mapa.entries()].map(([nome, despesa]) => ({ nome, despesa })).sort((a, b) => b.despesa - a.despesa);
   }, [saidas, categorias]);
 
-  const margemEstoqueLegado = useMemo(
-    () =>
-      produtos
-        .map((p) => {
-          const lucro = (Number(p.preco_venda) - Number(p.custo)) * Number(p.quantidade);
-          const perc =
-            Number(p.preco_venda) > 0
-              ? ((Number(p.preco_venda) - Number(p.custo)) / Number(p.preco_venda)) * 100
-              : 0;
-          return { nome: p.nome, lucro, perc };
-        })
-        .sort((a, b) => b.lucro - a.lucro),
-    [produtos],
-  );
-
   return (
     <AppShell titulo="Relatórios">
       <Card>
