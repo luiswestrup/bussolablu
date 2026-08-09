@@ -18,6 +18,7 @@ import {
 import { AlertTriangle, Boxes, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Kpi } from "@/components/ui-kit";
+import { usePapel } from "@/lib/papel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEmpresa } from "@/lib/empresa";
@@ -150,27 +151,27 @@ function DashboardPage() {
         </div>
       )}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi
+        {financeiro && <Kpi
           titulo="Saldo de caixa"
           valor={brl(resumo.saldo)}
           detalhe="Recebimentos confirmados menos pagamentos efetuados"
           tom={resumo.saldo >= 0 ? "positivo" : "negativo"}
           icone={<Wallet className="h-4 w-4" />}
-        />
-        <Kpi
+        />}
+        {financeiro && <Kpi
           titulo="Contas a pagar"
           valor={brl(resumo.pagarVencido + resumo.pagarAVencer)}
           detalhe={`${brl(resumo.pagarVencido)} vencidas · ${brl(resumo.pagarAVencer)} a vencer`}
           tom={resumo.pagarVencido > 0 ? "negativo" : "neutro"}
           icone={<TrendingDown className="h-4 w-4" />}
-        />
-        <Kpi
+        />}
+        {financeiro && <Kpi
           titulo="Contas a receber"
           valor={brl(resumo.receberVencido + resumo.receberAVencer)}
           detalhe={`${brl(resumo.receberVencido)} vencidas · ${brl(resumo.receberAVencer)} a vencer`}
           tom={resumo.receberVencido > 0 ? "alerta" : "neutro"}
           icone={<TrendingUp className="h-4 w-4" />}
-        />
+        />}
         <Kpi
           titulo="Valor em estoque"
           valor={brl(resumo.valorEstoque)}
@@ -192,7 +193,7 @@ function DashboardPage() {
       )}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <Card>
+        {financeiro && <Card>
           <CardHeader>
             <CardTitle className="text-base">Evolução do caixa (6 meses)</CardTitle>
           </CardHeader>
@@ -213,9 +214,9 @@ function DashboardPage() {
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
-        </Card>
+        </Card>}
 
-        <Card>
+        {financeiro && <Card>
           <CardHeader>
             <CardTitle className="text-base">Entradas x Saídas</CardTitle>
           </CardHeader>
@@ -232,9 +233,9 @@ function DashboardPage() {
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
-        </Card>
+        </Card>}
 
-        <Card>
+        {financeiro && <Card>
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <CardTitle className="text-base">
@@ -282,7 +283,7 @@ function DashboardPage() {
               </ResponsiveContainer>
             )}
           </CardContent>
-        </Card>
+        </Card>}
 
         <Card>
           <CardHeader>
