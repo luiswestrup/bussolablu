@@ -49,6 +49,8 @@ function ultimosMeses(qtd: number) {
 
 function DashboardPage() {
   const { escopo, consolidado, empresas, nomeEmpresa } = useEmpresa();
+  const { papel } = usePapel();
+  const financeiro = papel !== "estoque";
   const { data: pagarTodos = [] } = usePagar(escopo);
   const { data: receberTodos = [] } = useReceber(escopo);
   const { data: produtosTodos = [] } = useProdutos(escopo);
