@@ -19,6 +19,7 @@ export type Database = {
           criado_em: string
           empresa_id: string
           id: string
+          natureza: Database["public"]["Enums"]["natureza_categoria"] | null
           nome: string
           tipo: Database["public"]["Enums"]["tipo_categoria"]
         }
@@ -26,6 +27,7 @@ export type Database = {
           criado_em?: string
           empresa_id: string
           id?: string
+          natureza?: Database["public"]["Enums"]["natureza_categoria"] | null
           nome: string
           tipo: Database["public"]["Enums"]["tipo_categoria"]
         }
@@ -33,6 +35,7 @@ export type Database = {
           criado_em?: string
           empresa_id?: string
           id?: string
+          natureza?: Database["public"]["Enums"]["natureza_categoria"] | null
           nome?: string
           tipo?: Database["public"]["Enums"]["tipo_categoria"]
         }
@@ -81,9 +84,54 @@ export type Database = {
           },
         ]
       }
+      conta_bancaria: {
+        Row: {
+          agencia: string | null
+          banco: string
+          conta: string | null
+          criado_em: string
+          empresa_id: string
+          id: string
+          saldo_inicial: number
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          agencia?: string | null
+          banco: string
+          conta?: string | null
+          criado_em?: string
+          empresa_id: string
+          id?: string
+          saldo_inicial?: number
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          agencia?: string | null
+          banco?: string
+          conta?: string | null
+          criado_em?: string
+          empresa_id?: string
+          id?: string
+          saldo_inicial?: number
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conta_bancaria_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conta_pagar: {
         Row: {
           categoria_id: string | null
+          conta_bancaria_id: string | null
           criado_em: string
           data_pagamento: string | null
           data_vencimento: string
@@ -99,6 +147,7 @@ export type Database = {
         }
         Insert: {
           categoria_id?: string | null
+          conta_bancaria_id?: string | null
           criado_em?: string
           data_pagamento?: string | null
           data_vencimento: string
@@ -114,6 +163,7 @@ export type Database = {
         }
         Update: {
           categoria_id?: string | null
+          conta_bancaria_id?: string | null
           criado_em?: string
           data_pagamento?: string | null
           data_vencimento?: string
@@ -136,6 +186,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "conta_pagar_conta_bancaria_id_fkey"
+            columns: ["conta_bancaria_id"]
+            isOneToOne: false
+            referencedRelation: "conta_bancaria"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "conta_pagar_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
@@ -155,6 +212,7 @@ export type Database = {
         Row: {
           categoria_id: string | null
           cliente_id: string | null
+          conta_bancaria_id: string | null
           criado_em: string
           data_recebimento: string | null
           data_vencimento: string
@@ -169,6 +227,7 @@ export type Database = {
         Insert: {
           categoria_id?: string | null
           cliente_id?: string | null
+          conta_bancaria_id?: string | null
           criado_em?: string
           data_recebimento?: string | null
           data_vencimento: string
@@ -183,6 +242,7 @@ export type Database = {
         Update: {
           categoria_id?: string | null
           cliente_id?: string | null
+          conta_bancaria_id?: string | null
           criado_em?: string
           data_recebimento?: string | null
           data_vencimento?: string
@@ -207,6 +267,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "cliente"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conta_receber_conta_bancaria_id_fkey"
+            columns: ["conta_bancaria_id"]
+            isOneToOne: false
+            referencedRelation: "conta_bancaria"
             referencedColumns: ["id"]
           },
           {
@@ -532,6 +599,7 @@ export type Database = {
       pode_consolidar: { Args: never; Returns: boolean }
     }
     Enums: {
+      natureza_categoria: "mercadoria" | "servico" | "outro"
       papel_usuario: "admin" | "financeiro" | "estoque"
       status_pagar: "pendente" | "pago" | "vencido"
       status_receber: "pendente" | "recebido" | "vencido"
@@ -664,6 +732,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      natureza_categoria: ["mercadoria", "servico", "outro"],
       papel_usuario: ["admin", "financeiro", "estoque"],
       status_pagar: ["pendente", "pago", "vencido"],
       status_receber: ["pendente", "recebido", "vencido"],
