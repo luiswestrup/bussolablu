@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import iconeAsset from "@/assets/bussola-blu-icone.png.asset.json";
 
 const itens = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -54,11 +55,15 @@ export function AppShell({ titulo, children }: { titulo: string; children: React
           aberto ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground font-bold">
-            F
+        <div className="flex h-16 items-center gap-2.5 border-b border-sidebar-border px-5">
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-md bg-white p-0.5">
+            <img
+              src={iconeAsset.url}
+              alt="Bussola Blu"
+              className="h-full w-full object-contain"
+            />
           </div>
-          <span className="text-sm font-semibold tracking-tight">Fluxo Gestão</span>
+          <span className="text-sm font-semibold tracking-tight">Bussola Blu</span>
         </div>
         <nav className="flex-1 space-y-1 p-3">
           {itens.map((i) => {
