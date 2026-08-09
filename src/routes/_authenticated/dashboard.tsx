@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -18,6 +18,7 @@ import {
 import { AlertTriangle, Boxes, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Kpi } from "@/components/ui-kit";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEmpresa } from "@/lib/empresa";
 import { brl, hoje, num, rotuloMes } from "@/lib/format";
