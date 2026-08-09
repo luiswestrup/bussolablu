@@ -58,6 +58,27 @@ export type ContaBancaria = {
   saldo_inicial: number;
 };
 
+export type Natureza = "mercadoria" | "servico" | "outro";
+
+export const NATUREZAS: { valor: Natureza; rotulo: string }[] = [
+  { valor: "mercadoria", rotulo: "Mercadoria / insumo" },
+  { valor: "servico", rotulo: "Serviço prestado" },
+  { valor: "outro", rotulo: "Outro" },
+];
+
+export const rotuloNatureza = (n: string | null | undefined) =>
+  NATUREZAS.find((x) => x.valor === n)?.rotulo ?? "Sem natureza";
+
+type ContaBancariaAntiga = {
+  id: string;
+  empresa_id: string;
+  banco: string;
+  agencia: string | null;
+  conta: string | null;
+  tipo: string;
+  saldo_inicial: number;
+};
+
 export type Parceiro = {
   id: string;
   empresa_id: string;
