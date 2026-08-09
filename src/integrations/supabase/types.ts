@@ -494,6 +494,7 @@ export type Database = {
           empresa_id: string
           id: string
           papel: Database["public"]["Enums"]["papel_usuario"]
+          pode_ver_consolidado: boolean
           user_id: string
         }
         Insert: {
@@ -501,6 +502,7 @@ export type Database = {
           empresa_id: string
           id?: string
           papel?: Database["public"]["Enums"]["papel_usuario"]
+          pode_ver_consolidado?: boolean
           user_id: string
         }
         Update: {
@@ -508,6 +510,7 @@ export type Database = {
           empresa_id?: string
           id?: string
           papel?: Database["public"]["Enums"]["papel_usuario"]
+          pode_ver_consolidado?: boolean
           user_id?: string
         }
         Relationships: [
@@ -526,6 +529,7 @@ export type Database = {
     }
     Functions: {
       pertence_empresa: { Args: { _empresa_id: string }; Returns: boolean }
+      pode_consolidar: { Args: never; Returns: boolean }
     }
     Enums: {
       papel_usuario: "admin" | "financeiro" | "estoque"
