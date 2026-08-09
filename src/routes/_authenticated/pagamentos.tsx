@@ -16,9 +16,9 @@ export const Route = createFileRoute("/_authenticated/pagamentos")({
 });
 
 function PagamentosPage() {
-  const { empresa } = useEmpresa();
-  const { data: contas = [], isLoading } = usePagar(empresa?.id);
-  const { data: fornecedores = [] } = useFornecedores(empresa?.id);
+  const { escopo } = useEmpresa();
+  const { data: contas = [], isLoading } = usePagar(escopo);
+  const { data: fornecedores = [] } = useFornecedores(escopo);
 
   return (
     <ContasView
