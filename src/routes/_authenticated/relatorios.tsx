@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/table";
 import { useEmpresa } from "@/lib/empresa";
 import { brl, exportarCSV, fimDoMes, mesesAtras, rotuloMes } from "@/lib/format";
-import { useCategorias, usePagar, useProdutos, useReceber } from "@/lib/dados";
+import { rotuloNatureza, useCategorias, usePagar, useProdutos, useReceber } from "@/lib/dados";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
   head: () => ({
@@ -96,6 +96,31 @@ function RelatoriosPage() {
   }, [entradas, saidas, categorias]);
 
   const margemEstoque = useMemo(
+    () =>
+      produtos
+        .map((p) => {
+          const lucro = (Number(p.preco_venda) - Number(p.custo)) * Number(p.quantidade);
+          const perc =
+            Number(p.preco_venda) > 0
+              ? ((Number(p.preco_venda) - Number(p.custo)) / Number(p.preco_venda)) * 100
+              : 0;
+          return { nome: p.nome, lucro, perc };
+        })
+        .sort((a, b) => b.lucro - a.lucro),
+    [produtos],
+  );
+
+  const porNatureza = useMemo(() => {
+    const mapa = new Map<string, number>();
+    saidas.forEach((c) => {
+      const cat = categorias.find((k) => k.id === c.categoria_id);
+      const nome = rotuloNatureza(cat?.natureza ?? null);
+      mapa.set(nome, (mapa.get(nome) ?? 0) + Number(c.valor));
+    });
+    return [...mapa.entries()].map(([nome, despesa]) => ({ nome, despesa })).sort((a, b) => b.despesa - a.despesa);
+  }, [saidas, categorias]);
+
+  const margemEstoqueLegado = useMemo(
     () =>
       produtos
         .map((p) => {
