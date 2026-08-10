@@ -281,6 +281,8 @@ export function ContasView({
         .map((c) => ({
           ...c,
           statusCheque: (c["status_cheque"] as StatusCheque | null) ?? null,
+          numeroCheque: (c["numero_cheque"] as string | null) ?? null,
+          bancoEmissor: (c["banco_emissor"] as string | null) ?? null,
           situacao: situacao(
             c.status,
             c.data_vencimento,
@@ -736,10 +738,10 @@ export function ContasView({
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
-                        {c["numero_cheque"] ? (
+                        {c.numeroCheque ? (
                           <p className="mt-1 text-xs text-muted-foreground">
-                            Nº {String(c["numero_cheque"])}
-                            {c["banco_emissor"] ? ` · ${String(c["banco_emissor"])}` : ""}
+                            Nº {c.numeroCheque}
+                            {c.bancoEmissor ? ` · ${c.bancoEmissor}` : ""}
                           </p>
                         ) : null}
                       </TableCell>
