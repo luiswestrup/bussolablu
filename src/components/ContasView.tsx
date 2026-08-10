@@ -503,6 +503,74 @@ export function ContasView({
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!baixa} onOpenChange={(o) => !o && setBaixa(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {config.tipo === "pagar" ? "Baixa de pagamento" : "Baixa de recebimento"}
+            </DialogTitle>
+          </DialogHeader>
+          {baixa && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2 text-sm text-muted-foreground">
+                {baixa.descricao} · valor da parcela {brl(baixa.valor)}
+              </div>
+              <div>
+                <Label htmlFor="dt-baixa">
+                  {config.tipo === "pagar" ? "Data do pagamento" : "Data do recebimento"}
+                </Label>
+                <Input
+                  id="dt-baixa"
+                  type="date"
+                  value={baixa.data}
+                  onChange={(e) => setBaixa({ ...baixa, data: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="vl-baixa">
+                  {config.tipo === "pagar" ? "Valor pago (R$)" : "Valor recebido (R$)"}
+                </Label>
+                <Input
+                  id="vl-baixa"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={baixa.pago}
+                  onChange={(e) => setBaixa({ ...baixa, pago: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="vl-desc">Desconto (R$)</Label>
+                <Input
+                  id="vl-desc"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={baixa.desconto}
+                  onChange={(e) => setBaixa({ ...baixa, desconto: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="vl-multa">Multa e juros (R$)</Label>
+                <Input
+                  id="vl-multa"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={baixa.multa}
+                  onChange={(e) => setBaixa({ ...baixa, multa: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => baixar.mutate()} disabled={baixar.isPending}>
+              Confirmar baixa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
