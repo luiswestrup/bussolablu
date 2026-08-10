@@ -165,7 +165,10 @@ export const useProdutos = (escopo?: Escopo) =>
   );
 
 export const useCategorias = (escopo?: Escopo) =>
-  useTabela<Categoria>("categoria", escopo, "id, nome, tipo, natureza", "nome");
+  useTabela<Categoria>("categoria", escopo, "id, nome, tipo, natureza_id", "nome");
+
+export const useNaturezas = (escopo?: Escopo) =>
+  useTabela<Natureza>("natureza", escopo, "id, nome", "nome");
 
 export const useContasBancarias = (escopo?: Escopo) =>
   useTabela<ContaBancaria>(
