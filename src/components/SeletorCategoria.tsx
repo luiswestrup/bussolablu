@@ -20,9 +20,11 @@ import {
 } from "@/components/ui/select";
 import {
   inserirRetornando,
-  rotuloNatureza,
+  nomeNatureza,
+  useNaturezas,
   type Categoria,
 } from "@/lib/dados";
+import { SeletorNatureza } from "@/components/SeletorNatureza";
 
 const NOVA = "__nova__";
 
@@ -30,12 +32,6 @@ const TIPOS: { valor: Categoria["tipo"]; rotulo: string }[] = [
   { valor: "despesa", rotulo: "Despesa" },
   { valor: "receita", rotulo: "Receita" },
   { valor: "produto", rotulo: "Produto" },
-];
-
-const NATUREZAS: { valor: NonNullable<Categoria["natureza"]>; rotulo: string }[] = [
-  { valor: "mercadoria", rotulo: "Mercadoria" },
-  { valor: "servico", rotulo: "Serviço" },
-  { valor: "outro", rotulo: "Outro" },
 ];
 
 export function SeletorCategoria({
@@ -56,18 +52,19 @@ export function SeletorCategoria({
   disabled?: boolean | undefined;
 }) {
   const queryClient = useQueryClient();
+  const { data: naturezas = [] } = useNaturezas(empresaId);
   const [aberto, setAberto] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [nome, setNome] = useState("");
   const [tipoNovo, setTipoNovo] = useState<Categoria["tipo"]>(tipo);
-  const [natureza, setNatureza] = useState<NonNullable<Categoria["natureza"]>>("mercadoria");
+  const [naturezaId, setNaturezaId] = useState("");
 
   const opcoes = categorias.filter((c) => c.tipo === tipo);
 
   const abrirModal = () => {
     setNome("");
     setTipoNovo(tipo);
-    setNatureza("mercadoria");
+    setNaturezaId("");
     setAberto(true);
   };
 
@@ -88,7 +85,7 @@ export function SeletorCategoria({
           empresa_id: empresaId,
           nome: nome.trim(),
           tipo: tipoNovo,
-          natureza: tipoNovo === "despesa" ? natureza : null,
+          natureza_id: tipoNovo === "despesa" ? naturezaId || null : null,
         },
         "id",
       );
@@ -120,7 +117,7 @@ export function SeletorCategoria({
           {opcoes.map((c) => (
             <SelectItem key={c.id} value={c.id}>
               {c.nome}
-              {c.natureza ? ` · ${rotuloNatureza(c.natureza)}` : ""}
+              {c.natureza_id ? ` · ${nomeNatureza(naturezas, c.natureza_id)}` : ""}
             </SelectItem>
           ))}
           <SelectItem value={NOVA} className="font-medium text-primary">
@@ -166,23 +163,12 @@ export function SeletorCategoria({
             {tipoNovo === "despesa" && (
               <div>
                 <Label>Natureza</Label>
-                <Select
-                  value={natureza}
-                  onValueChange={(v) =>
-                    setNatureza(v as NonNullable<Categoria["natureza"]>)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {NATUREZAS.map((n) => (
-                      <SelectItem key={n.valor} value={n.valor}>
-                        {n.rotulo}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SeletorNatureza
+                  naturezas={naturezas}
+                  value={naturezaId}
+                  onChange={setNaturezaId}
+                  empresaId={empresaId}
+                />
               </div>
             )}
           </div>
