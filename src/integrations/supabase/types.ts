@@ -186,9 +186,14 @@ export type Database = {
           forma_pagamento: string | null
           fornecedor_id: string | null
           id: string
+          numero_documento: string | null
+          parcela: string | null
           status: Database["public"]["Enums"]["status_pagar"]
           updated_at: string
           valor: number
+          valor_desconto: number
+          valor_multa_juros: number
+          valor_pago: number | null
           vencimento_estimado: boolean
         }
         Insert: {
@@ -204,9 +209,14 @@ export type Database = {
           forma_pagamento?: string | null
           fornecedor_id?: string | null
           id?: string
+          numero_documento?: string | null
+          parcela?: string | null
           status?: Database["public"]["Enums"]["status_pagar"]
           updated_at?: string
           valor: number
+          valor_desconto?: number
+          valor_multa_juros?: number
+          valor_pago?: number | null
           vencimento_estimado?: boolean
         }
         Update: {
@@ -222,9 +232,14 @@ export type Database = {
           forma_pagamento?: string | null
           fornecedor_id?: string | null
           id?: string
+          numero_documento?: string | null
+          parcela?: string | null
           status?: Database["public"]["Enums"]["status_pagar"]
           updated_at?: string
           valor?: number
+          valor_desconto?: number
+          valor_multa_juros?: number
+          valor_pago?: number | null
           vencimento_estimado?: boolean
         }
         Relationships: [
@@ -272,9 +287,14 @@ export type Database = {
           empresa_id: string
           forma_recebimento: string | null
           id: string
+          numero_documento: string | null
+          parcela: string | null
           status: Database["public"]["Enums"]["status_receber"]
           updated_at: string
           valor: number
+          valor_desconto: number
+          valor_multa_juros: number
+          valor_recebido: number | null
         }
         Insert: {
           categoria_id?: string | null
@@ -289,9 +309,14 @@ export type Database = {
           empresa_id: string
           forma_recebimento?: string | null
           id?: string
+          numero_documento?: string | null
+          parcela?: string | null
           status?: Database["public"]["Enums"]["status_receber"]
           updated_at?: string
           valor: number
+          valor_desconto?: number
+          valor_multa_juros?: number
+          valor_recebido?: number | null
         }
         Update: {
           categoria_id?: string | null
@@ -306,9 +331,14 @@ export type Database = {
           empresa_id?: string
           forma_recebimento?: string | null
           id?: string
+          numero_documento?: string | null
+          parcela?: string | null
           status?: Database["public"]["Enums"]["status_receber"]
           updated_at?: string
           valor?: number
+          valor_desconto?: number
+          valor_multa_juros?: number
+          valor_recebido?: number | null
         }
         Relationships: [
           {
