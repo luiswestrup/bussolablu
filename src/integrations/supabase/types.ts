@@ -181,7 +181,9 @@ export type Database = {
       }
       conta_pagar: {
         Row: {
+          banco_emissor: string | null
           categoria_id: string | null
+          cheque_conta_bancaria_id: string | null
           conciliado: boolean
           conciliado_em: string | null
           conta_bancaria_id: string | null
@@ -192,10 +194,13 @@ export type Database = {
           empresa_id: string
           forma_pagamento: string | null
           fornecedor_id: string | null
+          grupo_parcelamento_id: string | null
           id: string
+          numero_cheque: string | null
           numero_documento: string | null
           parcela: string | null
           status: Database["public"]["Enums"]["status_pagar"]
+          status_cheque: Database["public"]["Enums"]["status_cheque"] | null
           updated_at: string
           valor: number
           valor_desconto: number
@@ -204,7 +209,9 @@ export type Database = {
           vencimento_estimado: boolean
         }
         Insert: {
+          banco_emissor?: string | null
           categoria_id?: string | null
+          cheque_conta_bancaria_id?: string | null
           conciliado?: boolean
           conciliado_em?: string | null
           conta_bancaria_id?: string | null
@@ -215,10 +222,13 @@ export type Database = {
           empresa_id: string
           forma_pagamento?: string | null
           fornecedor_id?: string | null
+          grupo_parcelamento_id?: string | null
           id?: string
+          numero_cheque?: string | null
           numero_documento?: string | null
           parcela?: string | null
           status?: Database["public"]["Enums"]["status_pagar"]
+          status_cheque?: Database["public"]["Enums"]["status_cheque"] | null
           updated_at?: string
           valor: number
           valor_desconto?: number
@@ -227,7 +237,9 @@ export type Database = {
           vencimento_estimado?: boolean
         }
         Update: {
+          banco_emissor?: string | null
           categoria_id?: string | null
+          cheque_conta_bancaria_id?: string | null
           conciliado?: boolean
           conciliado_em?: string | null
           conta_bancaria_id?: string | null
@@ -238,10 +250,13 @@ export type Database = {
           empresa_id?: string
           forma_pagamento?: string | null
           fornecedor_id?: string | null
+          grupo_parcelamento_id?: string | null
           id?: string
+          numero_cheque?: string | null
           numero_documento?: string | null
           parcela?: string | null
           status?: Database["public"]["Enums"]["status_pagar"]
+          status_cheque?: Database["public"]["Enums"]["status_cheque"] | null
           updated_at?: string
           valor?: number
           valor_desconto?: number
@@ -255,6 +270,13 @@ export type Database = {
             columns: ["categoria_id"]
             isOneToOne: false
             referencedRelation: "categoria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conta_pagar_cheque_conta_bancaria_id_fkey"
+            columns: ["cheque_conta_bancaria_id"]
+            isOneToOne: false
+            referencedRelation: "conta_bancaria"
             referencedColumns: ["id"]
           },
           {
@@ -282,6 +304,7 @@ export type Database = {
       }
       conta_receber: {
         Row: {
+          banco_emissor: string | null
           categoria_id: string | null
           cliente_id: string | null
           conciliado: boolean
@@ -293,10 +316,13 @@ export type Database = {
           descricao: string
           empresa_id: string
           forma_recebimento: string | null
+          grupo_parcelamento_id: string | null
           id: string
+          numero_cheque: string | null
           numero_documento: string | null
           parcela: string | null
           status: Database["public"]["Enums"]["status_receber"]
+          status_cheque: Database["public"]["Enums"]["status_cheque"] | null
           updated_at: string
           valor: number
           valor_desconto: number
@@ -304,6 +330,7 @@ export type Database = {
           valor_recebido: number | null
         }
         Insert: {
+          banco_emissor?: string | null
           categoria_id?: string | null
           cliente_id?: string | null
           conciliado?: boolean
@@ -315,10 +342,13 @@ export type Database = {
           descricao: string
           empresa_id: string
           forma_recebimento?: string | null
+          grupo_parcelamento_id?: string | null
           id?: string
+          numero_cheque?: string | null
           numero_documento?: string | null
           parcela?: string | null
           status?: Database["public"]["Enums"]["status_receber"]
+          status_cheque?: Database["public"]["Enums"]["status_cheque"] | null
           updated_at?: string
           valor: number
           valor_desconto?: number
@@ -326,6 +356,7 @@ export type Database = {
           valor_recebido?: number | null
         }
         Update: {
+          banco_emissor?: string | null
           categoria_id?: string | null
           cliente_id?: string | null
           conciliado?: boolean
@@ -337,10 +368,13 @@ export type Database = {
           descricao?: string
           empresa_id?: string
           forma_recebimento?: string | null
+          grupo_parcelamento_id?: string | null
           id?: string
+          numero_cheque?: string | null
           numero_documento?: string | null
           parcela?: string | null
           status?: Database["public"]["Enums"]["status_receber"]
+          status_cheque?: Database["public"]["Enums"]["status_cheque"] | null
           updated_at?: string
           valor?: number
           valor_desconto?: number
@@ -792,6 +826,7 @@ export type Database = {
       acao_auditoria: "criado" | "editado" | "excluido"
       natureza_categoria: "mercadoria" | "servico" | "outro"
       papel_usuario: "admin" | "financeiro" | "estoque"
+      status_cheque: "emitido" | "compensado" | "devolvido" | "cancelado"
       status_pagar: "pendente" | "pago" | "vencido"
       status_receber: "pendente" | "recebido" | "vencido"
       tipo_categoria: "despesa" | "receita" | "produto"
@@ -926,6 +961,7 @@ export const Constants = {
       acao_auditoria: ["criado", "editado", "excluido"],
       natureza_categoria: ["mercadoria", "servico", "outro"],
       papel_usuario: ["admin", "financeiro", "estoque"],
+      status_cheque: ["emitido", "compensado", "devolvido", "cancelado"],
       status_pagar: ["pendente", "pago", "vencido"],
       status_receber: ["pendente", "recebido", "vencido"],
       tipo_categoria: ["despesa", "receita", "produto"],

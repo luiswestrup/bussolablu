@@ -64,20 +64,33 @@ function DashboardPage() {
   const porFoco = <T extends { empresa_id: string }>(linhas: T[]) =>
     focoAtivo ? linhas.filter((l) => l.empresa_id === focoAtivo) : linhas;
 
-  const pagar = useMemo(() => porFoco(pagarTodos), [pagarTodos, focoAtivo]);
-  const receber = useMemo(() => porFoco(receberTodos), [receberTodos, focoAtivo]);
+  // Cheque cancelado saiu de circulação: não entra em nenhuma soma.
+  const ativo = <T extends { status_cheque?: string | null }>(linhas: T[]) =>
+    linhas.filter((l) => l.status_cheque !== "cancelado");
+
+  const pagar = useMemo(() => ativo(porFoco(pagarTodos)), [pagarTodos, focoAtivo]);
+  const receber = useMemo(() => ativo(porFoco(receberTodos)), [receberTodos, focoAtivo]);
   const produtos = useMemo(() => porFoco(produtosTodos), [produtosTodos, focoAtivo]);
 
   const resumo = useMemo(() => {
-    const pago = pagar.filter((c) => c.status === "pago");
-    const recebido = receber.filter((c) => c.status === "recebido");
+    // Cheque só entra/sai do caixa quando compensado.
+    const emCaixa = (c: { status_cheque?: string | null }) =>
+      !c.status_cheque || c.status_cheque === "compensado";
+    const pago = pagar.filter((c) => c.status === "pago" && emCaixa(c));
+    const recebido = receber.filter((c) => c.status === "recebido" && emCaixa(c));
     const saldo =
       recebido.reduce((s, c) => s + Number(c.valor), 0) - pago.reduce((s, c) => s + Number(c.valor), 0);
-    const pagarPend = pagar.filter((c) => c.status !== "pago");
-    const receberPend = receber.filter((c) => c.status !== "recebido");
+    const pagarPend = pagar.filter((c) => c.status !== "pago" || !emCaixa(c));
+    const receberPend = receber.filter((c) => c.status !== "recebido" || !emCaixa(c));
     const soma = (arr: { valor: number }[]) => arr.reduce((s, c) => s + Number(c.valor), 0);
+    const devolvidos = [
+      ...pagar.filter((c) => c.status_cheque === "devolvido"),
+      ...receber.filter((c) => c.status_cheque === "devolvido"),
+    ];
     return {
       saldo,
+      chequesDevolvidos: devolvidos.length,
+      valorDevolvidos: soma(devolvidos),
       pagarVencido: soma(pagarPend.filter((c) => c.data_vencimento < hj)),
       pagarAVencer: soma(pagarPend.filter((c) => c.data_vencimento >= hj)),
       receberVencido: soma(receberPend.filter((c) => c.data_vencimento < hj)),
@@ -92,10 +105,18 @@ function DashboardPage() {
     let acumulado = 0;
     return meses.map((m) => {
       const entradas = receber
-        .filter((c) => c.data_recebimento?.startsWith(m))
+        .filter(
+          (c) =>
+            c.data_recebimento?.startsWith(m) &&
+            (!c.status_cheque || c.status_cheque === "compensado"),
+        )
         .reduce((s, c) => s + Number(c.valor), 0);
       const saidas = pagar
-        .filter((c) => c.data_pagamento?.startsWith(m))
+        .filter(
+          (c) =>
+            c.data_pagamento?.startsWith(m) &&
+            (!c.status_cheque || c.status_cheque === "compensado"),
+        )
         .reduce((s, c) => s + Number(c.valor), 0);
       acumulado += entradas - saidas;
       return { mes: rotuloMes(`${m}-01`), entradas, saidas, saldo: acumulado };
@@ -192,6 +213,16 @@ function DashboardPage() {
         <div className="mt-4 flex items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
           <AlertTriangle className="h-4 w-4 text-warning" />
           {resumo.baixoEstoque} produto(s) com estoque abaixo do mínimo — verifique a tela de Estoque.
+        </div>
+      )}
+
+      {financeiro && resumo.chequesDevolvidos > 0 && (
+        <div className="mt-4 flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm">
+          <AlertTriangle className="h-4 w-4 text-destructive" />
+          <span>
+            <strong>{resumo.chequesDevolvidos} cheque(s) devolvido(s)</strong> em aberto, somando{" "}
+            {brl(resumo.valorDevolvidos)} — risco imediato de liquidez.
+          </span>
         </div>
       )}
 

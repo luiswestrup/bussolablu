@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type StatusCheque = "emitido" | "compensado" | "devolvido" | "cancelado";
+
 export type ContaPagar = {
   id: string;
   empresa_id: string;
@@ -20,6 +22,11 @@ export type ContaPagar = {
   valor_pago: number | null;
   valor_desconto: number;
   valor_multa_juros: number;
+  numero_cheque: string | null;
+  banco_emissor: string | null;
+  cheque_conta_bancaria_id: string | null;
+  status_cheque: StatusCheque | null;
+  grupo_parcelamento_id: string | null;
 };
 
 export type ContaReceber = {
@@ -41,6 +48,10 @@ export type ContaReceber = {
   valor_recebido: number | null;
   valor_desconto: number;
   valor_multa_juros: number;
+  numero_cheque: string | null;
+  banco_emissor: string | null;
+  status_cheque: StatusCheque | null;
+  grupo_parcelamento_id: string | null;
 };
 
 export type Produto = {
@@ -144,7 +155,7 @@ export const usePagar = (escopo?: Escopo) =>
   useTabela<ContaPagar>(
     "conta_pagar",
     escopo,
-    "id, descricao, valor, categoria_id, fornecedor_id, forma_pagamento, data_vencimento, data_pagamento, status, conta_bancaria_id, conciliado, conciliado_em, numero_documento, parcela, valor_pago, valor_desconto, valor_multa_juros",
+    "id, descricao, valor, categoria_id, fornecedor_id, forma_pagamento, data_vencimento, data_pagamento, status, conta_bancaria_id, conciliado, conciliado_em, numero_documento, parcela, valor_pago, valor_desconto, valor_multa_juros, numero_cheque, banco_emissor, cheque_conta_bancaria_id, status_cheque, grupo_parcelamento_id",
     "data_vencimento",
   );
 
@@ -152,7 +163,7 @@ export const useReceber = (escopo?: Escopo) =>
   useTabela<ContaReceber>(
     "conta_receber",
     escopo,
-    "id, descricao, valor, categoria_id, cliente_id, forma_recebimento, data_vencimento, data_recebimento, status, conta_bancaria_id, conciliado, conciliado_em, numero_documento, parcela, valor_recebido, valor_desconto, valor_multa_juros",
+    "id, descricao, valor, categoria_id, cliente_id, forma_recebimento, data_vencimento, data_recebimento, status, conta_bancaria_id, conciliado, conciliado_em, numero_documento, parcela, valor_recebido, valor_desconto, valor_multa_juros, numero_cheque, banco_emissor, status_cheque, grupo_parcelamento_id",
     "data_vencimento",
   );
 
@@ -257,7 +268,28 @@ export function situacao(
   status: string,
   vencimento: string,
   hojeISO: string,
-): "pago" | "recebido" | "pendente" | "vencido" {
+  statusCheque?: StatusCheque | null,
+): "pago" | "recebido" | "pendente" | "vencido" | "cancelado" {
+  // Cheque cancelado saiu de circulação: não entra em caixa nem em aberto.
+  if (statusCheque === "cancelado") return "cancelado";
+  // Cheque ainda não compensado não conta como pago/recebido, mesmo vencido.
+  if (statusCheque === "emitido" || statusCheque === "devolvido") {
+    return vencimento < hojeISO ? "vencido" : "pendente";
+  }
   if (status === "pago" || status === "recebido") return status;
   return vencimento < hojeISO ? "vencido" : "pendente";
+}
+
+/** Datas de cheques a partir da primeira data e do intervalo escolhido. */
+export function datasParcelas(
+  primeira: string,
+  quantidade: number,
+  intervalo: "mensal" | "quinzenal" | "semanal",
+): string[] {
+  return Array.from({ length: Math.max(1, quantidade) }, (_, i) => {
+    const d = new Date(`${primeira}T12:00:00`);
+    if (intervalo === "mensal") d.setMonth(d.getMonth() + i);
+    else d.setDate(d.getDate() + i * (intervalo === "quinzenal" ? 15 : 7));
+    return d.toISOString().slice(0, 10);
+  });
 }

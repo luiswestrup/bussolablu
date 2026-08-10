@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Download, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
-import { Kpi, SecaoVazia, StatusBadge } from "@/components/ui-kit";
+import { ChequeBadge, Kpi, SecaoVazia, StatusBadge } from "@/components/ui-kit";
 import { SeletorCategoria } from "@/components/SeletorCategoria";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,10 +38,12 @@ import { linhasPagamentosCSV, linhasRecebimentosCSV } from "@/lib/exportacao";
 import {
   situacao,
   tabela,
+  datasParcelas,
   useCategorias,
   useContasBancarias,
   type Categoria,
   type Parceiro,
+  type StatusCheque,
 } from "@/lib/dados";
 
 export type Conta = {
@@ -66,7 +68,11 @@ type Config = {
   tipoCategoria: Categoria["tipo"];
 };
 
-const FORMAS = ["Pix", "Boleto", "Transferência", "Cartão", "Dinheiro"];
+const FORMAS = ["Pix", "Boleto", "Transferência", "Cartão", "Dinheiro", "Cheque"];
+
+const STATUS_CHEQUE: StatusCheque[] = ["emitido", "compensado", "devolvido", "cancelado"];
+
+type ChequeLinha = { data: string; numero: string };
 
 export function ContasView({
   config,
@@ -86,6 +92,7 @@ export function ContasView({
   const hj = hoje();
 
   const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [filtroCheque, setFiltroCheque] = useState("todos");
   const [busca, setBusca] = useState("");
   const [aberto, setAberto] = useState(false);
   const [form, setForm] = useState({
@@ -98,7 +105,45 @@ export function ContasView({
     data_vencimento: hj,
     numero_documento: "",
     parcela: "",
+    banco_emissor: "",
+    numero_cheque: "",
   });
+  const [parcelarCheque, setParcelarCheque] = useState(false);
+  const [qtdCheques, setQtdCheques] = useState("2");
+  const [intervalo, setIntervalo] = useState<"mensal" | "quinzenal" | "semanal">("mensal");
+  const [cheques, setCheques] = useState<ChequeLinha[]>([]);
+
+  const ehCheque = form.forma === "Cheque";
+
+  const gerarDatas = () => {
+    const qtd = Math.max(1, Math.min(48, Number(qtdCheques) || 1));
+    setCheques(
+      datasParcelas(form.data_vencimento, qtd, intervalo).map((data, i) => ({
+        data,
+        numero: cheques[i]?.numero ?? "",
+      })),
+    );
+  };
+
+  const limparForm = () => {
+    setForm({
+      descricao: "",
+      valor: "",
+      categoria_id: "",
+      parceiro_id: "",
+      forma: "",
+      conta_bancaria_id: "",
+      data_vencimento: hj,
+      numero_documento: "",
+      parcela: "",
+      banco_emissor: "",
+      numero_cheque: "",
+    });
+    setParcelarCheque(false);
+    setQtdCheques("2");
+    setIntervalo("mensal");
+    setCheques([]);
+  };
   const [baixa, setBaixa] = useState<{
     id: string;
     descricao: string;
@@ -113,34 +158,62 @@ export function ContasView({
 
   const criar = useMutation({
     mutationFn: async () => {
-      const { error } = await tabela(config.tabelaNome).insert({
+      const base = {
         empresa_id: empresa!.id,
         descricao: form.descricao.trim(),
-        valor: Number(form.valor),
         categoria_id: form.categoria_id || null,
         [config.campoParceiro]: form.parceiro_id || null,
         [config.campoForma]: form.forma || null,
         conta_bancaria_id: form.conta_bancaria_id || null,
-        data_vencimento: form.data_vencimento,
         numero_documento: form.numero_documento.trim() || null,
-        parcela: form.parcela.trim() || null,
         status: "pendente",
+        ...(ehCheque
+          ? {
+              banco_emissor: form.banco_emissor.trim() || null,
+              status_cheque: "emitido",
+              ...(config.tipo === "pagar"
+                ? { cheque_conta_bancaria_id: form.conta_bancaria_id || null }
+                : {}),
+            }
+          : {}),
+      };
+
+      // Parcelamento manual em cheques: um título por cheque, mesmo grupo.
+      if (ehCheque && parcelarCheque && cheques.length > 0) {
+        const grupo = crypto.randomUUID();
+        const total = cheques.length;
+        const valorTotal = Number(form.valor);
+        const parcelaValor = Math.round((valorTotal / total) * 100) / 100;
+        for (let i = 0; i < total; i++) {
+          const ultimo = i === total - 1;
+          const valor = ultimo
+            ? Math.round((valorTotal - parcelaValor * (total - 1)) * 100) / 100
+            : parcelaValor;
+          const { error } = await tabela(config.tabelaNome).insert({
+            ...base,
+            valor,
+            data_vencimento: cheques[i]!.data,
+            parcela: `${i + 1}/${total}`,
+            numero_cheque: cheques[i]!.numero.trim() || null,
+            grupo_parcelamento_id: grupo,
+          });
+          if (error) throw new Error(error.message);
+        }
+        return;
+      }
+
+      const { error } = await tabela(config.tabelaNome).insert({
+        ...base,
+        valor: Number(form.valor),
+        data_vencimento: form.data_vencimento,
+        parcela: form.parcela.trim() || null,
+        ...(ehCheque ? { numero_cheque: form.numero_cheque.trim() || null } : {}),
       });
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       setAberto(false);
-      setForm({
-        descricao: "",
-        valor: "",
-        categoria_id: "",
-        parceiro_id: "",
-        forma: "",
-        conta_bancaria_id: "",
-        data_vencimento: hj,
-        numero_documento: "",
-        parcela: "",
-      });
+      limparForm();
       invalidar();
       toast.success("Lançamento registrado.");
     },
@@ -170,6 +243,23 @@ export function ContasView({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Regra de caixa do cheque: só compensado entra/sai do caixa, na data da compensação.
+  const mudarCheque = useMutation({
+    mutationFn: async ({ id, novo }: { id: string; novo: StatusCheque }) => {
+      const valores: Record<string, unknown> =
+        novo === "compensado"
+          ? { status_cheque: novo, status: config.statusFinal, [config.campoData]: hj }
+          : { status_cheque: novo, status: "pendente", [config.campoData]: null };
+      const { error } = await tabela(config.tabelaNome).update(valores).eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      invalidar();
+      toast.success("Situação do cheque atualizada.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const excluir = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await tabela(config.tabelaNome).delete().eq("id", id);
@@ -188,15 +278,36 @@ export function ContasView({
   const lista = useMemo(
     () =>
       contas
-        .map((c) => ({ ...c, situacao: situacao(c.status, c.data_vencimento, hj) }))
+        .map((c) => ({
+          ...c,
+          statusCheque: (c["status_cheque"] as StatusCheque | null) ?? null,
+          numeroCheque: (c["numero_cheque"] as string | null) ?? null,
+          bancoEmissor: (c["banco_emissor"] as string | null) ?? null,
+          situacao: situacao(
+            c.status,
+            c.data_vencimento,
+            hj,
+            c["status_cheque"] as StatusCheque | null,
+          ),
+        }))
         .filter((c) => (filtroStatus === "todos" ? true : c.situacao === filtroStatus))
+        .filter((c) =>
+          filtroCheque === "todos"
+            ? true
+            : filtroCheque === "sem_cheque"
+              ? !c.statusCheque
+              : c.statusCheque === filtroCheque,
+        )
         .filter((c) => c.descricao.toLowerCase().includes(busca.trim().toLowerCase())),
-    [contas, filtroStatus, busca, hj],
+    [contas, filtroStatus, filtroCheque, busca, hj],
   );
 
   const totais = useMemo(() => {
     const soma = (f: (c: (typeof lista)[number]) => boolean) =>
-      lista.filter(f).reduce((s, c) => s + Number(c.valor), 0);
+      lista
+        .filter((c) => c.situacao !== "cancelado")
+        .filter(f)
+        .reduce((s, c) => s + Number(c.valor), 0);
     return {
       total: soma(() => true),
       liquidado: soma((c) => c.situacao === config.statusFinal),
@@ -238,6 +349,22 @@ export function ContasView({
                 <SelectItem value={config.statusFinal}>
                   {config.tipo === "pagar" ? "Pago" : "Recebido"}
                 </SelectItem>
+                <SelectItem value="cancelado">Cancelado</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filtroCheque} onValueChange={setFiltroCheque}>
+              <SelectTrigger className="w-[190px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Cheques: todos</SelectItem>
+                <SelectItem value="sem_cheque">Sem cheque</SelectItem>
+                {STATUS_CHEQUE.map((s) => (
+                  <SelectItem key={s} value={s} className="capitalize">
+                    Cheque {s}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -270,7 +397,7 @@ export function ContasView({
                     {consolidado ? "Selecione uma empresa para lançar" : "Novo lançamento"}
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>
                       {config.tipo === "pagar" ? "Nova conta a pagar" : "Nova conta a receber"}
@@ -400,6 +527,129 @@ export function ContasView({
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {ehCheque && (
+                      <div className="sm:col-span-2 space-y-4 rounded-lg border border-dashed p-4">
+                        <p className="text-sm font-medium">Dados do cheque</p>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div>
+                            <Label htmlFor="banco-emissor">Banco emissor</Label>
+                            <Input
+                              id="banco-emissor"
+                              value={form.banco_emissor}
+                              maxLength={60}
+                              placeholder="Ex: Banco do Brasil"
+                              onChange={(e) => setForm({ ...form, banco_emissor: e.target.value })}
+                            />
+                          </div>
+                          {!parcelarCheque && (
+                            <div>
+                              <Label htmlFor="num-cheque">Número do cheque</Label>
+                              <Input
+                                id="num-cheque"
+                                value={form.numero_cheque}
+                                maxLength={30}
+                                onChange={(e) => setForm({ ...form, numero_cheque: e.target.value })}
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-primary"
+                            checked={parcelarCheque}
+                            onChange={(e) => {
+                              setParcelarCheque(e.target.checked);
+                              if (e.target.checked && cheques.length === 0) gerarDatas();
+                            }}
+                          />
+                          Parcelar em vários cheques pré-datados
+                        </label>
+
+                        {parcelarCheque && (
+                          <div className="space-y-3">
+                            <div className="grid gap-3 sm:grid-cols-3">
+                              <div>
+                                <Label htmlFor="qtd-cheques">Quantidade</Label>
+                                <Input
+                                  id="qtd-cheques"
+                                  type="number"
+                                  min="1"
+                                  max="48"
+                                  value={qtdCheques}
+                                  onChange={(e) => setQtdCheques(e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <Label>Intervalo</Label>
+                                <Select
+                                  value={intervalo}
+                                  onValueChange={(v) =>
+                                    setIntervalo(v as "mensal" | "quinzenal" | "semanal")
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="mensal">Mensal</SelectItem>
+                                    <SelectItem value="quinzenal">Quinzenal</SelectItem>
+                                    <SelectItem value="semanal">Semanal</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="flex items-end">
+                                <Button type="button" variant="outline" onClick={gerarDatas}>
+                                  Gerar datas
+                                </Button>
+                              </div>
+                            </div>
+
+                            {cheques.length > 0 && (
+                              <div className="space-y-2">
+                                <p className="text-xs text-muted-foreground">
+                                  A partir do primeiro vencimento ({dataBR(form.data_vencimento)}). O
+                                  valor total é dividido entre os cheques; as datas podem ser
+                                  ajustadas uma a uma.
+                                </p>
+                                {cheques.map((ch, i) => (
+                                  <div key={i} className="grid grid-cols-[54px_1fr_1fr] items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">
+                                      {i + 1}/{cheques.length}
+                                    </span>
+                                    <Input
+                                      type="date"
+                                      value={ch.data}
+                                      onChange={(e) =>
+                                        setCheques(
+                                          cheques.map((x, j) =>
+                                            j === i ? { ...x, data: e.target.value } : x,
+                                          ),
+                                        )
+                                      }
+                                    />
+                                    <Input
+                                      placeholder="Nº do cheque"
+                                      value={ch.numero}
+                                      maxLength={30}
+                                      onChange={(e) =>
+                                        setCheques(
+                                          cheques.map((x, j) =>
+                                            j === i ? { ...x, numero: e.target.value } : x,
+                                          ),
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <DialogFooter>
                     <Button
@@ -437,6 +687,7 @@ export function ContasView({
                     <TableHead>Vencimento</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead>Situação</TableHead>
+                    <TableHead>Cheque</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -462,9 +713,41 @@ export function ContasView({
                       <TableCell>
                         <StatusBadge status={c.situacao} />
                       </TableCell>
+                      <TableCell>
+                        {c.statusCheque ? (
+                          <div className="flex items-center gap-2">
+                            <ChequeBadge status={c.statusCheque} />
+                            <Select
+                              value={c.statusCheque}
+                              onValueChange={(v) =>
+                                mudarCheque.mutate({ id: c.id, novo: v as StatusCheque })
+                              }
+                            >
+                              <SelectTrigger className="h-7 w-[130px] text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {STATUS_CHEQUE.map((s) => (
+                                  <SelectItem key={s} value={s} className="capitalize">
+                                    {s}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                        {c.numeroCheque ? (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Nº {c.numeroCheque}
+                            {c.bancoEmissor ? ` · ${c.bancoEmissor}` : ""}
+                          </p>
+                        ) : null}
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          {c.situacao !== config.statusFinal && (
+                          {c.situacao !== config.statusFinal && c.situacao !== "cancelado" && !c.statusCheque && (
                             <Button
                               size="icon"
                               variant="ghost"
