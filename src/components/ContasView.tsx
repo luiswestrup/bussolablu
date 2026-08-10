@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/table";
 import { useEmpresa } from "@/lib/empresa";
 import { brl, dataBR, exportarCSV, hoje } from "@/lib/format";
+import { linhasPagamentosCSV, linhasRecebimentosCSV } from "@/lib/exportacao";
 import {
   situacao,
   tabela,
@@ -96,7 +97,18 @@ export function ContasView({
     forma: "",
     conta_bancaria_id: "",
     data_vencimento: hj,
+    numero_documento: "",
+    parcela: "",
   });
+  const [baixa, setBaixa] = useState<{
+    id: string;
+    descricao: string;
+    valor: number;
+    data: string;
+    pago: string;
+    desconto: string;
+    multa: string;
+  } | null>(null);
 
   const invalidar = () => queryClient.invalidateQueries({ queryKey: [config.tabelaNome] });
 
@@ -111,6 +123,8 @@ export function ContasView({
         [config.campoForma]: form.forma || null,
         conta_bancaria_id: form.conta_bancaria_id || null,
         data_vencimento: form.data_vencimento,
+        numero_documento: form.numero_documento.trim() || null,
+        parcela: form.parcela.trim() || null,
         status: "pendente",
       });
       if (error) throw new Error(error.message);
@@ -125,6 +139,8 @@ export function ContasView({
         forma: "",
         conta_bancaria_id: "",
         data_vencimento: hj,
+        numero_documento: "",
+        parcela: "",
       });
       invalidar();
       toast.success("Lançamento registrado.");
@@ -133,13 +149,22 @@ export function ContasView({
   });
 
   const baixar = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async () => {
+      if (!baixa) return;
       const { error } = await tabela(config.tabelaNome)
-        .update({ status: config.statusFinal, [config.campoData]: hj })
-        .eq("id", id);
+        .update({
+          status: config.statusFinal,
+          [config.campoData]: baixa.data,
+          [config.tipo === "pagar" ? "valor_pago" : "valor_recebido"]:
+            baixa.pago === "" ? baixa.valor : Number(baixa.pago),
+          valor_desconto: Number(baixa.desconto || 0),
+          valor_multa_juros: Number(baixa.multa || 0),
+        })
+        .eq("id", baixa.id);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
+      setBaixa(null);
       invalidar();
       toast.success(config.tipo === "pagar" ? "Conta paga." : "Recebimento confirmado.");
     },
@@ -223,15 +248,9 @@ export function ContasView({
                 onClick={() =>
                   exportarCSV(
                     config.tabelaNome,
-                    lista.map((c) => ({
-                      ...(consolidado ? { Empresa: nomeEmpresa(c.empresa_id) } : {}),
-                      Descrição: c.descricao,
-                      Categoria: nomeCategoria(c.categoria_id),
-                      [config.rotuloParceiro]: nomeParceiro((c as Record<string, unknown>)[config.campoParceiro]),
-                      Vencimento: dataBR(c.data_vencimento),
-                      Valor: Number(c.valor).toFixed(2).replace(".", ","),
-                      Situação: c.situacao,
-                    })),
+                    config.tipo === "pagar"
+                      ? linhasPagamentosCSV(lista, parceiros, contasBancarias)
+                      : linhasRecebimentosCSV(lista, parceiros, contasBancarias),
                   )
                 }
               >
@@ -286,6 +305,26 @@ export function ContasView({
                         type="date"
                         value={form.data_vencimento}
                         onChange={(e) => setForm({ ...form, data_vencimento: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="numdoc">Número do documento</Label>
+                      <Input
+                        id="numdoc"
+                        value={form.numero_documento}
+                        maxLength={40}
+                        placeholder="Ex: 12345"
+                        onChange={(e) => setForm({ ...form, numero_documento: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="parcela">Parcela</Label>
+                      <Input
+                        id="parcela"
+                        value={form.parcela}
+                        maxLength={12}
+                        placeholder="Ex: 1/3"
+                        onChange={(e) => setForm({ ...form, parcela: e.target.value })}
                       />
                     </div>
                     <div>
@@ -392,6 +431,8 @@ export function ContasView({
                   <TableRow>
                     {consolidado && <TableHead>Empresa</TableHead>}
                     <TableHead>Descrição</TableHead>
+                    <TableHead>Documento</TableHead>
+                    <TableHead>Parcela</TableHead>
                     <TableHead>Categoria</TableHead>
                     <TableHead>{config.rotuloParceiro}</TableHead>
                     <TableHead>Vencimento</TableHead>
@@ -409,6 +450,12 @@ export function ContasView({
                         </TableCell>
                       )}
                       <TableCell className="font-medium">{c.descricao}</TableCell>
+                      <TableCell className="whitespace-nowrap text-muted-foreground">
+                        {(c as Record<string, unknown>)["numero_documento"] as string ?? "—"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-muted-foreground">
+                        {(c as Record<string, unknown>)["parcela"] as string ?? "—"}
+                      </TableCell>
                       <TableCell>{nomeCategoria(c.categoria_id)}</TableCell>
                       <TableCell>{nomeParceiro((c as Record<string, unknown>)[config.campoParceiro])}</TableCell>
                       <TableCell>{dataBR(c.data_vencimento)}</TableCell>
@@ -423,7 +470,17 @@ export function ContasView({
                               size="icon"
                               variant="ghost"
                               title={config.tipo === "pagar" ? "Marcar como pago" : "Marcar como recebido"}
-                              onClick={() => baixar.mutate(c.id)}
+                              onClick={() =>
+                                setBaixa({
+                                  id: c.id,
+                                  descricao: c.descricao,
+                                  valor: Number(c.valor),
+                                  data: hj,
+                                  pago: Number(c.valor).toFixed(2),
+                                  desconto: "0",
+                                  multa: "0",
+                                })
+                              }
                             >
                               <CheckCircle2 className="h-4 w-4 text-success" />
                             </Button>
@@ -446,6 +503,74 @@ export function ContasView({
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!baixa} onOpenChange={(o) => !o && setBaixa(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {config.tipo === "pagar" ? "Baixa de pagamento" : "Baixa de recebimento"}
+            </DialogTitle>
+          </DialogHeader>
+          {baixa && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2 text-sm text-muted-foreground">
+                {baixa.descricao} · valor da parcela {brl(baixa.valor)}
+              </div>
+              <div>
+                <Label htmlFor="dt-baixa">
+                  {config.tipo === "pagar" ? "Data do pagamento" : "Data do recebimento"}
+                </Label>
+                <Input
+                  id="dt-baixa"
+                  type="date"
+                  value={baixa.data}
+                  onChange={(e) => setBaixa({ ...baixa, data: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="vl-baixa">
+                  {config.tipo === "pagar" ? "Valor pago (R$)" : "Valor recebido (R$)"}
+                </Label>
+                <Input
+                  id="vl-baixa"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={baixa.pago}
+                  onChange={(e) => setBaixa({ ...baixa, pago: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="vl-desc">Desconto (R$)</Label>
+                <Input
+                  id="vl-desc"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={baixa.desconto}
+                  onChange={(e) => setBaixa({ ...baixa, desconto: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="vl-multa">Multa e juros (R$)</Label>
+                <Input
+                  id="vl-multa"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={baixa.multa}
+                  onChange={(e) => setBaixa({ ...baixa, multa: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => baixar.mutate()} disabled={baixar.isPending}>
+              Confirmar baixa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
