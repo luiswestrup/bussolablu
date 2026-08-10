@@ -158,34 +158,62 @@ export function ContasView({
 
   const criar = useMutation({
     mutationFn: async () => {
-      const { error } = await tabela(config.tabelaNome).insert({
+      const base = {
         empresa_id: empresa!.id,
         descricao: form.descricao.trim(),
-        valor: Number(form.valor),
         categoria_id: form.categoria_id || null,
         [config.campoParceiro]: form.parceiro_id || null,
         [config.campoForma]: form.forma || null,
         conta_bancaria_id: form.conta_bancaria_id || null,
-        data_vencimento: form.data_vencimento,
         numero_documento: form.numero_documento.trim() || null,
-        parcela: form.parcela.trim() || null,
         status: "pendente",
+        ...(ehCheque
+          ? {
+              banco_emissor: form.banco_emissor.trim() || null,
+              status_cheque: "emitido",
+              ...(config.tipo === "pagar"
+                ? { cheque_conta_bancaria_id: form.conta_bancaria_id || null }
+                : {}),
+            }
+          : {}),
+      };
+
+      // Parcelamento manual em cheques: um título por cheque, mesmo grupo.
+      if (ehCheque && parcelarCheque && cheques.length > 0) {
+        const grupo = crypto.randomUUID();
+        const total = cheques.length;
+        const valorTotal = Number(form.valor);
+        const parcelaValor = Math.round((valorTotal / total) * 100) / 100;
+        for (let i = 0; i < total; i++) {
+          const ultimo = i === total - 1;
+          const valor = ultimo
+            ? Math.round((valorTotal - parcelaValor * (total - 1)) * 100) / 100
+            : parcelaValor;
+          const { error } = await tabela(config.tabelaNome).insert({
+            ...base,
+            valor,
+            data_vencimento: cheques[i]!.data,
+            parcela: `${i + 1}/${total}`,
+            numero_cheque: cheques[i]!.numero.trim() || null,
+            grupo_parcelamento_id: grupo,
+          });
+          if (error) throw new Error(error.message);
+        }
+        return;
+      }
+
+      const { error } = await tabela(config.tabelaNome).insert({
+        ...base,
+        valor: Number(form.valor),
+        data_vencimento: form.data_vencimento,
+        parcela: form.parcela.trim() || null,
+        ...(ehCheque ? { numero_cheque: form.numero_cheque.trim() || null } : {}),
       });
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       setAberto(false);
-      setForm({
-        descricao: "",
-        valor: "",
-        categoria_id: "",
-        parceiro_id: "",
-        forma: "",
-        conta_bancaria_id: "",
-        data_vencimento: hj,
-        numero_documento: "",
-        parcela: "",
-      });
+      limparForm();
       invalidar();
       toast.success("Lançamento registrado.");
     },
@@ -215,6 +243,23 @@ export function ContasView({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Regra de caixa do cheque: só compensado entra/sai do caixa, na data da compensação.
+  const mudarCheque = useMutation({
+    mutationFn: async ({ id, novo }: { id: string; novo: StatusCheque }) => {
+      const valores: Record<string, unknown> =
+        novo === "compensado"
+          ? { status_cheque: novo, status: config.statusFinal, [config.campoData]: hj }
+          : { status_cheque: novo, status: "pendente", [config.campoData]: null };
+      const { error } = await tabela(config.tabelaNome).update(valores).eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      invalidar();
+      toast.success("Situação do cheque atualizada.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const excluir = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await tabela(config.tabelaNome).delete().eq("id", id);
@@ -233,15 +278,34 @@ export function ContasView({
   const lista = useMemo(
     () =>
       contas
-        .map((c) => ({ ...c, situacao: situacao(c.status, c.data_vencimento, hj) }))
+        .map((c) => ({
+          ...c,
+          statusCheque: (c["status_cheque"] as StatusCheque | null) ?? null,
+          situacao: situacao(
+            c.status,
+            c.data_vencimento,
+            hj,
+            c["status_cheque"] as StatusCheque | null,
+          ),
+        }))
         .filter((c) => (filtroStatus === "todos" ? true : c.situacao === filtroStatus))
+        .filter((c) =>
+          filtroCheque === "todos"
+            ? true
+            : filtroCheque === "sem_cheque"
+              ? !c.statusCheque
+              : c.statusCheque === filtroCheque,
+        )
         .filter((c) => c.descricao.toLowerCase().includes(busca.trim().toLowerCase())),
-    [contas, filtroStatus, busca, hj],
+    [contas, filtroStatus, filtroCheque, busca, hj],
   );
 
   const totais = useMemo(() => {
     const soma = (f: (c: (typeof lista)[number]) => boolean) =>
-      lista.filter(f).reduce((s, c) => s + Number(c.valor), 0);
+      lista
+        .filter((c) => c.situacao !== "cancelado")
+        .filter(f)
+        .reduce((s, c) => s + Number(c.valor), 0);
     return {
       total: soma(() => true),
       liquidado: soma((c) => c.situacao === config.statusFinal),
