@@ -431,6 +431,8 @@ export function ContasView({
                   <TableRow>
                     {consolidado && <TableHead>Empresa</TableHead>}
                     <TableHead>Descrição</TableHead>
+                    <TableHead>Documento</TableHead>
+                    <TableHead>Parcela</TableHead>
                     <TableHead>Categoria</TableHead>
                     <TableHead>{config.rotuloParceiro}</TableHead>
                     <TableHead>Vencimento</TableHead>
@@ -448,6 +450,12 @@ export function ContasView({
                         </TableCell>
                       )}
                       <TableCell className="font-medium">{c.descricao}</TableCell>
+                      <TableCell className="whitespace-nowrap text-muted-foreground">
+                        {(c as Record<string, unknown>)["numero_documento"] as string ?? "—"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-muted-foreground">
+                        {(c as Record<string, unknown>)["parcela"] as string ?? "—"}
+                      </TableCell>
                       <TableCell>{nomeCategoria(c.categoria_id)}</TableCell>
                       <TableCell>{nomeParceiro((c as Record<string, unknown>)[config.campoParceiro])}</TableCell>
                       <TableCell>{dataBR(c.data_vencimento)}</TableCell>
@@ -462,7 +470,17 @@ export function ContasView({
                               size="icon"
                               variant="ghost"
                               title={config.tipo === "pagar" ? "Marcar como pago" : "Marcar como recebido"}
-                              onClick={() => baixar.mutate(c.id)}
+                              onClick={() =>
+                                setBaixa({
+                                  id: c.id,
+                                  descricao: c.descricao,
+                                  valor: Number(c.valor),
+                                  data: hj,
+                                  pago: Number(c.valor).toFixed(2),
+                                  desconto: "0",
+                                  multa: "0",
+                                })
+                              }
                             >
                               <CheckCircle2 className="h-4 w-4 text-success" />
                             </Button>
