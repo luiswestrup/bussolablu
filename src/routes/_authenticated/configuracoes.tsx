@@ -30,13 +30,14 @@ import { Usuarios } from "@/components/Usuarios";
 import { Auditoria } from "@/components/Auditoria";
 import { brl } from "@/lib/format";
 import {
-  NATUREZAS,
   tabela,
   useCategorias,
   useClientes,
   useContasBancarias,
   useFornecedores,
+  useNaturezas,
 } from "@/lib/dados";
+import { SeletorNatureza } from "@/components/SeletorNatureza";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -167,9 +168,10 @@ function ConfiguracoesPage() {
   const { eAdmin } = usePapel();
   const queryClient = useQueryClient();
   const { data: categorias = [] } = useCategorias(empresa?.id);
+  const { data: naturezas = [] } = useNaturezas(empresa?.id);
   const { data: fornecedores = [] } = useFornecedores(empresa?.id);
   const { data: clientes = [] } = useClientes(empresa?.id);
-  const [cat, setCat] = useState({ nome: "", tipo: "despesa", natureza: "mercadoria" });
+  const [cat, setCat] = useState({ nome: "", tipo: "despesa", natureza_id: "" });
 
   const criarCategoria = useMutation({
     mutationFn: async () => {
@@ -177,12 +179,12 @@ function ConfiguracoesPage() {
         empresa_id: empresa!.id,
         nome: cat.nome.trim(),
         tipo: cat.tipo,
-        natureza: cat.tipo === "despesa" ? cat.natureza : null,
+        natureza_id: cat.tipo === "despesa" ? cat.natureza_id || null : null,
       });
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      setCat({ nome: "", tipo: "despesa", natureza: "mercadoria" });
+      setCat({ nome: "", tipo: "despesa", natureza_id: "" });
       queryClient.invalidateQueries({ queryKey: ["categoria"] });
       toast.success("Categoria criada.");
     },
@@ -190,8 +192,8 @@ function ConfiguracoesPage() {
   });
 
   const alterarNatureza = useMutation({
-    mutationFn: async ({ id, natureza }: { id: string; natureza: string }) => {
-      const { error } = await tabela("categoria").update({ natureza }).eq("id", id);
+    mutationFn: async ({ id, naturezaId }: { id: string; naturezaId: string }) => {
+      const { error } = await tabela("categoria").update({ natureza_id: naturezaId }).eq("id", id);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
@@ -218,6 +220,7 @@ function ConfiguracoesPage() {
       <Tabs defaultValue="categorias">
         <TabsList>
           <TabsTrigger value="categorias">Categorias</TabsTrigger>
+          <TabsTrigger value="naturezas">Naturezas</TabsTrigger>
           <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
           <TabsTrigger value="clientes">Clientes</TabsTrigger>
           <TabsTrigger value="contas">Contas bancárias</TabsTrigger>
@@ -250,18 +253,13 @@ function ConfiguracoesPage() {
                   </SelectContent>
                 </Select>
                 {cat.tipo === "despesa" && (
-                  <Select value={cat.natureza} onValueChange={(v) => setCat({ ...cat, natureza: v })}>
-                    <SelectTrigger className="w-[210px]">
-                      <SelectValue placeholder="Natureza" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {NATUREZAS.map((n) => (
-                        <SelectItem key={n.valor} value={n.valor}>
-                          {n.rotulo}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SeletorNatureza
+                    className="w-[210px]"
+                    naturezas={naturezas}
+                    value={cat.natureza_id}
+                    onChange={(v) => setCat({ ...cat, natureza_id: v })}
+                    empresaId={empresa?.id}
+                  />
                 )}
                 <Button
                   onClick={() => criarCategoria.mutate()}
@@ -291,21 +289,13 @@ function ConfiguracoesPage() {
                           <TableCell className="capitalize">{c.tipo}</TableCell>
                           <TableCell>
                             {c.tipo === "despesa" ? (
-                              <Select
-                                value={c.natureza ?? "outro"}
-                                onValueChange={(v) => alterarNatureza.mutate({ id: c.id, natureza: v })}
-                              >
-                                <SelectTrigger className="w-[200px]">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {NATUREZAS.map((n) => (
-                                    <SelectItem key={n.valor} value={n.valor}>
-                                      {n.rotulo}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <SeletorNatureza
+                                className="w-[210px]"
+                                naturezas={naturezas}
+                                value={c.natureza_id ?? ""}
+                                onChange={(v) => alterarNatureza.mutate({ id: c.id, naturezaId: v })}
+                                empresaId={empresa?.id}
+                              />
                             ) : (
                               <span className="text-muted-foreground">—</span>
                             )}
@@ -328,6 +318,10 @@ function ConfiguracoesPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="naturezas" className="mt-4">
+          <Naturezas />
         </TabsContent>
 
         <TabsContent value="fornecedores" className="mt-4">
