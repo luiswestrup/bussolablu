@@ -15,6 +15,11 @@ export type ContaPagar = {
   conta_bancaria_id: string | null;
   conciliado: boolean;
   conciliado_em: string | null;
+  numero_documento: string | null;
+  parcela: string | null;
+  valor_pago: number | null;
+  valor_desconto: number;
+  valor_multa_juros: number;
 };
 
 export type ContaReceber = {
@@ -31,6 +36,11 @@ export type ContaReceber = {
   conta_bancaria_id: string | null;
   conciliado: boolean;
   conciliado_em: string | null;
+  numero_documento: string | null;
+  parcela: string | null;
+  valor_recebido: number | null;
+  valor_desconto: number;
+  valor_multa_juros: number;
 };
 
 export type Produto = {
@@ -133,7 +143,7 @@ export const usePagar = (escopo?: Escopo) =>
   useTabela<ContaPagar>(
     "conta_pagar",
     escopo,
-    "id, descricao, valor, categoria_id, fornecedor_id, forma_pagamento, data_vencimento, data_pagamento, status, conta_bancaria_id, conciliado, conciliado_em",
+    "id, descricao, valor, categoria_id, fornecedor_id, forma_pagamento, data_vencimento, data_pagamento, status, conta_bancaria_id, conciliado, conciliado_em, numero_documento, parcela, valor_pago, valor_desconto, valor_multa_juros",
     "data_vencimento",
   );
 
@@ -141,7 +151,7 @@ export const useReceber = (escopo?: Escopo) =>
   useTabela<ContaReceber>(
     "conta_receber",
     escopo,
-    "id, descricao, valor, categoria_id, cliente_id, forma_recebimento, data_vencimento, data_recebimento, status, conta_bancaria_id, conciliado, conciliado_em",
+    "id, descricao, valor, categoria_id, cliente_id, forma_recebimento, data_vencimento, data_recebimento, status, conta_bancaria_id, conciliado, conciliado_em, numero_documento, parcela, valor_recebido, valor_desconto, valor_multa_juros",
     "data_vencimento",
   );
 
