@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/table";
 import { useEmpresa } from "@/lib/empresa";
 import { brl, dataBR, exportarCSV, hoje } from "@/lib/format";
+import { linhasPagamentosCSV, linhasRecebimentosCSV } from "@/lib/exportacao";
 import {
   situacao,
   tabela,
@@ -96,7 +97,18 @@ export function ContasView({
     forma: "",
     conta_bancaria_id: "",
     data_vencimento: hj,
+    numero_documento: "",
+    parcela: "",
   });
+  const [baixa, setBaixa] = useState<{
+    id: string;
+    descricao: string;
+    valor: number;
+    data: string;
+    pago: string;
+    desconto: string;
+    multa: string;
+  } | null>(null);
 
   const invalidar = () => queryClient.invalidateQueries({ queryKey: [config.tabelaNome] });
 
@@ -111,6 +123,8 @@ export function ContasView({
         [config.campoForma]: form.forma || null,
         conta_bancaria_id: form.conta_bancaria_id || null,
         data_vencimento: form.data_vencimento,
+        numero_documento: form.numero_documento.trim() || null,
+        parcela: form.parcela.trim() || null,
         status: "pendente",
       });
       if (error) throw new Error(error.message);
@@ -125,6 +139,8 @@ export function ContasView({
         forma: "",
         conta_bancaria_id: "",
         data_vencimento: hj,
+        numero_documento: "",
+        parcela: "",
       });
       invalidar();
       toast.success("Lançamento registrado.");
@@ -133,13 +149,22 @@ export function ContasView({
   });
 
   const baixar = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async () => {
+      if (!baixa) return;
       const { error } = await tabela(config.tabelaNome)
-        .update({ status: config.statusFinal, [config.campoData]: hj })
-        .eq("id", id);
+        .update({
+          status: config.statusFinal,
+          [config.campoData]: baixa.data,
+          [config.tipo === "pagar" ? "valor_pago" : "valor_recebido"]:
+            baixa.pago === "" ? baixa.valor : Number(baixa.pago),
+          valor_desconto: Number(baixa.desconto || 0),
+          valor_multa_juros: Number(baixa.multa || 0),
+        })
+        .eq("id", baixa.id);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
+      setBaixa(null);
       invalidar();
       toast.success(config.tipo === "pagar" ? "Conta paga." : "Recebimento confirmado.");
     },
