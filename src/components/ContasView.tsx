@@ -347,6 +347,22 @@ export function ContasView({
                 <SelectItem value={config.statusFinal}>
                   {config.tipo === "pagar" ? "Pago" : "Recebido"}
                 </SelectItem>
+                <SelectItem value="cancelado">Cancelado</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filtroCheque} onValueChange={setFiltroCheque}>
+              <SelectTrigger className="w-[190px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Cheques: todos</SelectItem>
+                <SelectItem value="sem_cheque">Sem cheque</SelectItem>
+                {STATUS_CHEQUE.map((s) => (
+                  <SelectItem key={s} value={s} className="capitalize">
+                    Cheque {s}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
