@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Download, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
-import { Kpi, SecaoVazia, StatusBadge } from "@/components/ui-kit";
+import { ChequeBadge, Kpi, SecaoVazia, StatusBadge } from "@/components/ui-kit";
 import { SeletorCategoria } from "@/components/SeletorCategoria";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,10 +38,12 @@ import { linhasPagamentosCSV, linhasRecebimentosCSV } from "@/lib/exportacao";
 import {
   situacao,
   tabela,
+  datasParcelas,
   useCategorias,
   useContasBancarias,
   type Categoria,
   type Parceiro,
+  type StatusCheque,
 } from "@/lib/dados";
 
 export type Conta = {
@@ -66,7 +68,11 @@ type Config = {
   tipoCategoria: Categoria["tipo"];
 };
 
-const FORMAS = ["Pix", "Boleto", "Transferência", "Cartão", "Dinheiro"];
+const FORMAS = ["Pix", "Boleto", "Transferência", "Cartão", "Dinheiro", "Cheque"];
+
+const STATUS_CHEQUE: StatusCheque[] = ["emitido", "compensado", "devolvido", "cancelado"];
+
+type ChequeLinha = { data: string; numero: string };
 
 export function ContasView({
   config,
@@ -86,6 +92,7 @@ export function ContasView({
   const hj = hoje();
 
   const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [filtroCheque, setFiltroCheque] = useState("todos");
   const [busca, setBusca] = useState("");
   const [aberto, setAberto] = useState(false);
   const [form, setForm] = useState({
@@ -98,7 +105,45 @@ export function ContasView({
     data_vencimento: hj,
     numero_documento: "",
     parcela: "",
+    banco_emissor: "",
+    numero_cheque: "",
   });
+  const [parcelarCheque, setParcelarCheque] = useState(false);
+  const [qtdCheques, setQtdCheques] = useState("2");
+  const [intervalo, setIntervalo] = useState<"mensal" | "quinzenal" | "semanal">("mensal");
+  const [cheques, setCheques] = useState<ChequeLinha[]>([]);
+
+  const ehCheque = form.forma === "Cheque";
+
+  const gerarDatas = () => {
+    const qtd = Math.max(1, Math.min(48, Number(qtdCheques) || 1));
+    setCheques(
+      datasParcelas(form.data_vencimento, qtd, intervalo).map((data, i) => ({
+        data,
+        numero: cheques[i]?.numero ?? "",
+      })),
+    );
+  };
+
+  const limparForm = () => {
+    setForm({
+      descricao: "",
+      valor: "",
+      categoria_id: "",
+      parceiro_id: "",
+      forma: "",
+      conta_bancaria_id: "",
+      data_vencimento: hj,
+      numero_documento: "",
+      parcela: "",
+      banco_emissor: "",
+      numero_cheque: "",
+    });
+    setParcelarCheque(false);
+    setQtdCheques("2");
+    setIntervalo("mensal");
+    setCheques([]);
+  };
   const [baixa, setBaixa] = useState<{
     id: string;
     descricao: string;
