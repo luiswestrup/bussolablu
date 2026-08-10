@@ -165,12 +165,15 @@ function ImportarNotasPage() {
     }
 
     if (nota.duplicatas.length > 0) {
-      for (const dup of nota.duplicatas) {
+      const totalDup = nota.duplicatas.length;
+      for (const [i, dup] of nota.duplicatas.entries()) {
         await tabela("conta_pagar").insert({
           empresa_id: empresaId,
           descricao: `NF-e ${nota.numeroNota} — parcela ${dup.numero}`,
           valor: dup.valor,
           fornecedor_id: fornecedor.id,
+          numero_documento: nota.numeroNota || null,
+          parcela: `${i + 1}/${totalDup}`,
           data_vencimento: dup.vencimento ?? adicionarDias(nota.dataEmissao ?? hoje(), 30),
           vencimento_estimado: !dup.vencimento,
           status: "pendente",
@@ -183,6 +186,8 @@ function ImportarNotasPage() {
         descricao: `NF-e ${nota.numeroNota} — parcela única`,
         valor: nota.valorTotal,
         fornecedor_id: fornecedor.id,
+        numero_documento: nota.numeroNota || null,
+        parcela: "1/1",
         data_vencimento: adicionarDias(nota.dataEmissao ?? hoje(), 30),
         vencimento_estimado: true,
         status: "pendente",
