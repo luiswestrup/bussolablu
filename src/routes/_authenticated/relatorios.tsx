@@ -31,10 +31,13 @@ import {
 } from "@/components/ui/table";
 import { useEmpresa } from "@/lib/empresa";
 import { brl, exportarCSV, exportarXLSX, fimDoMes, hoje, mesesAtras, rotuloMes } from "@/lib/format";
+import { linhasPagamentosCSV, linhasRecebimentosCSV } from "@/lib/exportacao";
 import {
   rotuloNatureza,
   useCategorias,
+  useClientes,
   useContasBancarias,
+  useFornecedores,
   usePagar,
   useProdutos,
   useReceber,
@@ -59,6 +62,8 @@ function RelatoriosPage() {
   const { data: produtos = [] } = useProdutos(escopo);
   const { data: categorias = [] } = useCategorias(escopo);
   const { data: contasBancarias = [] } = useContasBancarias(escopo);
+  const { data: fornecedores = [] } = useFornecedores(escopo);
+  const { data: clientes = [] } = useClientes(escopo);
 
   const [inicio, setInicio] = useState(mesesAtras(5));
   const [fim, setFim] = useState(fimDoMes());
@@ -199,6 +204,22 @@ function RelatoriosPage() {
               }
             >
               <Download className="mr-2 h-4 w-4" /> CSV do fluxo
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() =>
+                exportarCSV("pagamentos", linhasPagamentosCSV(saidas, fornecedores, contasBancarias))
+              }
+            >
+              <Download className="mr-2 h-4 w-4" /> CSV pagamentos
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() =>
+                exportarCSV("recebimentos", linhasRecebimentosCSV(entradas, clientes, contasBancarias))
+              }
+            >
+              <Download className="mr-2 h-4 w-4" /> CSV recebimentos
             </Button>
             <Button
               variant="outline"
