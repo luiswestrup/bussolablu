@@ -63,7 +63,7 @@ export type Database = {
           criado_em: string
           empresa_id: string
           id: string
-          natureza: Database["public"]["Enums"]["natureza_categoria"] | null
+          natureza_id: string | null
           nome: string
           tipo: Database["public"]["Enums"]["tipo_categoria"]
         }
@@ -71,7 +71,7 @@ export type Database = {
           criado_em?: string
           empresa_id: string
           id?: string
-          natureza?: Database["public"]["Enums"]["natureza_categoria"] | null
+          natureza_id?: string | null
           nome: string
           tipo: Database["public"]["Enums"]["tipo_categoria"]
         }
@@ -79,7 +79,7 @@ export type Database = {
           criado_em?: string
           empresa_id?: string
           id?: string
-          natureza?: Database["public"]["Enums"]["natureza_categoria"] | null
+          natureza_id?: string | null
           nome?: string
           tipo?: Database["public"]["Enums"]["tipo_categoria"]
         }
@@ -89,6 +89,13 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categoria_natureza_id_fkey"
+            columns: ["natureza_id"]
+            isOneToOne: false
+            referencedRelation: "natureza"
             referencedColumns: ["id"]
           },
         ]
@@ -518,6 +525,38 @@ export type Database = {
             columns: ["produto_id"]
             isOneToOne: false
             referencedRelation: "produto"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      natureza: {
+        Row: {
+          criado_em: string
+          empresa_id: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          criado_em?: string
+          empresa_id: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          criado_em?: string
+          empresa_id?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "natureza_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa"
             referencedColumns: ["id"]
           },
         ]

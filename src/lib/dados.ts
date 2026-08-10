@@ -61,7 +61,13 @@ export type Categoria = {
   empresa_id: string;
   nome: string;
   tipo: "despesa" | "receita" | "produto";
-  natureza: "mercadoria" | "servico" | "outro" | null;
+  natureza_id: string | null;
+};
+
+export type Natureza = {
+  id: string;
+  empresa_id: string;
+  nome: string;
 };
 
 export type ContaBancaria = {
@@ -74,16 +80,11 @@ export type ContaBancaria = {
   saldo_inicial: number;
 };
 
-export type Natureza = "mercadoria" | "servico" | "outro";
-
-export const NATUREZAS: { valor: Natureza; rotulo: string }[] = [
-  { valor: "mercadoria", rotulo: "Mercadoria / insumo" },
-  { valor: "servico", rotulo: "Serviço prestado" },
-  { valor: "outro", rotulo: "Outro" },
-];
-
-export const rotuloNatureza = (n: string | null | undefined) =>
-  NATUREZAS.find((x) => x.valor === n)?.rotulo ?? "Sem natureza";
+/** Nome da natureza a partir da lista cadastrada. */
+export const nomeNatureza = (
+  naturezas: Natureza[],
+  id: string | null | undefined,
+) => naturezas.find((n) => n.id === id)?.nome ?? "Sem natureza";
 
 export type Parceiro = {
   id: string;
@@ -164,7 +165,10 @@ export const useProdutos = (escopo?: Escopo) =>
   );
 
 export const useCategorias = (escopo?: Escopo) =>
-  useTabela<Categoria>("categoria", escopo, "id, nome, tipo, natureza", "nome");
+  useTabela<Categoria>("categoria", escopo, "id, nome, tipo, natureza_id", "nome");
+
+export const useNaturezas = (escopo?: Escopo) =>
+  useTabela<Natureza>("natureza", escopo, "id, nome", "nome");
 
 export const useContasBancarias = (escopo?: Escopo) =>
   useTabela<ContaBancaria>(
