@@ -164,6 +164,182 @@ function ListaParceiros({
 }
 
 function ConfiguracoesPage() {
+  return <ConfiguracoesConteudo />;
+}
+
+function Naturezas() {
+  const { empresa } = useEmpresa();
+  const queryClient = useQueryClient();
+  const { data: naturezas = [] } = useNaturezas(empresa?.id);
+  const { data: categorias = [] } = useCategorias(empresa?.id);
+  const [nome, setNome] = useState("");
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [nomeEdicao, setNomeEdicao] = useState("");
+
+  const invalidar = () => queryClient.invalidateQueries({ queryKey: ["natureza"] });
+  const emUso = (id: string) => categorias.filter((c) => c.natureza_id === id).length;
+
+  const criar = useMutation({
+    mutationFn: async () => {
+      const { error } = await tabela("natureza").insert({
+        empresa_id: empresa!.id,
+        nome: nome.trim(),
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      setNome("");
+      invalidar();
+      toast.success("Natureza criada.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const renomear = useMutation({
+    mutationFn: async ({ id, novo }: { id: string; novo: string }) => {
+      const { error } = await tabela("natureza").update({ nome: novo }).eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      setEditandoId(null);
+      invalidar();
+      toast.success("Natureza atualizada.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const excluir = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await tabela("natureza").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      invalidar();
+      queryClient.invalidateQueries({ queryKey: ["categoria"] });
+      toast.success("Natureza removida.");
+    },
+    onError: (e: Error) =>
+      toast.error(
+        e.message.toLowerCase().includes("foreign key") || e.message.includes("23503")
+          ? "Esta natureza está em uso por categorias e não pode ser excluída."
+          : e.message,
+      ),
+  });
+
+  const tentarExcluir = (id: string) => {
+    const usos = emUso(id);
+    if (usos > 0) {
+      toast.error(
+        `Natureza em uso por ${usos} categoria${usos > 1 ? "s" : ""}. Renomeie-a ou troque a natureza dessas categorias antes de excluir.`,
+      );
+      return;
+    }
+    excluir.mutate(id);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Naturezas de {empresa?.nome ?? "—"}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-2">
+          <Input
+            placeholder="Nome da natureza"
+            maxLength={60}
+            className="max-w-xs"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+          />
+          <Button
+            onClick={() => criar.mutate()}
+            disabled={!empresa || !nome.trim() || criar.isPending}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Adicionar
+          </Button>
+        </div>
+
+        <div className="mt-4">
+          {naturezas.length === 0 ? (
+            <SecaoVazia texto="Nenhuma natureza cadastrada." />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Categorias vinculadas</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {naturezas.map((n) => {
+                  const usos = emUso(n.id);
+                  return (
+                    <TableRow key={n.id}>
+                      <TableCell className="font-medium">
+                        {editandoId === n.id ? (
+                          <Input
+                            autoFocus
+                            className="max-w-xs"
+                            value={nomeEdicao}
+                            maxLength={60}
+                            onChange={(e) => setNomeEdicao(e.target.value)}
+                          />
+                        ) : (
+                          n.nome
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{usos}</TableCell>
+                      <TableCell className="space-x-2 text-right">
+                        {editandoId === n.id ? (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => renomear.mutate({ id: n.id, novo: nomeEdicao.trim() })}
+                              disabled={!nomeEdicao.trim() || renomear.isPending}
+                            >
+                              Salvar
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setEditandoId(null)}>
+                              Cancelar
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setEditandoId(n.id);
+                                setNomeEdicao(n.nome);
+                              }}
+                            >
+                              Renomear
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              title={usos > 0 ? "Natureza em uso" : "Excluir"}
+                              onClick={() => tentarExcluir(n.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ConfiguracoesConteudo() {
   const { empresa } = useEmpresa();
   const { eAdmin } = usePapel();
   const queryClient = useQueryClient();
