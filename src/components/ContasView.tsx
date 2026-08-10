@@ -395,7 +395,7 @@ export function ContasView({
                     {consolidado ? "Selecione uma empresa para lançar" : "Novo lançamento"}
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>
                       {config.tipo === "pagar" ? "Nova conta a pagar" : "Nova conta a receber"}
@@ -525,6 +525,129 @@ export function ContasView({
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {ehCheque && (
+                      <div className="sm:col-span-2 space-y-4 rounded-lg border border-dashed p-4">
+                        <p className="text-sm font-medium">Dados do cheque</p>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div>
+                            <Label htmlFor="banco-emissor">Banco emissor</Label>
+                            <Input
+                              id="banco-emissor"
+                              value={form.banco_emissor}
+                              maxLength={60}
+                              placeholder="Ex: Banco do Brasil"
+                              onChange={(e) => setForm({ ...form, banco_emissor: e.target.value })}
+                            />
+                          </div>
+                          {!parcelarCheque && (
+                            <div>
+                              <Label htmlFor="num-cheque">Número do cheque</Label>
+                              <Input
+                                id="num-cheque"
+                                value={form.numero_cheque}
+                                maxLength={30}
+                                onChange={(e) => setForm({ ...form, numero_cheque: e.target.value })}
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-primary"
+                            checked={parcelarCheque}
+                            onChange={(e) => {
+                              setParcelarCheque(e.target.checked);
+                              if (e.target.checked && cheques.length === 0) gerarDatas();
+                            }}
+                          />
+                          Parcelar em vários cheques pré-datados
+                        </label>
+
+                        {parcelarCheque && (
+                          <div className="space-y-3">
+                            <div className="grid gap-3 sm:grid-cols-3">
+                              <div>
+                                <Label htmlFor="qtd-cheques">Quantidade</Label>
+                                <Input
+                                  id="qtd-cheques"
+                                  type="number"
+                                  min="1"
+                                  max="48"
+                                  value={qtdCheques}
+                                  onChange={(e) => setQtdCheques(e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <Label>Intervalo</Label>
+                                <Select
+                                  value={intervalo}
+                                  onValueChange={(v) =>
+                                    setIntervalo(v as "mensal" | "quinzenal" | "semanal")
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="mensal">Mensal</SelectItem>
+                                    <SelectItem value="quinzenal">Quinzenal</SelectItem>
+                                    <SelectItem value="semanal">Semanal</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="flex items-end">
+                                <Button type="button" variant="outline" onClick={gerarDatas}>
+                                  Gerar datas
+                                </Button>
+                              </div>
+                            </div>
+
+                            {cheques.length > 0 && (
+                              <div className="space-y-2">
+                                <p className="text-xs text-muted-foreground">
+                                  A partir do primeiro vencimento ({dataBR(form.data_vencimento)}). O
+                                  valor total é dividido entre os cheques; as datas podem ser
+                                  ajustadas uma a uma.
+                                </p>
+                                {cheques.map((ch, i) => (
+                                  <div key={i} className="grid grid-cols-[54px_1fr_1fr] items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">
+                                      {i + 1}/{cheques.length}
+                                    </span>
+                                    <Input
+                                      type="date"
+                                      value={ch.data}
+                                      onChange={(e) =>
+                                        setCheques(
+                                          cheques.map((x, j) =>
+                                            j === i ? { ...x, data: e.target.value } : x,
+                                          ),
+                                        )
+                                      }
+                                    />
+                                    <Input
+                                      placeholder="Nº do cheque"
+                                      value={ch.numero}
+                                      maxLength={30}
+                                      onChange={(e) =>
+                                        setCheques(
+                                          cheques.map((x, j) =>
+                                            j === i ? { ...x, numero: e.target.value } : x,
+                                          ),
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <DialogFooter>
                     <Button
