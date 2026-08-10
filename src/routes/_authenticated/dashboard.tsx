@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEmpresa } from "@/lib/empresa";
 import { brl, hoje, num, rotuloMes } from "@/lib/format";
-import { rotuloNatureza, useCategorias, usePagar, useProdutos, useReceber } from "@/lib/dados";
+import { nomeNatureza, useCategorias, useNaturezas, usePagar, useProdutos, useReceber } from "@/lib/dados";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -116,11 +116,11 @@ function DashboardPage() {
     const mapa = new Map<string, number>();
     pagar.forEach((c) => {
       const cat = categorias.find((k) => k.id === c.categoria_id);
-      const nome = rotuloNatureza(cat?.natureza ?? null);
+      const nome = nomeNatureza(naturezas, cat?.natureza_id ?? null);
       mapa.set(nome, (mapa.get(nome) ?? 0) + Number(c.valor));
     });
     return [...mapa.entries()].map(([nome, valor]) => ({ nome, valor })).sort((a, b) => b.valor - a.valor);
-  }, [pagar, categorias]);
+  }, [pagar, categorias, naturezas]);
 
   const despesasGrafico = agrupamento === "categoria" ? despesasPorCategoria : despesasPorNatureza;
 
