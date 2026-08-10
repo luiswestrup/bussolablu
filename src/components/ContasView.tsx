@@ -248,15 +248,9 @@ export function ContasView({
                 onClick={() =>
                   exportarCSV(
                     config.tabelaNome,
-                    lista.map((c) => ({
-                      ...(consolidado ? { Empresa: nomeEmpresa(c.empresa_id) } : {}),
-                      Descrição: c.descricao,
-                      Categoria: nomeCategoria(c.categoria_id),
-                      [config.rotuloParceiro]: nomeParceiro((c as Record<string, unknown>)[config.campoParceiro]),
-                      Vencimento: dataBR(c.data_vencimento),
-                      Valor: Number(c.valor).toFixed(2).replace(".", ","),
-                      Situação: c.situacao,
-                    })),
+                    config.tipo === "pagar"
+                      ? linhasPagamentosCSV(lista, parceiros, contasBancarias)
+                      : linhasRecebimentosCSV(lista, parceiros, contasBancarias),
                   )
                 }
               >
@@ -311,6 +305,26 @@ export function ContasView({
                         type="date"
                         value={form.data_vencimento}
                         onChange={(e) => setForm({ ...form, data_vencimento: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="numdoc">Número do documento</Label>
+                      <Input
+                        id="numdoc"
+                        value={form.numero_documento}
+                        maxLength={40}
+                        placeholder="Ex: 12345"
+                        onChange={(e) => setForm({ ...form, numero_documento: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="parcela">Parcela</Label>
+                      <Input
+                        id="parcela"
+                        value={form.parcela}
+                        maxLength={12}
+                        placeholder="Ex: 1/3"
+                        onChange={(e) => setForm({ ...form, parcela: e.target.value })}
                       />
                     </div>
                     <div>
