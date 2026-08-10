@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -61,5 +62,26 @@ export function SecaoVazia({ texto }: { texto: string }) {
     <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
       {texto}
     </div>
+  );
+}
+
+/** Situação do cheque pré-datado, com cores próprias por estágio. */
+export function ChequeBadge({ status }: { status: string }) {
+  const estilo: Record<string, string> = {
+    emitido: "bg-muted text-foreground",
+    compensado: "bg-success/12 text-success",
+    devolvido: "bg-destructive/12 text-destructive",
+    cancelado: "bg-muted/60 text-muted-foreground line-through",
+  };
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize",
+        estilo[status] ?? "bg-muted text-muted-foreground",
+      )}
+    >
+      {status === "devolvido" && <AlertTriangle className="h-3 w-3" />}
+      cheque {status}
+    </span>
   );
 }
