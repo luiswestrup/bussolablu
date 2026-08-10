@@ -20,19 +20,19 @@ export const linhasPagamentosCSV = (
   bancos: ContaBancaria[],
 ) =>
   contas.map((c) => {
-    const f = buscarParceiro(fornecedores, c.fornecedor_id);
+    const f = buscarParceiro(fornecedores, c["fornecedor_id"]);
     return {
-      "Data de pagamento": dia(c.data_pagamento),
-      "Número do documento": txt(c.numero_documento),
-      Parcela: txt(c.parcela),
+      "Data de pagamento": dia(c["data_pagamento"]),
+      "Número do documento": txt(c["numero_documento"]),
+      Parcela: txt(c["parcela"]),
       Fornecedor: f?.nome ?? "",
       CNPJ: f?.documento ?? "",
-      "Valor da parcela": num(c.valor),
-      Banco: buscarBanco(bancos, c.conta_bancaria_id),
-      "Valor pago": num(c.valor_pago),
-      Observação: txt(c.descricao),
-      "Valor de desconto": num(c.valor_desconto ?? 0),
-      "Valor de multa e juros pagos": num(c.valor_multa_juros ?? 0),
+      "Valor da parcela": num(c["valor"]),
+      Banco: buscarBanco(bancos, c["conta_bancaria_id"]),
+      "Valor pago": num(c["valor_pago"]),
+      Observação: txt(c["descricao"]),
+      "Valor de desconto": num(c["valor_desconto"] ?? 0),
+      "Valor de multa e juros pagos": num(c["valor_multa_juros"] ?? 0),
     };
   });
 
@@ -43,14 +43,14 @@ export const linhasRecebimentosCSV = (
   bancos: ContaBancaria[],
 ) =>
   contas.map((c) => ({
-    "Data de recebimento": dia(c.data_recebimento),
-    "Número do documento": txt(c.numero_documento),
-    Parcela: txt(c.parcela),
-    Cliente: buscarParceiro(clientes, c.cliente_id)?.nome ?? "",
-    "Valor da parcela": num(c.valor),
-    Banco: buscarBanco(bancos, c.conta_bancaria_id),
-    "Valor recebido": num(c.valor_recebido),
-    Observação: txt(c.descricao),
-    "Valor de desconto": num(c.valor_desconto ?? 0),
-    "Valor de multa e juros recebidos": num(c.valor_multa_juros ?? 0),
+    "Data de recebimento": dia(c["data_recebimento"]),
+    "Número do documento": txt(c["numero_documento"]),
+    Parcela: txt(c["parcela"]),
+    Cliente: buscarParceiro(clientes, c["cliente_id"])?.nome ?? "",
+    "Valor da parcela": num(c["valor"]),
+    Banco: buscarBanco(bancos, c["conta_bancaria_id"]),
+    "Valor recebido": num(c["valor_recebido"]),
+    Observação: txt(c["descricao"]),
+    "Valor de desconto": num(c["valor_desconto"] ?? 0),
+    "Valor de multa e juros recebidos": num(c["valor_multa_juros"] ?? 0),
   }));
