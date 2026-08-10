@@ -685,6 +685,7 @@ export function ContasView({
                     <TableHead>Vencimento</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead>Situação</TableHead>
+                    <TableHead>Cheque</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -710,9 +711,41 @@ export function ContasView({
                       <TableCell>
                         <StatusBadge status={c.situacao} />
                       </TableCell>
+                      <TableCell>
+                        {c.statusCheque ? (
+                          <div className="flex items-center gap-2">
+                            <ChequeBadge status={c.statusCheque} />
+                            <Select
+                              value={c.statusCheque}
+                              onValueChange={(v) =>
+                                mudarCheque.mutate({ id: c.id, novo: v as StatusCheque })
+                              }
+                            >
+                              <SelectTrigger className="h-7 w-[130px] text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {STATUS_CHEQUE.map((s) => (
+                                  <SelectItem key={s} value={s} className="capitalize">
+                                    {s}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                        {c["numero_cheque"] ? (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Nº {String(c["numero_cheque"])}
+                            {c["banco_emissor"] ? ` · ${String(c["banco_emissor"])}` : ""}
+                          </p>
+                        ) : null}
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          {c.situacao !== config.statusFinal && (
+                          {c.situacao !== config.statusFinal && c.situacao !== "cancelado" && !c.statusCheque && (
                             <Button
                               size="icon"
                               variant="ghost"
