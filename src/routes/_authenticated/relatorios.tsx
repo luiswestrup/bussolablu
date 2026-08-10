@@ -33,8 +33,9 @@ import { useEmpresa } from "@/lib/empresa";
 import { brl, exportarCSV, exportarXLSX, fimDoMes, hoje, mesesAtras, rotuloMes } from "@/lib/format";
 import { linhasPagamentosCSV, linhasRecebimentosCSV } from "@/lib/exportacao";
 import {
-  rotuloNatureza,
+  nomeNatureza,
   useCategorias,
+  useNaturezas,
   useClientes,
   useContasBancarias,
   useFornecedores,
@@ -61,6 +62,7 @@ function RelatoriosPage() {
   const { data: receber = [] } = useReceber(escopo);
   const { data: produtos = [] } = useProdutos(escopo);
   const { data: categorias = [] } = useCategorias(escopo);
+  const { data: naturezas = [] } = useNaturezas(escopo);
   const { data: contasBancarias = [] } = useContasBancarias(escopo);
   const { data: fornecedores = [] } = useFornecedores(escopo);
   const { data: clientes = [] } = useClientes(escopo);
@@ -129,11 +131,11 @@ function RelatoriosPage() {
     const mapa = new Map<string, number>();
     saidas.forEach((c) => {
       const cat = categorias.find((k) => k.id === c.categoria_id);
-      const nome = rotuloNatureza(cat?.natureza ?? null);
+      const nome = nomeNatureza(naturezas, cat?.natureza_id ?? null);
       mapa.set(nome, (mapa.get(nome) ?? 0) + Number(c.valor));
     });
     return [...mapa.entries()].map(([nome, despesa]) => ({ nome, despesa })).sort((a, b) => b.despesa - a.despesa);
-  }, [saidas, categorias]);
+  }, [saidas, categorias, naturezas]);
 
   const saldoAtual = useMemo(() => {
     const inicial = contasBancarias.reduce((s, c) => s + Number(c.saldo_inicial), 0);
@@ -303,7 +305,7 @@ function RelatoriosPage() {
 
       <Card className="mt-4">
         <CardHeader>
-          <CardTitle className="text-base">Despesas por natureza (mercadoria x serviço x outro)</CardTitle>
+          <CardTitle className="text-base">Despesas por natureza</CardTitle>
         </CardHeader>
         <CardContent className="h-72">
           {porNatureza.length === 0 ? (

@@ -55,6 +55,7 @@ function DashboardPage() {
   const { data: receberTodos = [] } = useReceber(escopo);
   const { data: produtosTodos = [] } = useProdutos(escopo);
   const { data: categorias = [] } = useCategorias(escopo);
+  const { data: naturezas = [] } = useNaturezas(escopo);
   const hj = hoje();
 
   // Filtro rápido da visão consolidada: "todas" soma os totais, sem misturar registros.
