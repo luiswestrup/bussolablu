@@ -357,7 +357,21 @@ function ConfiguracoesConteudo() {
   const { data: naturezas = [] } = useNaturezas(empresa?.id);
   const { data: fornecedores = [] } = useFornecedores(empresa?.id);
   const { data: clientes = [] } = useClientes(empresa?.id);
+  const { data: pagar = [] } = usePagar(empresa?.id);
+  const { data: receber = [] } = useReceber(empresa?.id);
+  const { data: produtos = [] } = useProdutos(empresa?.id);
   const [cat, setCat] = useState({ nome: "", tipo: "despesa", natureza_id: "" });
+  const [editando, setEditando] = useState<{
+    id: string;
+    nome: string;
+    tipo: string;
+    natureza_id: string;
+  } | null>(null);
+
+  const usosCategoria = (id: string) =>
+    pagar.filter((p) => p.categoria_id === id).length +
+    receber.filter((r) => r.categoria_id === id).length +
+    produtos.filter((p) => p.categoria_id === id).length;
 
   const criarCategoria = useMutation({
     mutationFn: async () => {
@@ -385,6 +399,26 @@ function ConfiguracoesConteudo() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categoria"] });
       toast.success("Natureza atualizada.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const salvarEdicao = useMutation({
+    mutationFn: async () => {
+      if (!editando) return;
+      const emUso = usosCategoria(editando.id) > 0;
+      const patch: Record<string, unknown> = {
+        nome: editando.nome.trim(),
+        natureza_id: editando.tipo === "despesa" ? editando.natureza_id || null : null,
+      };
+      if (!emUso) patch.tipo = editando.tipo;
+      const { error } = await tabela("categoria").update(patch).eq("id", editando.id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      setEditando(null);
+      queryClient.invalidateQueries();
+      toast.success("Categoria atualizada.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
