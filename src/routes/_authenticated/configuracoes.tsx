@@ -411,7 +411,7 @@ function ConfiguracoesConteudo() {
         nome: editando.nome.trim(),
         natureza_id: editando.tipo === "despesa" ? editando.natureza_id || null : null,
       };
-      if (!emUso) patch.tipo = editando.tipo;
+      if (!emUso) patch["tipo"] = editando.tipo;
       const { error } = await tabela("categoria").update(patch).eq("id", editando.id);
       if (error) throw new Error(error.message);
     },
