@@ -3,6 +3,7 @@ import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { brl } from "@/lib/format";
+import { liquidoRecebimento } from "@/lib/dados";
 import type { ContaPagar, ContaReceber } from "@/lib/dados";
 
 type Periodo = { inicio: string; fim: string };
@@ -30,7 +31,7 @@ const mediaDias = (lista: { data_vencimento: string }[], liquidacoes: (string | 
 function calcular(pagar: ContaPagar[], receber: ContaReceber[], p: Periodo, hojeISO: string) {
   const recebidos = receber.filter((c) => dentro(c.data_recebimento, p));
   const pagos = pagar.filter((c) => dentro(c.data_pagamento, p));
-  const faturamento = soma(recebidos);
+  const faturamento = recebidos.reduce((s, c) => s + liquidoRecebimento(c), 0);
   const despesas = soma(pagos);
 
   const aReceberPeriodo = receber.filter((c) => dentro(c.data_vencimento, p));
