@@ -876,10 +876,105 @@ export function ContasView({
                   onChange={(e) => setBaixa({ ...baixa, multa: e.target.value })}
                 />
               </div>
+              <div className="sm:col-span-2">
+                <Label>
+                  Conta bancária{" "}
+                  {config.tipo === "pagar" ? (
+                    <span className="text-destructive">*</span>
+                  ) : (
+                    <span className="text-muted-foreground">(opcional)</span>
+                  )}
+                </Label>
+                <Select
+                  value={baixa.conta_bancaria_id}
+                  onValueChange={(v) => setBaixa({ ...baixa, conta_bancaria_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        config.tipo === "pagar"
+                          ? "Informe de qual conta saiu o pagamento"
+                          : "Onde entrou o recebimento"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {contasBancarias.map((cb) => (
+                      <SelectItem key={cb.id} value={cb.id}>
+                        {cb.banco}
+                        {cb.conta ? ` · ${cb.conta}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {config.tipo === "pagar" && !baixa.conta_bancaria_id && (
+                  <p className="mt-1 text-xs text-destructive">
+                    Obrigatório para confirmar a baixa do pagamento.
+                  </p>
+                )}
+              </div>
+
+              {config.tipo === "receber" && ehCartao(baixa.forma) && (
+                <div className="sm:col-span-2 grid gap-4 rounded-lg border border-dashed p-4 sm:grid-cols-2">
+                  <p className="sm:col-span-2 text-sm font-medium">Taxa da maquininha</p>
+                  <div>
+                    <Label htmlFor="perc-taxa">Percentual (%)</Label>
+                    <Input
+                      id="perc-taxa"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={baixa.percentualTaxa}
+                      onChange={(e) => {
+                        const perc = e.target.value;
+                        const bruto = Number(baixa.pago || baixa.valor);
+                        setBaixa({
+                          ...baixa,
+                          percentualTaxa: perc,
+                          valorTaxa:
+                            perc === ""
+                              ? ""
+                              : ((bruto * Number(perc)) / 100).toFixed(2),
+                        });
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="vl-taxa">Valor da taxa (R$)</Label>
+                    <Input
+                      id="vl-taxa"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={baixa.valorTaxa}
+                      onChange={(e) => setBaixa({ ...baixa, valorTaxa: e.target.value })}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>Valor líquido recebido (R$)</Label>
+                    <Input
+                      readOnly
+                      value={brl(
+                        Number(baixa.pago || baixa.valor) - Number(baixa.valorTaxa || 0),
+                      )}
+                      className="bg-muted"
+                    />
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Bruto {brl(Number(baixa.pago || baixa.valor))} menos a taxa da maquininha. É
+                      esse valor que entra no caixa.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
-            <Button onClick={() => baixar.mutate()} disabled={baixar.isPending}>
+            <Button
+              onClick={() => baixar.mutate()}
+              disabled={
+                baixar.isPending || (config.tipo === "pagar" && !baixa?.conta_bancaria_id)
+              }
+            >
               Confirmar baixa
             </Button>
           </DialogFooter>
