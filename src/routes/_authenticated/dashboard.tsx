@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEmpresa } from "@/lib/empresa";
 import { brl, hoje, num, rotuloMes } from "@/lib/format";
-import { nomeNatureza, useCategorias, useNaturezas, usePagar, useProdutos, useReceber } from "@/lib/dados";
+import { liquidoRecebimento, nomeNatureza, useCategorias, useNaturezas, usePagar, useProdutos, useReceber } from "@/lib/dados";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({

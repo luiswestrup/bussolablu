@@ -35,6 +35,7 @@ import { linhasPagamentosCSV, linhasRecebimentosCSV } from "@/lib/exportacao";
 import {
   nomeNatureza,
   useCategorias,
+  liquidoRecebimento,
   useNaturezas,
   useClientes,
   useContasBancarias,
