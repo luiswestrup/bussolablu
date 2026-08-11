@@ -52,6 +52,8 @@ export type ContaReceber = {
   banco_emissor: string | null;
   status_cheque: StatusCheque | null;
   grupo_parcelamento_id: string | null;
+  percentual_taxa_maquininha: number | null;
+  valor_taxa_maquininha: number | null;
 };
 
 export type Produto = {
@@ -163,7 +165,7 @@ export const useReceber = (escopo?: Escopo) =>
   useTabela<ContaReceber>(
     "conta_receber",
     escopo,
-    "id, descricao, valor, categoria_id, cliente_id, forma_recebimento, data_vencimento, data_recebimento, status, conta_bancaria_id, conciliado, conciliado_em, numero_documento, parcela, valor_recebido, valor_desconto, valor_multa_juros, numero_cheque, banco_emissor, status_cheque, grupo_parcelamento_id",
+    "id, descricao, valor, categoria_id, cliente_id, forma_recebimento, data_vencimento, data_recebimento, status, conta_bancaria_id, conciliado, conciliado_em, numero_documento, parcela, valor_recebido, valor_desconto, valor_multa_juros, numero_cheque, banco_emissor, status_cheque, grupo_parcelamento_id, percentual_taxa_maquininha, valor_taxa_maquininha",
     "data_vencimento",
   );
 
@@ -204,6 +206,18 @@ export const useMovimentos = (escopo?: Escopo) =>
   );
 
 /** Situação real considerando vencimento (contas vencidas destacadas). */
+
+/** Recebimento por cartão entra no caixa já descontada a taxa da maquininha. */
+export const ehCartao = (forma: unknown) => forma === "Cartão";
+
+export function liquidoRecebimento(c: {
+  valor: number | string;
+  forma_recebimento?: string | null;
+  valor_taxa_maquininha?: number | string | null;
+}): number {
+  const bruto = Number(c.valor);
+  return ehCartao(c.forma_recebimento) ? bruto - Number(c.valor_taxa_maquininha ?? 0) : bruto;
+}
 type Erro = { message: string } | null;
 type LooseTable = {
   insert: (v: Record<string, unknown>) => Promise<{ error: Erro }>;

@@ -35,6 +35,7 @@ import { linhasPagamentosCSV, linhasRecebimentosCSV } from "@/lib/exportacao";
 import {
   nomeNatureza,
   useCategorias,
+  liquidoRecebimento,
   useNaturezas,
   useClientes,
   useContasBancarias,
@@ -78,7 +79,7 @@ function RelatoriosPage() {
   );
   const saidas = useMemo(() => pagar.filter((c) => noPeriodo(c.data_pagamento)), [pagar, inicio, fim]);
 
-  const totalEntradas = entradas.reduce((s, c) => s + Number(c.valor), 0);
+  const totalEntradas = entradas.reduce((s, c) => s + liquidoRecebimento(c), 0);
   const totalSaidas = saidas.reduce((s, c) => s + Number(c.valor), 0);
   const resultado = totalEntradas - totalSaidas;
   const margem = totalEntradas > 0 ? (resultado / totalEntradas) * 100 : 0;
@@ -91,7 +92,7 @@ function RelatoriosPage() {
       atual[campo] += valor;
       mapa.set(chave, atual);
     };
-    entradas.forEach((c) => add(c.data_recebimento!, "entradas", Number(c.valor)));
+    entradas.forEach((c) => add(c.data_recebimento!, "entradas", liquidoRecebimento(c)));
     saidas.forEach((c) => add(c.data_pagamento!, "saidas", Number(c.valor)));
     return [...mapa.values()]
       .sort((a, b) => a.mes.localeCompare(b.mes))
@@ -108,7 +109,7 @@ function RelatoriosPage() {
       mapa.set(chave, atual);
     };
     saidas.forEach((c) => add(c.categoria_id, "despesa", Number(c.valor)));
-    entradas.forEach((c) => add(c.categoria_id, "receita", Number(c.valor)));
+    entradas.forEach((c) => add(c.categoria_id, "receita", liquidoRecebimento(c)));
     return [...mapa.values()].sort((a, b) => b.despesa + b.receita - (a.despesa + a.receita));
   }, [entradas, saidas, categorias]);
 

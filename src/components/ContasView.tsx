@@ -39,6 +39,8 @@ import {
   situacao,
   tabela,
   datasParcelas,
+  ehCartao,
+  liquidoRecebimento,
   useCategorias,
   useContasBancarias,
   type Categoria,
@@ -152,6 +154,10 @@ export function ContasView({
     pago: string;
     desconto: string;
     multa: string;
+    conta_bancaria_id: string;
+    forma: string;
+    percentualTaxa: string;
+    valorTaxa: string;
   } | null>(null);
 
   const invalidar = () => queryClient.invalidateQueries({ queryKey: [config.tabelaNome] });
@@ -223,6 +229,9 @@ export function ContasView({
   const baixar = useMutation({
     mutationFn: async () => {
       if (!baixa) return;
+      if (config.tipo === "pagar" && !baixa.conta_bancaria_id) {
+        throw new Error("Informe a conta bancária de onde saiu o pagamento.");
+      }
       const { error } = await tabela(config.tabelaNome)
         .update({
           status: config.statusFinal,
@@ -231,6 +240,17 @@ export function ContasView({
             baixa.pago === "" ? baixa.valor : Number(baixa.pago),
           valor_desconto: Number(baixa.desconto || 0),
           valor_multa_juros: Number(baixa.multa || 0),
+          ...(baixa.conta_bancaria_id ? { conta_bancaria_id: baixa.conta_bancaria_id } : {}),
+          ...(config.tipo === "receber"
+            ? {
+                percentual_taxa_maquininha: ehCartao(baixa.forma)
+                  ? Number(baixa.percentualTaxa || 0)
+                  : null,
+                valor_taxa_maquininha: ehCartao(baixa.forma)
+                  ? Number(baixa.valorTaxa || 0)
+                  : null,
+              }
+            : {}),
         })
         .eq("id", baixa.id);
       if (error) throw new Error(error.message);
@@ -709,7 +729,38 @@ export function ContasView({
                       <TableCell>{nomeCategoria(c.categoria_id)}</TableCell>
                       <TableCell>{nomeParceiro((c as Record<string, unknown>)[config.campoParceiro])}</TableCell>
                       <TableCell>{dataBR(c.data_vencimento)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{brl(Number(c.valor))}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {config.tipo === "receber" &&
+                        ehCartao((c as Record<string, unknown>)[config.campoForma]) ? (
+                          <span
+                            title={`Bruto ${brl(Number(c.valor))} · taxa ${brl(
+                              Number((c as Record<string, unknown>)["valor_taxa_maquininha"] ?? 0),
+                            )}`}
+                          >
+                            <span className="font-semibold">
+                              {brl(
+                                liquidoRecebimento(
+                                  c as unknown as {
+                                    valor: number;
+                                    forma_recebimento?: string | null;
+                                    valor_taxa_maquininha?: number | null;
+                                  },
+                                ),
+                              )}
+                            </span>
+                            <span className="block text-xs text-muted-foreground">
+                              bruto {brl(Number(c.valor))} · taxa{" "}
+                              {brl(
+                                Number(
+                                  (c as Record<string, unknown>)["valor_taxa_maquininha"] ?? 0,
+                                ),
+                              )}
+                            </span>
+                          </span>
+                        ) : (
+                          brl(Number(c.valor))
+                        )}
+                      </TableCell>
                       <TableCell>
                         <StatusBadge status={c.situacao} />
                       </TableCell>
@@ -761,6 +812,18 @@ export function ContasView({
                                   pago: Number(c.valor).toFixed(2),
                                   desconto: "0",
                                   multa: "0",
+                                  conta_bancaria_id:
+                                    ((c as Record<string, unknown>)["conta_bancaria_id"] as string) ??
+                                    "",
+                                  forma:
+                                    ((c as Record<string, unknown>)[config.campoForma] as string) ??
+                                    "",
+                                  percentualTaxa: String(
+                                    (c as Record<string, unknown>)["percentual_taxa_maquininha"] ?? "",
+                                  ),
+                                  valorTaxa: String(
+                                    (c as Record<string, unknown>)["valor_taxa_maquininha"] ?? "",
+                                  ),
                                 })
                               }
                             >
@@ -844,10 +907,105 @@ export function ContasView({
                   onChange={(e) => setBaixa({ ...baixa, multa: e.target.value })}
                 />
               </div>
+              <div className="sm:col-span-2">
+                <Label>
+                  Conta bancária{" "}
+                  {config.tipo === "pagar" ? (
+                    <span className="text-destructive">*</span>
+                  ) : (
+                    <span className="text-muted-foreground">(opcional)</span>
+                  )}
+                </Label>
+                <Select
+                  value={baixa.conta_bancaria_id}
+                  onValueChange={(v) => setBaixa({ ...baixa, conta_bancaria_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        config.tipo === "pagar"
+                          ? "Informe de qual conta saiu o pagamento"
+                          : "Onde entrou o recebimento"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {contasBancarias.map((cb) => (
+                      <SelectItem key={cb.id} value={cb.id}>
+                        {cb.banco}
+                        {cb.conta ? ` · ${cb.conta}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {config.tipo === "pagar" && !baixa.conta_bancaria_id && (
+                  <p className="mt-1 text-xs text-destructive">
+                    Obrigatório para confirmar a baixa do pagamento.
+                  </p>
+                )}
+              </div>
+
+              {config.tipo === "receber" && ehCartao(baixa.forma) && (
+                <div className="sm:col-span-2 grid gap-4 rounded-lg border border-dashed p-4 sm:grid-cols-2">
+                  <p className="sm:col-span-2 text-sm font-medium">Taxa da maquininha</p>
+                  <div>
+                    <Label htmlFor="perc-taxa">Percentual (%)</Label>
+                    <Input
+                      id="perc-taxa"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={baixa.percentualTaxa}
+                      onChange={(e) => {
+                        const perc = e.target.value;
+                        const bruto = Number(baixa.pago || baixa.valor);
+                        setBaixa({
+                          ...baixa,
+                          percentualTaxa: perc,
+                          valorTaxa:
+                            perc === ""
+                              ? ""
+                              : ((bruto * Number(perc)) / 100).toFixed(2),
+                        });
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="vl-taxa">Valor da taxa (R$)</Label>
+                    <Input
+                      id="vl-taxa"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={baixa.valorTaxa}
+                      onChange={(e) => setBaixa({ ...baixa, valorTaxa: e.target.value })}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>Valor líquido recebido (R$)</Label>
+                    <Input
+                      readOnly
+                      value={brl(
+                        Number(baixa.pago || baixa.valor) - Number(baixa.valorTaxa || 0),
+                      )}
+                      className="bg-muted"
+                    />
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Bruto {brl(Number(baixa.pago || baixa.valor))} menos a taxa da maquininha. É
+                      esse valor que entra no caixa.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
-            <Button onClick={() => baixar.mutate()} disabled={baixar.isPending}>
+            <Button
+              onClick={() => baixar.mutate()}
+              disabled={
+                baixar.isPending || (config.tipo === "pagar" && !baixa?.conta_bancaria_id)
+              }
+            >
               Confirmar baixa
             </Button>
           </DialogFooter>
