@@ -79,7 +79,8 @@ function DashboardPage() {
     const pago = pagar.filter((c) => c.status === "pago" && emCaixa(c));
     const recebido = receber.filter((c) => c.status === "recebido" && emCaixa(c));
     const saldo =
-      recebido.reduce((s, c) => s + Number(c.valor), 0) - pago.reduce((s, c) => s + Number(c.valor), 0);
+      recebido.reduce((s, c) => s + liquidoRecebimento(c), 0) -
+      pago.reduce((s, c) => s + Number(c.valor), 0);
     const pagarPend = pagar.filter((c) => c.status !== "pago" || !emCaixa(c));
     const receberPend = receber.filter((c) => c.status !== "recebido" || !emCaixa(c));
     const soma = (arr: { valor: number }[]) => arr.reduce((s, c) => s + Number(c.valor), 0);
@@ -110,7 +111,7 @@ function DashboardPage() {
             c.data_recebimento?.startsWith(m) &&
             (!c.status_cheque || c.status_cheque === "compensado"),
         )
-        .reduce((s, c) => s + Number(c.valor), 0);
+        .reduce((s, c) => s + liquidoRecebimento(c), 0);
       const saidas = pagar
         .filter(
           (c) =>
