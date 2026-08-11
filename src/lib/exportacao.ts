@@ -53,4 +53,6 @@ export const linhasRecebimentosCSV = (
     Observação: txt(c["descricao"]),
     "Valor de desconto": num(c["valor_desconto"] ?? 0),
     "Valor de multa e juros recebidos": num(c["valor_multa_juros"] ?? 0),
+    "% taxa da maquininha": num(c["percentual_taxa_maquininha"]),
+    "Valor da taxa da maquininha": num(c["valor_taxa_maquininha"]),
   }));
