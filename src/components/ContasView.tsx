@@ -39,6 +39,8 @@ import {
   situacao,
   tabela,
   datasParcelas,
+  ehCartao,
+  liquidoRecebimento,
   useCategorias,
   useContasBancarias,
   type Categoria,
@@ -152,6 +154,10 @@ export function ContasView({
     pago: string;
     desconto: string;
     multa: string;
+    conta_bancaria_id: string;
+    forma: string;
+    percentualTaxa: string;
+    valorTaxa: string;
   } | null>(null);
 
   const invalidar = () => queryClient.invalidateQueries({ queryKey: [config.tabelaNome] });
@@ -223,6 +229,9 @@ export function ContasView({
   const baixar = useMutation({
     mutationFn: async () => {
       if (!baixa) return;
+      if (config.tipo === "pagar" && !baixa.conta_bancaria_id) {
+        throw new Error("Informe a conta bancária de onde saiu o pagamento.");
+      }
       const { error } = await tabela(config.tabelaNome)
         .update({
           status: config.statusFinal,
@@ -231,6 +240,17 @@ export function ContasView({
             baixa.pago === "" ? baixa.valor : Number(baixa.pago),
           valor_desconto: Number(baixa.desconto || 0),
           valor_multa_juros: Number(baixa.multa || 0),
+          ...(baixa.conta_bancaria_id ? { conta_bancaria_id: baixa.conta_bancaria_id } : {}),
+          ...(config.tipo === "receber"
+            ? {
+                percentual_taxa_maquininha: ehCartao(baixa.forma)
+                  ? Number(baixa.percentualTaxa || 0)
+                  : null,
+                valor_taxa_maquininha: ehCartao(baixa.forma)
+                  ? Number(baixa.valorTaxa || 0)
+                  : null,
+              }
+            : {}),
         })
         .eq("id", baixa.id);
       if (error) throw new Error(error.message);
