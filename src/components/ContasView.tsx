@@ -781,6 +781,18 @@ export function ContasView({
                                   pago: Number(c.valor).toFixed(2),
                                   desconto: "0",
                                   multa: "0",
+                                  conta_bancaria_id:
+                                    ((c as Record<string, unknown>)["conta_bancaria_id"] as string) ??
+                                    "",
+                                  forma:
+                                    ((c as Record<string, unknown>)[config.campoForma] as string) ??
+                                    "",
+                                  percentualTaxa: String(
+                                    (c as Record<string, unknown>)["percentual_taxa_maquininha"] ?? "",
+                                  ),
+                                  valorTaxa: String(
+                                    (c as Record<string, unknown>)["valor_taxa_maquininha"] ?? "",
+                                  ),
                                 })
                               }
                             >
