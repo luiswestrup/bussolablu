@@ -555,6 +555,73 @@ function ConfiguracoesConteudo() {
           </Card>
         </TabsContent>
 
+        <Dialog open={!!editando} onOpenChange={(o) => !o && setEditando(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Editar categoria</DialogTitle>
+            </DialogHeader>
+            {editando && (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Nome</label>
+                  <Input
+                    maxLength={80}
+                    value={editando.nome}
+                    onChange={(e) => setEditando({ ...editando, nome: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Tipo</label>
+                  <Select
+                    value={editando.tipo}
+                    disabled={usosCategoria(editando.id) > 0}
+                    onValueChange={(v) => setEditando({ ...editando, tipo: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="despesa">Despesa</SelectItem>
+                      <SelectItem value="receita">Receita</SelectItem>
+                      <SelectItem value="produto">Produto</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {usosCategoria(editando.id) > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      O tipo não pode ser alterado porque esta categoria já está em uso em{" "}
+                      {usosCategoria(editando.id)} lançamento(s) — crie uma nova categoria se
+                      precisar de outro tipo.
+                    </p>
+                  )}
+                </div>
+                {editando.tipo === "despesa" && (
+                  <div className="space-y-1">
+                    <label className="text-sm text-muted-foreground">Natureza</label>
+                    <SeletorNatureza
+                      className="w-full"
+                      naturezas={naturezas}
+                      value={editando.natureza_id}
+                      onChange={(v) => setEditando({ ...editando, natureza_id: v })}
+                      empresaId={empresa?.id}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditando(null)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => salvarEdicao.mutate()}
+                disabled={!editando?.nome.trim() || salvarEdicao.isPending}
+              >
+                Salvar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <TabsContent value="naturezas" className="mt-4">
           <Naturezas />
         </TabsContent>
