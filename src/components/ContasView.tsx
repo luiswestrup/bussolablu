@@ -729,7 +729,38 @@ export function ContasView({
                       <TableCell>{nomeCategoria(c.categoria_id)}</TableCell>
                       <TableCell>{nomeParceiro((c as Record<string, unknown>)[config.campoParceiro])}</TableCell>
                       <TableCell>{dataBR(c.data_vencimento)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{brl(Number(c.valor))}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {config.tipo === "receber" &&
+                        ehCartao((c as Record<string, unknown>)[config.campoForma]) ? (
+                          <span
+                            title={`Bruto ${brl(Number(c.valor))} · taxa ${brl(
+                              Number((c as Record<string, unknown>)["valor_taxa_maquininha"] ?? 0),
+                            )}`}
+                          >
+                            <span className="font-semibold">
+                              {brl(
+                                liquidoRecebimento(
+                                  c as unknown as {
+                                    valor: number;
+                                    forma_recebimento?: string | null;
+                                    valor_taxa_maquininha?: number | null;
+                                  },
+                                ),
+                              )}
+                            </span>
+                            <span className="block text-xs text-muted-foreground">
+                              bruto {brl(Number(c.valor))} · taxa{" "}
+                              {brl(
+                                Number(
+                                  (c as Record<string, unknown>)["valor_taxa_maquininha"] ?? 0,
+                                ),
+                              )}
+                            </span>
+                          </span>
+                        ) : (
+                          brl(Number(c.valor))
+                        )}
+                      </TableCell>
                       <TableCell>
                         <StatusBadge status={c.situacao} />
                       </TableCell>
