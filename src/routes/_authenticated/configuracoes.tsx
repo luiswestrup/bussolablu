@@ -524,6 +524,21 @@ function ConfiguracoesConteudo() {
                             <Button
                               size="icon"
                               variant="ghost"
+                              title="Editar"
+                              onClick={() =>
+                                setEditando({
+                                  id: c.id,
+                                  nome: c.nome,
+                                  tipo: c.tipo,
+                                  natureza_id: c.natureza_id ?? "",
+                                })
+                              }
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
                               title="Excluir"
                               onClick={() => excluirCategoria.mutate(c.id)}
                             >
