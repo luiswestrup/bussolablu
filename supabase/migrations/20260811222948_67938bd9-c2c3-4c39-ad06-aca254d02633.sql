@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.bloquear_troca_tipo_categoria() FROM PUBLIC, anon, authenticated;

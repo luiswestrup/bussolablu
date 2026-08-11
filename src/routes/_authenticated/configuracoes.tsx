@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { SecaoVazia } from "@/components/ui-kit";
@@ -36,8 +36,18 @@ import {
   useContasBancarias,
   useFornecedores,
   useNaturezas,
+  usePagar,
+  useProdutos,
+  useReceber,
 } from "@/lib/dados";
 import { SeletorNatureza } from "@/components/SeletorNatureza";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -347,7 +357,21 @@ function ConfiguracoesConteudo() {
   const { data: naturezas = [] } = useNaturezas(empresa?.id);
   const { data: fornecedores = [] } = useFornecedores(empresa?.id);
   const { data: clientes = [] } = useClientes(empresa?.id);
+  const { data: pagar = [] } = usePagar(empresa?.id);
+  const { data: receber = [] } = useReceber(empresa?.id);
+  const { data: produtos = [] } = useProdutos(empresa?.id);
   const [cat, setCat] = useState({ nome: "", tipo: "despesa", natureza_id: "" });
+  const [editando, setEditando] = useState<{
+    id: string;
+    nome: string;
+    tipo: string;
+    natureza_id: string;
+  } | null>(null);
+
+  const usosCategoria = (id: string) =>
+    pagar.filter((p) => p.categoria_id === id).length +
+    receber.filter((r) => r.categoria_id === id).length +
+    produtos.filter((p) => p.categoria_id === id).length;
 
   const criarCategoria = useMutation({
     mutationFn: async () => {
@@ -375,6 +399,26 @@ function ConfiguracoesConteudo() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categoria"] });
       toast.success("Natureza atualizada.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const salvarEdicao = useMutation({
+    mutationFn: async () => {
+      if (!editando) return;
+      const emUso = usosCategoria(editando.id) > 0;
+      const patch: Record<string, unknown> = {
+        nome: editando.nome.trim(),
+        natureza_id: editando.tipo === "despesa" ? editando.natureza_id || null : null,
+      };
+      if (!emUso) patch["tipo"] = editando.tipo;
+      const { error } = await tabela("categoria").update(patch).eq("id", editando.id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      setEditando(null);
+      queryClient.invalidateQueries();
+      toast.success("Categoria atualizada.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -480,6 +524,21 @@ function ConfiguracoesConteudo() {
                             <Button
                               size="icon"
                               variant="ghost"
+                              title="Editar"
+                              onClick={() =>
+                                setEditando({
+                                  id: c.id,
+                                  nome: c.nome,
+                                  tipo: c.tipo,
+                                  natureza_id: c.natureza_id ?? "",
+                                })
+                              }
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
                               title="Excluir"
                               onClick={() => excluirCategoria.mutate(c.id)}
                             >
@@ -495,6 +554,73 @@ function ConfiguracoesConteudo() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <Dialog open={!!editando} onOpenChange={(o) => !o && setEditando(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Editar categoria</DialogTitle>
+            </DialogHeader>
+            {editando && (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Nome</label>
+                  <Input
+                    maxLength={80}
+                    value={editando.nome}
+                    onChange={(e) => setEditando({ ...editando, nome: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Tipo</label>
+                  <Select
+                    value={editando.tipo}
+                    disabled={usosCategoria(editando.id) > 0}
+                    onValueChange={(v) => setEditando({ ...editando, tipo: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="despesa">Despesa</SelectItem>
+                      <SelectItem value="receita">Receita</SelectItem>
+                      <SelectItem value="produto">Produto</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {usosCategoria(editando.id) > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      O tipo não pode ser alterado porque esta categoria já está em uso em{" "}
+                      {usosCategoria(editando.id)} lançamento(s) — crie uma nova categoria se
+                      precisar de outro tipo.
+                    </p>
+                  )}
+                </div>
+                {editando.tipo === "despesa" && (
+                  <div className="space-y-1">
+                    <label className="text-sm text-muted-foreground">Natureza</label>
+                    <SeletorNatureza
+                      className="w-full"
+                      naturezas={naturezas}
+                      value={editando.natureza_id}
+                      onChange={(v) => setEditando({ ...editando, natureza_id: v })}
+                      empresaId={empresa?.id}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditando(null)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => salvarEdicao.mutate()}
+                disabled={!editando?.nome.trim() || salvarEdicao.isPending}
+              >
+                Salvar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <TabsContent value="naturezas" className="mt-4">
           <Naturezas />
