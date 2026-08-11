@@ -52,6 +52,8 @@ export type ContaReceber = {
   banco_emissor: string | null;
   status_cheque: StatusCheque | null;
   grupo_parcelamento_id: string | null;
+  percentual_taxa_maquininha: number | null;
+  valor_taxa_maquininha: number | null;
 };
 
 export type Produto = {
@@ -164,6 +166,7 @@ export const useReceber = (escopo?: Escopo) =>
     "conta_receber",
     escopo,
     "id, descricao, valor, categoria_id, cliente_id, forma_recebimento, data_vencimento, data_recebimento, status, conta_bancaria_id, conciliado, conciliado_em, numero_documento, parcela, valor_recebido, valor_desconto, valor_multa_juros, numero_cheque, banco_emissor, status_cheque, grupo_parcelamento_id",
+    // percentual/valor da taxa da maquininha entram no líquido de cartão
     "data_vencimento",
   );
 
