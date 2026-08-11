@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { SecaoVazia } from "@/components/ui-kit";
@@ -36,8 +36,18 @@ import {
   useContasBancarias,
   useFornecedores,
   useNaturezas,
+  usePagar,
+  useProdutos,
+  useReceber,
 } from "@/lib/dados";
 import { SeletorNatureza } from "@/components/SeletorNatureza";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
