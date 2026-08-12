@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Download, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { ChequeBadge, Kpi, SecaoVazia, StatusBadge } from "@/components/ui-kit";
@@ -97,6 +97,7 @@ export function ContasView({
   const [filtroCheque, setFiltroCheque] = useState("todos");
   const [busca, setBusca] = useState("");
   const [aberto, setAberto] = useState(false);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
   const [form, setForm] = useState({
     descricao: "",
     valor: "",
@@ -146,6 +147,34 @@ export function ContasView({
     setIntervalo("mensal");
     setCheques([]);
   };
+
+  const abrirEdicao = (c: Record<string, unknown>) => {
+    setEditandoId(c["id"] as string);
+    setForm({
+      descricao: (c["descricao"] as string) ?? "",
+      valor: String(c["valor"] ?? ""),
+      categoria_id: (c["categoria_id"] as string) ?? "",
+      parceiro_id: (c[config.campoParceiro] as string) ?? "",
+      forma: (c[config.campoForma] as string) ?? "",
+      conta_bancaria_id: (c["conta_bancaria_id"] as string) ?? "",
+      data_vencimento: (c["data_vencimento"] as string) ?? hj,
+      numero_documento: (c["numero_documento"] as string) ?? "",
+      parcela: (c["parcela"] as string) ?? "",
+      banco_emissor: (c["banco_emissor"] as string) ?? "",
+      numero_cheque: (c["numero_cheque"] as string) ?? "",
+    });
+    setParcelarCheque(false);
+    setCheques([]);
+    setAberto(true);
+  };
+
+  const fecharForm = (aberta: boolean) => {
+    setAberto(aberta);
+    if (!aberta) {
+      setEditandoId(null);
+      limparForm();
+    }
+  };
   const [baixa, setBaixa] = useState<{
     id: string;
     descricao: string;
@@ -184,6 +213,23 @@ export function ContasView({
           : {}),
       };
 
+      // Edição de um título já lançado: sempre UPDATE, nunca novo INSERT.
+      if (editandoId) {
+        const { empresa_id: _ignorado, status: _statusIgnorado, ...campos } = base;
+        const { error } = await tabela(config.tabelaNome)
+          .update({
+            ...campos,
+            valor: Number(form.valor),
+            data_vencimento: form.data_vencimento,
+            parcela: form.parcela.trim() || null,
+            numero_cheque: ehCheque ? form.numero_cheque.trim() || null : null,
+            ...(form.categoria_id ? { categoria_sugerida: true } : {}),
+          })
+          .eq("id", editandoId);
+        if (error) throw new Error(error.message);
+        return;
+      }
+
       // Parcelamento manual em cheques: um título por cheque, mesmo grupo.
       if (ehCheque && parcelarCheque && cheques.length > 0) {
         const grupo = crypto.randomUUID();
@@ -219,9 +265,10 @@ export function ContasView({
     },
     onSuccess: () => {
       setAberto(false);
+      setEditandoId(null);
       limparForm();
       invalidar();
-      toast.success("Lançamento registrado.");
+      toast.success(editandoId ? "Lançamento atualizado." : "Lançamento registrado.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
