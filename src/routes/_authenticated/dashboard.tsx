@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEmpresa } from "@/lib/empresa";
 import { brl, hoje, num, rotuloMes } from "@/lib/format";
-import { liquidoRecebimento, nomeNatureza, useCategorias, useNaturezas, usePagar, useProdutos, useReceber } from "@/lib/dados";
+import { liquidoRecebimento, nomeNatureza, useCategorias, useContasBancarias, useNaturezas, usePagar, useProdutos, useReceber } from "@/lib/dados";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -56,6 +56,7 @@ function DashboardPage() {
   const { data: produtosTodos = [] } = useProdutos(escopo);
   const { data: categorias = [] } = useCategorias(escopo);
   const { data: naturezas = [] } = useNaturezas(escopo);
+  const { data: contasBancarias = [] } = useContasBancarias(escopo);
   const hj = hoje();
 
   // Filtro rápido da visão consolidada: "todas" soma os totais, sem misturar registros.
@@ -78,9 +79,11 @@ function DashboardPage() {
       !c.status_cheque || c.status_cheque === "compensado";
     const pago = pagar.filter((c) => c.status === "pago" && emCaixa(c));
     const recebido = receber.filter((c) => c.status === "recebido" && emCaixa(c));
+    const inicial = contasBancarias.reduce((s, c) => s + Number(c.saldo_inicial), 0);
     const saldo =
+      inicial +
       recebido.reduce((s, c) => s + liquidoRecebimento(c), 0) -
-      pago.reduce((s, c) => s + Number(c.valor), 0);
+      pago.reduce((s, c) => s + Number(c.valor_pago ?? c.valor), 0);
     const pagarPend = pagar.filter((c) => c.status !== "pago" || !emCaixa(c));
     const receberPend = receber.filter((c) => c.status !== "recebido" || !emCaixa(c));
     const soma = (arr: { valor: number }[]) => arr.reduce((s, c) => s + Number(c.valor), 0);
@@ -99,7 +102,7 @@ function DashboardPage() {
       valorEstoque: produtos.reduce((s, p) => s + Number(p.quantidade) * Number(p.custo), 0),
       baixoEstoque: produtos.filter((p) => Number(p.quantidade) <= Number(p.estoque_minimo)).length,
     };
-  }, [pagar, receber, produtos, hj]);
+  }, [pagar, receber, produtos, contasBancarias, hj]);
 
   const serieMensal = useMemo(() => {
     const meses = ultimosMeses(6);
@@ -118,7 +121,7 @@ function DashboardPage() {
             c.data_pagamento?.startsWith(m) &&
             (!c.status_cheque || c.status_cheque === "compensado"),
         )
-        .reduce((s, c) => s + Number(c.valor), 0);
+        .reduce((s, c) => s + Number(c.valor_pago ?? c.valor), 0);
       acumulado += entradas - saidas;
       return { mes: rotuloMes(`${m}-01`), entradas, saidas, saldo: acumulado };
     });

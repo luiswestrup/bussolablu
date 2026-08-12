@@ -80,7 +80,7 @@ function RelatoriosPage() {
   const saidas = useMemo(() => pagar.filter((c) => noPeriodo(c.data_pagamento)), [pagar, inicio, fim]);
 
   const totalEntradas = entradas.reduce((s, c) => s + liquidoRecebimento(c), 0);
-  const totalSaidas = saidas.reduce((s, c) => s + Number(c.valor), 0);
+  const totalSaidas = saidas.reduce((s, c) => s + Number(c.valor_pago ?? c.valor), 0);
   const resultado = totalEntradas - totalSaidas;
   const margem = totalEntradas > 0 ? (resultado / totalEntradas) * 100 : 0;
 
@@ -93,7 +93,7 @@ function RelatoriosPage() {
       mapa.set(chave, atual);
     };
     entradas.forEach((c) => add(c.data_recebimento!, "entradas", liquidoRecebimento(c)));
-    saidas.forEach((c) => add(c.data_pagamento!, "saidas", Number(c.valor)));
+    saidas.forEach((c) => add(c.data_pagamento!, "saidas", Number(c.valor_pago ?? c.valor)));
     return [...mapa.values()]
       .sort((a, b) => a.mes.localeCompare(b.mes))
       .map((m) => ({ ...m, rotulo: rotuloMes(`${m.mes}-01`), resultado: m.entradas - m.saidas }));
@@ -108,7 +108,7 @@ function RelatoriosPage() {
       atual[campo] += valor;
       mapa.set(chave, atual);
     };
-    saidas.forEach((c) => add(c.categoria_id, "despesa", Number(c.valor)));
+    saidas.forEach((c) => add(c.categoria_id, "despesa", Number(c.valor_pago ?? c.valor)));
     entradas.forEach((c) => add(c.categoria_id, "receita", liquidoRecebimento(c)));
     return [...mapa.values()].sort((a, b) => b.despesa + b.receita - (a.despesa + a.receita));
   }, [entradas, saidas, categorias]);
@@ -133,17 +133,21 @@ function RelatoriosPage() {
     saidas.forEach((c) => {
       const cat = categorias.find((k) => k.id === c.categoria_id);
       const nome = nomeNatureza(naturezas, cat?.natureza_id ?? null);
-      mapa.set(nome, (mapa.get(nome) ?? 0) + Number(c.valor));
+      mapa.set(nome, (mapa.get(nome) ?? 0) + Number(c.valor_pago ?? c.valor));
     });
     return [...mapa.entries()].map(([nome, despesa]) => ({ nome, despesa })).sort((a, b) => b.despesa - a.despesa);
   }, [saidas, categorias, naturezas]);
 
   const saldoAtual = useMemo(() => {
     const inicial = contasBancarias.reduce((s, c) => s + Number(c.saldo_inicial), 0);
+    const emCaixa = (c: { status_cheque?: string | null }) =>
+      !c.status_cheque || c.status_cheque === "compensado";
     const entrou = receber
-      .filter((c) => c.status === "recebido")
-      .reduce((s, c) => s + Number(c.valor), 0);
-    const saiu = pagar.filter((c) => c.status === "pago").reduce((s, c) => s + Number(c.valor), 0);
+      .filter((c) => c.status === "recebido" && emCaixa(c))
+      .reduce((s, c) => s + liquidoRecebimento(c), 0);
+    const saiu = pagar
+      .filter((c) => c.status === "pago" && emCaixa(c))
+      .reduce((s, c) => s + Number(c.valor_pago ?? c.valor), 0);
     return inicial + entrou - saiu;
   }, [contasBancarias, receber, pagar]);
 
