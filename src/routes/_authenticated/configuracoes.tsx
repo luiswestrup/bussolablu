@@ -379,7 +379,7 @@ function ConfiguracoesConteudo() {
         empresa_id: empresa!.id,
         nome: cat.nome.trim(),
         tipo: cat.tipo,
-        natureza_id: cat.tipo === "despesa" ? cat.natureza_id || null : null,
+        natureza_id: cat.tipo === "despesa" || cat.tipo === "produto" ? cat.natureza_id || null : null,
       });
       if (error) throw new Error(error.message);
     },
@@ -409,7 +409,10 @@ function ConfiguracoesConteudo() {
       const emUso = usosCategoria(editando.id) > 0;
       const patch: Record<string, unknown> = {
         nome: editando.nome.trim(),
-        natureza_id: editando.tipo === "despesa" ? editando.natureza_id || null : null,
+        natureza_id:
+          editando.tipo === "despesa" || editando.tipo === "produto"
+            ? editando.natureza_id || null
+            : null,
       };
       if (!emUso) patch["tipo"] = editando.tipo;
       const { error } = await tabela("categoria").update(patch).eq("id", editando.id);
@@ -472,7 +475,7 @@ function ConfiguracoesConteudo() {
                     <SelectItem value="produto">Produto</SelectItem>
                   </SelectContent>
                 </Select>
-                {cat.tipo === "despesa" && (
+                {(cat.tipo === "despesa" || cat.tipo === "produto") && (
                   <SeletorNatureza
                     className="w-[210px]"
                     naturezas={naturezas}
@@ -508,7 +511,7 @@ function ConfiguracoesConteudo() {
                           <TableCell className="font-medium">{c.nome}</TableCell>
                           <TableCell className="capitalize">{c.tipo}</TableCell>
                           <TableCell>
-                            {c.tipo === "despesa" ? (
+                            {c.tipo === "despesa" || c.tipo === "produto" ? (
                               <SeletorNatureza
                                 className="w-[210px]"
                                 naturezas={naturezas}
@@ -594,7 +597,7 @@ function ConfiguracoesConteudo() {
                     </p>
                   )}
                 </div>
-                {editando.tipo === "despesa" && (
+                {(editando.tipo === "despesa" || editando.tipo === "produto") && (
                   <div className="space-y-1">
                     <label className="text-sm text-muted-foreground">Natureza</label>
                     <SeletorNatureza
