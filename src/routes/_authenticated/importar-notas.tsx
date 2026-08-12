@@ -137,9 +137,22 @@ function ImportarNotasPage() {
       { empresa_id: empresaId, fornecedor_id: fornecedor.id },
     );
 
+    const produtosEmpresa = await selecionar<{ id: string; categoria_id: string | null }>(
+      "produto",
+      "id, categoria_id",
+      { empresa_id: empresaId },
+    );
+
+    // Sugestão de categoria do título: só é segura quando TODOS os itens da nota
+    // já são reconhecidos e apontam para a MESMA categoria de produto.
+    const categoriasItens = new Set<string | null>();
+
     for (const item of nota.itens) {
       const vinculo = mapa.find((m) => m.codigo_produto_fornecedor === item.codigo);
       if (vinculo) {
+        categoriasItens.add(
+          produtosEmpresa.find((p) => p.id === vinculo.produto_id)?.categoria_id ?? null,
+        );
         await tabela("movimento_estoque").insert({
           empresa_id: empresaId,
           produto_id: vinculo.produto_id,
@@ -151,6 +164,7 @@ function ImportarNotasPage() {
         });
         acc.entradas += 1;
       } else {
+        categoriasItens.add(null);
         novosPendentes.push({
           chave: `${nota.chaveAcesso}-${item.codigo}-${novosPendentes.length}`,
           numeroNota: nota.numeroNota,
@@ -164,6 +178,10 @@ function ImportarNotasPage() {
       }
     }
 
+    const unica = categoriasItens.size === 1 ? [...categoriasItens][0] : null;
+    const categoriaSugerida = typeof unica === "string" && unica.length > 0;
+    const categoriaId = categoriaSugerida ? unica : null;
+
     if (nota.duplicatas.length > 0) {
       const totalDup = nota.duplicatas.length;
       for (const [i, dup] of nota.duplicatas.entries()) {
@@ -172,6 +190,8 @@ function ImportarNotasPage() {
           descricao: `NF-e ${nota.numeroNota} — parcela ${dup.numero}`,
           valor: dup.valor,
           fornecedor_id: fornecedor.id,
+          categoria_id: categoriaId,
+          categoria_sugerida: categoriaSugerida,
           numero_documento: nota.numeroNota || null,
           parcela: `${i + 1}/${totalDup}`,
           data_vencimento: dup.vencimento ?? adicionarDias(nota.dataEmissao ?? hoje(), 30),
@@ -186,6 +206,8 @@ function ImportarNotasPage() {
         descricao: `NF-e ${nota.numeroNota} — parcela única`,
         valor: nota.valorTotal,
         fornecedor_id: fornecedor.id,
+        categoria_id: categoriaId,
+        categoria_sugerida: categoriaSugerida,
         numero_documento: nota.numeroNota || null,
         parcela: "1/1",
         data_vencimento: adicionarDias(nota.dataEmissao ?? hoje(), 30),

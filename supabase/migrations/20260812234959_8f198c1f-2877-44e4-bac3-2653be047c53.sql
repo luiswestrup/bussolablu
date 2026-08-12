@@ -1,0 +1,1 @@
+ALTER TABLE public.conta_pagar ADD COLUMN IF NOT EXISTS categoria_sugerida boolean NOT NULL DEFAULT true;

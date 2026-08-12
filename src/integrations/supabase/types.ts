@@ -183,6 +183,7 @@ export type Database = {
         Row: {
           banco_emissor: string | null
           categoria_id: string | null
+          categoria_sugerida: boolean
           cheque_conta_bancaria_id: string | null
           conciliado: boolean
           conciliado_em: string | null
@@ -211,6 +212,7 @@ export type Database = {
         Insert: {
           banco_emissor?: string | null
           categoria_id?: string | null
+          categoria_sugerida?: boolean
           cheque_conta_bancaria_id?: string | null
           conciliado?: boolean
           conciliado_em?: string | null
@@ -239,6 +241,7 @@ export type Database = {
         Update: {
           banco_emissor?: string | null
           categoria_id?: string | null
+          categoria_sugerida?: boolean
           cheque_conta_bancaria_id?: string | null
           conciliado?: boolean
           conciliado_em?: string | null

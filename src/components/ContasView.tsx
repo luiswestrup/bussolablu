@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Download, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { ChequeBadge, Kpi, SecaoVazia, StatusBadge } from "@/components/ui-kit";
@@ -97,6 +97,7 @@ export function ContasView({
   const [filtroCheque, setFiltroCheque] = useState("todos");
   const [busca, setBusca] = useState("");
   const [aberto, setAberto] = useState(false);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
   const [form, setForm] = useState({
     descricao: "",
     valor: "",
@@ -146,6 +147,34 @@ export function ContasView({
     setIntervalo("mensal");
     setCheques([]);
   };
+
+  const abrirEdicao = (c: Record<string, unknown>) => {
+    setEditandoId(c["id"] as string);
+    setForm({
+      descricao: (c["descricao"] as string) ?? "",
+      valor: String(c["valor"] ?? ""),
+      categoria_id: (c["categoria_id"] as string) ?? "",
+      parceiro_id: (c[config.campoParceiro] as string) ?? "",
+      forma: (c[config.campoForma] as string) ?? "",
+      conta_bancaria_id: (c["conta_bancaria_id"] as string) ?? "",
+      data_vencimento: (c["data_vencimento"] as string) ?? hj,
+      numero_documento: (c["numero_documento"] as string) ?? "",
+      parcela: (c["parcela"] as string) ?? "",
+      banco_emissor: (c["banco_emissor"] as string) ?? "",
+      numero_cheque: (c["numero_cheque"] as string) ?? "",
+    });
+    setParcelarCheque(false);
+    setCheques([]);
+    setAberto(true);
+  };
+
+  const fecharForm = (aberta: boolean) => {
+    setAberto(aberta);
+    if (!aberta) {
+      setEditandoId(null);
+      limparForm();
+    }
+  };
   const [baixa, setBaixa] = useState<{
     id: string;
     descricao: string;
@@ -165,7 +194,7 @@ export function ContasView({
   const criar = useMutation({
     mutationFn: async () => {
       const base = {
-        empresa_id: empresa!.id,
+        empresa_id: empresa?.id as string,
         descricao: form.descricao.trim(),
         categoria_id: form.categoria_id || null,
         [config.campoParceiro]: form.parceiro_id || null,
@@ -183,6 +212,25 @@ export function ContasView({
             }
           : {}),
       };
+
+      // Edição de um título já lançado: sempre UPDATE, nunca novo INSERT.
+      if (editandoId) {
+        const { empresa_id: _ignorado, status: _statusIgnorado, ...campos } = base;
+        const { error } = await tabela(config.tabelaNome)
+          .update({
+            ...campos,
+            valor: Number(form.valor),
+            data_vencimento: form.data_vencimento,
+            parcela: form.parcela.trim() || null,
+            numero_cheque: ehCheque ? form.numero_cheque.trim() || null : null,
+            ...(config.tipo === "pagar" && form.categoria_id
+              ? { categoria_sugerida: true }
+              : {}),
+          })
+          .eq("id", editandoId);
+        if (error) throw new Error(error.message);
+        return;
+      }
 
       // Parcelamento manual em cheques: um título por cheque, mesmo grupo.
       if (ehCheque && parcelarCheque && cheques.length > 0) {
@@ -219,9 +267,10 @@ export function ContasView({
     },
     onSuccess: () => {
       setAberto(false);
+      setEditandoId(null);
       limparForm();
       invalidar();
-      toast.success("Lançamento registrado.");
+      toast.success(editandoId ? "Lançamento atualizado." : "Lançamento registrado.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -403,10 +452,14 @@ export function ContasView({
                 <Download className="mr-2 h-4 w-4" /> CSV
               </Button>
 
-              <Dialog open={aberto} onOpenChange={setAberto}>
+              <Dialog open={aberto} onOpenChange={fecharForm}>
                 <DialogTrigger asChild>
                   <Button
                     disabled={!empresa}
+                    onClick={() => {
+                      setEditandoId(null);
+                      limparForm();
+                    }}
                     title={
                       consolidado
                         ? "Selecione uma empresa específica para lançar"
@@ -420,7 +473,13 @@ export function ContasView({
                 <DialogContent className="max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>
-                      {config.tipo === "pagar" ? "Nova conta a pagar" : "Nova conta a receber"}
+                      {editandoId
+                        ? config.tipo === "pagar"
+                          ? "Editar conta a pagar"
+                          : "Editar conta a receber"
+                        : config.tipo === "pagar"
+                          ? "Nova conta a pagar"
+                          : "Nova conta a receber"}
                     </DialogTitle>
                   </DialogHeader>
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -575,6 +634,7 @@ export function ContasView({
                           )}
                         </div>
 
+                        {!editandoId && (
                         <label className="flex items-center gap-2 text-sm">
                           <input
                             type="checkbox"
@@ -587,6 +647,7 @@ export function ContasView({
                           />
                           Parcelar em vários cheques pré-datados
                         </label>
+                        )}
 
                         {parcelarCheque && (
                           <div className="space-y-3">
@@ -681,7 +742,7 @@ export function ContasView({
                         criar.isPending
                       }
                     >
-                      Salvar
+                      {editandoId ? "Salvar alterações" : "Salvar"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -726,7 +787,17 @@ export function ContasView({
                       <TableCell className="whitespace-nowrap text-muted-foreground">
                         {(c as Record<string, unknown>)["parcela"] as string ?? "—"}
                       </TableCell>
-                      <TableCell>{nomeCategoria(c.categoria_id)}</TableCell>
+                      <TableCell>
+                        {c.categoria_id ? (
+                          nomeCategoria(c.categoria_id)
+                        ) : (c as Record<string, unknown>)["categoria_sugerida"] === false ? (
+                          <span className="inline-flex items-center rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning-foreground">
+                            revisar categoria
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
                       <TableCell>{nomeParceiro((c as Record<string, unknown>)[config.campoParceiro])}</TableCell>
                       <TableCell>{dataBR(c.data_vencimento)}</TableCell>
                       <TableCell className="text-right tabular-nums">
@@ -830,6 +901,15 @@ export function ContasView({
                               <CheckCircle2 className="h-4 w-4 text-success" />
                             </Button>
                           )}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Editar lançamento"
+                            disabled={consolidado}
+                            onClick={() => abrirEdicao(c as unknown as Record<string, unknown>)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
                           <Button
                             size="icon"
                             variant="ghost"
