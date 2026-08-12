@@ -452,10 +452,14 @@ export function ContasView({
                 <Download className="mr-2 h-4 w-4" /> CSV
               </Button>
 
-              <Dialog open={aberto} onOpenChange={setAberto}>
+              <Dialog open={aberto} onOpenChange={fecharForm}>
                 <DialogTrigger asChild>
                   <Button
                     disabled={!empresa}
+                    onClick={() => {
+                      setEditandoId(null);
+                      limparForm();
+                    }}
                     title={
                       consolidado
                         ? "Selecione uma empresa específica para lançar"
@@ -469,7 +473,13 @@ export function ContasView({
                 <DialogContent className="max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>
-                      {config.tipo === "pagar" ? "Nova conta a pagar" : "Nova conta a receber"}
+                      {editandoId
+                        ? config.tipo === "pagar"
+                          ? "Editar conta a pagar"
+                          : "Editar conta a receber"
+                        : config.tipo === "pagar"
+                          ? "Nova conta a pagar"
+                          : "Nova conta a receber"}
                     </DialogTitle>
                   </DialogHeader>
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -624,6 +634,7 @@ export function ContasView({
                           )}
                         </div>
 
+                        {!editandoId && (
                         <label className="flex items-center gap-2 text-sm">
                           <input
                             type="checkbox"
@@ -636,6 +647,7 @@ export function ContasView({
                           />
                           Parcelar em vários cheques pré-datados
                         </label>
+                        )}
 
                         {parcelarCheque && (
                           <div className="space-y-3">
@@ -730,7 +742,7 @@ export function ContasView({
                         criar.isPending
                       }
                     >
-                      Salvar
+                      {editandoId ? "Salvar alterações" : "Salvar"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
