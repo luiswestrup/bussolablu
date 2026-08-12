@@ -194,7 +194,7 @@ export function ContasView({
   const criar = useMutation({
     mutationFn: async () => {
       const base = {
-        empresa_id: empresa!.id,
+        empresa_id: empresa?.id as string,
         descricao: form.descricao.trim(),
         categoria_id: form.categoria_id || null,
         [config.campoParceiro]: form.parceiro_id || null,
