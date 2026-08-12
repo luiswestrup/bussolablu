@@ -10,21 +10,24 @@ export function dataBR(iso: string | null | undefined) {
   return `${d}/${m}/${y}`;
 }
 
-export const hoje = () => new Date().toISOString().slice(0, 10);
+const iso = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+export const hoje = () => iso(new Date());
 
 export function inicioDoMes() {
   const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+  return iso(new Date(d.getFullYear(), d.getMonth(), 1));
 }
 
 export function fimDoMes() {
   const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10);
+  return iso(new Date(d.getFullYear(), d.getMonth() + 1, 0));
 }
 
 export function mesesAtras(n: number) {
   const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth() - n, 1).toISOString().slice(0, 10);
+  return iso(new Date(d.getFullYear(), d.getMonth() - n, 1));
 }
 
 export function rotuloMes(iso: string) {
