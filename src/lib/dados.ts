@@ -224,10 +224,11 @@ export const ehCartao = (forma: unknown) => forma === "Cartão";
 
 export function liquidoRecebimento(c: {
   valor: number | string;
+  valor_recebido?: number | string | null;
   forma_recebimento?: string | null;
   valor_taxa_maquininha?: number | string | null;
 }): number {
-  const bruto = Number(c.valor);
+  const bruto = Number(c.valor_recebido ?? c.valor);
   return ehCartao(c.forma_recebimento) ? bruto - Number(c.valor_taxa_maquininha ?? 0) : bruto;
 }
 type Erro = { message: string } | null;
