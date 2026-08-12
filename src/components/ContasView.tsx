@@ -223,7 +223,9 @@ export function ContasView({
             data_vencimento: form.data_vencimento,
             parcela: form.parcela.trim() || null,
             numero_cheque: ehCheque ? form.numero_cheque.trim() || null : null,
-            ...(form.categoria_id ? { categoria_sugerida: true } : {}),
+            ...(config.tipo === "pagar" && form.categoria_id
+              ? { categoria_sugerida: true }
+              : {}),
           })
           .eq("id", editandoId);
         if (error) throw new Error(error.message);
