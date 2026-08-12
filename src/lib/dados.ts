@@ -169,7 +169,7 @@ export const usePagar = (escopo?: Escopo) =>
   useTabela<ContaPagar>(
     "conta_pagar",
     escopo,
-    "id, descricao, valor, categoria_id, fornecedor_id, forma_pagamento, data_vencimento, data_pagamento, status, conta_bancaria_id, conciliado, conciliado_em, numero_documento, parcela, valor_pago, valor_desconto, valor_multa_juros, numero_cheque, banco_emissor, cheque_conta_bancaria_id, status_cheque, grupo_parcelamento_id",
+    "id, descricao, valor, categoria_id, categoria_sugerida, fornecedor_id, forma_pagamento, data_vencimento, data_pagamento, status, conta_bancaria_id, conciliado, conciliado_em, numero_documento, parcela, valor_pago, valor_desconto, valor_multa_juros, numero_cheque, banco_emissor, cheque_conta_bancaria_id, status_cheque, grupo_parcelamento_id",
     "data_vencimento",
   );
 
