@@ -141,7 +141,7 @@ function useTabela<T>(tabela: string, escopo: Escopo, colunas: string, ordem: st
     };
   };
   const alvo = ids(escopo);
-  return useQuery({
+  const query = useQuery({
     queryKey: [tabela, alvo.join(",")],
     enabled: alvo.length > 0,
     queryFn: async () => {
@@ -153,6 +153,16 @@ function useTabela<T>(tabela: string, escopo: Escopo, colunas: string, ordem: st
       return (data ?? []) as unknown as T[];
     },
   });
+
+  useEffect(() => {
+    if (query.error) {
+      toast.error(`Erro ao carregar ${tabela}`, {
+        description: query.error.message,
+      });
+    }
+  }, [query.error, tabela]);
+
+  return query;
 }
 
 export const usePagar = (escopo?: Escopo) =>
