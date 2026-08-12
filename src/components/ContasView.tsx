@@ -787,7 +787,17 @@ export function ContasView({
                       <TableCell className="whitespace-nowrap text-muted-foreground">
                         {(c as Record<string, unknown>)["parcela"] as string ?? "—"}
                       </TableCell>
-                      <TableCell>{nomeCategoria(c.categoria_id)}</TableCell>
+                      <TableCell>
+                        {c.categoria_id ? (
+                          nomeCategoria(c.categoria_id)
+                        ) : (c as Record<string, unknown>)["categoria_sugerida"] === false ? (
+                          <span className="inline-flex items-center rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning-foreground">
+                            revisar categoria
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
                       <TableCell>{nomeParceiro((c as Record<string, unknown>)[config.campoParceiro])}</TableCell>
                       <TableCell>{dataBR(c.data_vencimento)}</TableCell>
                       <TableCell className="text-right tabular-nums">
@@ -891,6 +901,15 @@ export function ContasView({
                               <CheckCircle2 className="h-4 w-4 text-success" />
                             </Button>
                           )}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Editar lançamento"
+                            disabled={consolidado}
+                            onClick={() => abrirEdicao(c as unknown as Record<string, unknown>)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
                           <Button
                             size="icon"
                             variant="ghost"
