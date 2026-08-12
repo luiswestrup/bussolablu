@@ -85,7 +85,8 @@ export function SeletorCategoria({
           empresa_id: empresaId,
           nome: nome.trim(),
           tipo: tipoNovo,
-          natureza_id: tipoNovo === "despesa" ? naturezaId || null : null,
+          natureza_id:
+            tipoNovo === "despesa" || tipoNovo === "produto" ? naturezaId || null : null,
         },
         "id",
       );
@@ -160,7 +161,7 @@ export function SeletorCategoria({
                 </SelectContent>
               </Select>
             </div>
-            {tipoNovo === "despesa" && (
+            {(tipoNovo === "despesa" || tipoNovo === "produto") && (
               <div>
                 <Label>Natureza</Label>
                 <SeletorNatureza
