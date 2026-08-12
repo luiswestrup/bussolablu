@@ -142,6 +142,7 @@ function RelatoriosPage() {
     const inicial = contasBancarias.reduce((s, c) => s + Number(c.saldo_inicial), 0);
     const emCaixa = (c: { status_cheque?: string | null }) =>
       !c.status_cheque || c.status_cheque === "compensado";
+    // cheque cancelado saiu de circulação (mesma regra do Dashboard)
     const entrou = receber
       .filter((c) => c.status === "recebido" && emCaixa(c))
       .reduce((s, c) => s + liquidoRecebimento(c), 0);
