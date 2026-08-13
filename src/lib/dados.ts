@@ -216,6 +216,15 @@ export const useContasBancarias = (escopo?: Escopo) =>
 export const useFornecedores = (escopo?: Escopo) =>
   useTabela<Parceiro>("fornecedor", escopo, "id, nome, contato, documento", "nome");
 
+export const useTransferencias = (escopo?: Escopo) =>
+  useTabela<TransferenciaBancaria>(
+    "transferencia_bancaria",
+    escopo,
+    "id, conta_origem_id, conta_destino_id, valor, data, observacao",
+    "data",
+  );
+  useTabela<Parceiro>("fornecedor", escopo, "id, nome, contato, documento", "nome");
+
 export const useClientes = (escopo?: Escopo) =>
   useTabela<Parceiro>("cliente", escopo, "id, nome, contato, documento", "nome");
 
