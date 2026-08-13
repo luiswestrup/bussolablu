@@ -369,7 +369,7 @@ export function ContasView({
               ? !c.statusCheque
               : c.statusCheque === filtroCheque,
         )
-        .filter((c) => c.descricao.toLowerCase().includes(busca.trim().toLowerCase())),
+        .filter((c) => c.descricao.toLowerCase().includes(busca.trim().toLowerCase()))
         .filter((c) => (dataDe ? c.data_vencimento >= dataDe : true))
         .filter((c) => (dataAte ? c.data_vencimento <= dataAte : true)),
     [contas, filtroStatus, filtroCheque, busca, hj, dataDe, dataAte],
