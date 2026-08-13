@@ -95,6 +95,8 @@ export function ContasView({
 
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [filtroCheque, setFiltroCheque] = useState("todos");
+  const [dataDe, setDataDe] = useState("");
+  const [dataAte, setDataAte] = useState("");
   const [busca, setBusca] = useState("");
   const [aberto, setAberto] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -368,7 +370,9 @@ export function ContasView({
               : c.statusCheque === filtroCheque,
         )
         .filter((c) => c.descricao.toLowerCase().includes(busca.trim().toLowerCase())),
-    [contas, filtroStatus, filtroCheque, busca, hj],
+        .filter((c) => (dataDe ? c.data_vencimento >= dataDe : true))
+        .filter((c) => (dataAte ? c.data_vencimento <= dataAte : true)),
+    [contas, filtroStatus, filtroCheque, busca, hj, dataDe, dataAte],
   );
 
   const totais = useMemo(() => {
