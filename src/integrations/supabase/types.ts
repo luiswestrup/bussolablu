@@ -767,6 +767,64 @@ export type Database = {
           },
         ]
       }
+      transferencia_bancaria: {
+        Row: {
+          conta_destino_id: string
+          conta_origem_id: string
+          criado_em: string
+          data: string
+          empresa_id: string
+          id: string
+          observacao: string | null
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          conta_destino_id: string
+          conta_origem_id: string
+          criado_em?: string
+          data?: string
+          empresa_id: string
+          id?: string
+          observacao?: string | null
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          conta_destino_id?: string
+          conta_origem_id?: string
+          criado_em?: string
+          data?: string
+          empresa_id?: string
+          id?: string
+          observacao?: string | null
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transferencia_bancaria_conta_destino_id_fkey"
+            columns: ["conta_destino_id"]
+            isOneToOne: false
+            referencedRelation: "conta_bancaria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transferencia_bancaria_conta_origem_id_fkey"
+            columns: ["conta_origem_id"]
+            isOneToOne: false
+            referencedRelation: "conta_bancaria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transferencia_bancaria_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       usuario_empresa: {
         Row: {
           criado_em: string
