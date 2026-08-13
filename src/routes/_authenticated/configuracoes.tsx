@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeftRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { SecaoVazia } from "@/components/ui-kit";
@@ -28,7 +28,7 @@ import { useEmpresa } from "@/lib/empresa";
 import { usePapel } from "@/lib/papel";
 import { Usuarios } from "@/components/Usuarios";
 import { Auditoria } from "@/components/Auditoria";
-import { brl } from "@/lib/format";
+import { brl, dataBR, hoje } from "@/lib/format";
 import {
   tabela,
   useCategorias,
@@ -39,6 +39,8 @@ import {
   usePagar,
   useProdutos,
   useReceber,
+  useTransferencias,
+  liquidoRecebimento,
 } from "@/lib/dados";
 import { SeletorNatureza } from "@/components/SeletorNatureza";
 import {
@@ -663,6 +665,9 @@ function ContasBancarias() {
   const { empresa } = useEmpresa();
   const queryClient = useQueryClient();
   const { data: contas = [] } = useContasBancarias(empresa?.id);
+  const { data: pagar = [] } = usePagar(empresa?.id);
+  const { data: receber = [] } = useReceber(empresa?.id);
+  const { data: transferencias = [] } = useTransferencias(empresa?.id);
   const [form, setForm] = useState({
     banco: "",
     agencia: "",
@@ -670,8 +675,82 @@ function ContasBancarias() {
     tipo: "corrente",
     saldo_inicial: "",
   });
+  const [aberto, setAberto] = useState(false);
+  const [tr, setTr] = useState({
+    conta_origem_id: "",
+    conta_destino_id: "",
+    valor: "",
+    data: hoje(),
+    observacao: "",
+  });
 
   const invalidar = () => queryClient.invalidateQueries({ queryKey: ["conta_bancaria"] });
+  const invalidarTransf = () =>
+    queryClient.invalidateQueries({ queryKey: ["transferencia_bancaria"] });
+
+  // Cheque só afeta o caixa quando compensado; cancelado nunca entra.
+  const emCaixa = (c: { status_cheque?: string | null }) =>
+    !c.status_cheque || c.status_cheque === "compensado";
+
+  const saldoDaConta = (contaId: string) => {
+    const conta = contas.find((c) => c.id === contaId);
+    const entradas = receber
+      .filter((c) => c.conta_bancaria_id === contaId && c.status === "recebido" && emCaixa(c))
+      .reduce((s, c) => s + liquidoRecebimento(c), 0);
+    const saidas = pagar
+      .filter((c) => c.conta_bancaria_id === contaId && c.status === "pago" && emCaixa(c))
+      .reduce((s, c) => s + Number(c.valor_pago ?? c.valor), 0);
+    const recebidasTr = transferencias
+      .filter((t) => t.conta_destino_id === contaId)
+      .reduce((s, t) => s + Number(t.valor), 0);
+    const enviadasTr = transferencias
+      .filter((t) => t.conta_origem_id === contaId)
+      .reduce((s, t) => s + Number(t.valor), 0);
+    return Number(conta?.saldo_inicial ?? 0) + entradas - saidas + recebidasTr - enviadasTr;
+  };
+
+  const nomeConta = (id: string) => contas.find((c) => c.id === id)?.banco ?? "—";
+
+  const criarTransferencia = useMutation({
+    mutationFn: async () => {
+      const { error } = await tabela("transferencia_bancaria").insert({
+        empresa_id: empresa!.id,
+        conta_origem_id: tr.conta_origem_id,
+        conta_destino_id: tr.conta_destino_id,
+        valor: Number(tr.valor),
+        data: tr.data,
+        observacao: tr.observacao.trim() || null,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      setAberto(false);
+      setTr({ conta_origem_id: "", conta_destino_id: "", valor: "", data: hoje(), observacao: "" });
+      invalidarTransf();
+      toast.success("Transferência registrada.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const excluirTransferencia = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await tabela("transferencia_bancaria").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      invalidarTransf();
+      toast.success("Transferência excluída.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const transferenciaValida =
+    !!empresa &&
+    !!tr.conta_origem_id &&
+    !!tr.conta_destino_id &&
+    tr.conta_origem_id !== tr.conta_destino_id &&
+    Number(tr.valor) > 0 &&
+    !!tr.data;
 
   const criar = useMutation({
     mutationFn: async () => {
@@ -708,7 +787,12 @@ function ContasBancarias() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Contas bancárias de {empresa?.nome ?? "—"}</CardTitle>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="text-base">Contas bancárias de {empresa?.nome ?? "—"}</CardTitle>
+          <Button variant="outline" disabled={!empresa || contas.length < 2} onClick={() => setAberto(true)}>
+            <ArrowLeftRight className="mr-2 h-4 w-4" /> Nova transferência
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="flex flex-wrap gap-2">
@@ -770,6 +854,7 @@ function ContasBancarias() {
                   <TableHead>Conta</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead className="text-right">Saldo inicial</TableHead>
+                  <TableHead className="text-right">Saldo atual</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -781,6 +866,9 @@ function ContasBancarias() {
                     <TableCell>{c.conta ?? "—"}</TableCell>
                     <TableCell className="capitalize">{c.tipo}</TableCell>
                     <TableCell className="text-right tabular-nums">{brl(Number(c.saldo_inicial))}</TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">
+                      {brl(saldoDaConta(c.id))}
+                    </TableCell>
                     <TableCell className="text-right">
                       <Button size="icon" variant="ghost" title="Excluir" onClick={() => excluir.mutate(c.id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -792,6 +880,144 @@ function ContasBancarias() {
             </Table>
           )}
         </div>
+
+        <div className="mt-8">
+          <h3 className="text-sm font-semibold">Transferências entre contas</h3>
+          <p className="text-xs text-muted-foreground">
+            Movimentação interna: não entra em receitas nem despesas.
+          </p>
+          <div className="mt-3">
+            {transferencias.length === 0 ? (
+              <SecaoVazia texto="Nenhuma transferência registrada." />
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Origem → Destino</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead>Observação</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transferencias.map((t) => (
+                    <TableRow key={t.id}>
+                      <TableCell>{dataBR(t.data)}</TableCell>
+                      <TableCell className="font-medium">
+                        {nomeConta(t.conta_origem_id)} → {nomeConta(t.conta_destino_id)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{brl(Number(t.valor))}</TableCell>
+                      <TableCell className="text-muted-foreground">{t.observacao ?? "—"}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          title="Excluir transferência"
+                          onClick={() => excluirTransferencia.mutate(t.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </div>
+
+        <Dialog open={aberto} onOpenChange={setAberto}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Nova transferência</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-muted-foreground">Conta de origem</label>
+                <Select
+                  value={tr.conta_origem_id}
+                  onValueChange={(v) =>
+                    setTr({
+                      ...tr,
+                      conta_origem_id: v,
+                      conta_destino_id: tr.conta_destino_id === v ? "" : tr.conta_destino_id,
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {contas.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.banco} {c.conta ? `· ${c.conta}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Conta de destino</label>
+                <Select
+                  value={tr.conta_destino_id}
+                  onValueChange={(v) => setTr({ ...tr, conta_destino_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {contas
+                      .filter((c) => c.id !== tr.conta_origem_id)
+                      .map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.banco} {c.conta ? `· ${c.conta}` : ""}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">Valor</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={tr.valor}
+                    onChange={(e) => setTr({ ...tr, valor: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Data</label>
+                  <Input
+                    type="date"
+                    value={tr.data}
+                    onChange={(e) => setTr({ ...tr, data: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Observação (opcional)</label>
+                <Input
+                  maxLength={200}
+                  value={tr.observacao}
+                  onChange={(e) => setTr({ ...tr, observacao: e.target.value })}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAberto(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => criarTransferencia.mutate()}
+                disabled={!transferenciaValida || criarTransferencia.isPending}
+              >
+                Salvar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

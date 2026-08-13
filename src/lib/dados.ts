@@ -95,6 +95,16 @@ export type ContaBancaria = {
   saldo_inicial: number;
 };
 
+export type TransferenciaBancaria = {
+  id: string;
+  empresa_id: string;
+  conta_origem_id: string;
+  conta_destino_id: string;
+  valor: number;
+  data: string;
+  observacao: string | null;
+};
+
 /** Nome da natureza a partir da lista cadastrada. */
 export const nomeNatureza = (
   naturezas: Natureza[],
@@ -205,6 +215,14 @@ export const useContasBancarias = (escopo?: Escopo) =>
 
 export const useFornecedores = (escopo?: Escopo) =>
   useTabela<Parceiro>("fornecedor", escopo, "id, nome, contato, documento", "nome");
+
+export const useTransferencias = (escopo?: Escopo) =>
+  useTabela<TransferenciaBancaria>(
+    "transferencia_bancaria",
+    escopo,
+    "id, conta_origem_id, conta_destino_id, valor, data, observacao",
+    "data",
+  );
 
 export const useClientes = (escopo?: Escopo) =>
   useTabela<Parceiro>("cliente", escopo, "id, nome, contato, documento", "nome");

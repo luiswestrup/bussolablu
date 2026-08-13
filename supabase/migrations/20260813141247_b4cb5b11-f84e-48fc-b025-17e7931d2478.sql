@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.validar_transferencia_bancaria() FROM PUBLIC, anon, authenticated;
