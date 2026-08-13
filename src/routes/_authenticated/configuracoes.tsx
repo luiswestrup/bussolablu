@@ -663,6 +663,9 @@ function ContasBancarias() {
   const { empresa } = useEmpresa();
   const queryClient = useQueryClient();
   const { data: contas = [] } = useContasBancarias(empresa?.id);
+  const { data: pagar = [] } = usePagar(empresa?.id);
+  const { data: receber = [] } = useReceber(empresa?.id);
+  const { data: transferencias = [] } = useTransferencias(empresa?.id);
   const [form, setForm] = useState({
     banco: "",
     agencia: "",
@@ -670,8 +673,82 @@ function ContasBancarias() {
     tipo: "corrente",
     saldo_inicial: "",
   });
+  const [aberto, setAberto] = useState(false);
+  const [tr, setTr] = useState({
+    conta_origem_id: "",
+    conta_destino_id: "",
+    valor: "",
+    data: hoje(),
+    observacao: "",
+  });
 
   const invalidar = () => queryClient.invalidateQueries({ queryKey: ["conta_bancaria"] });
+  const invalidarTransf = () =>
+    queryClient.invalidateQueries({ queryKey: ["transferencia_bancaria"] });
+
+  // Cheque só afeta o caixa quando compensado; cancelado nunca entra.
+  const emCaixa = (c: { status_cheque?: string | null }) =>
+    !c.status_cheque || c.status_cheque === "compensado";
+
+  const saldoDaConta = (contaId: string) => {
+    const conta = contas.find((c) => c.id === contaId);
+    const entradas = receber
+      .filter((c) => c.conta_bancaria_id === contaId && c.status === "recebido" && emCaixa(c))
+      .reduce((s, c) => s + liquidoRecebimento(c), 0);
+    const saidas = pagar
+      .filter((c) => c.conta_bancaria_id === contaId && c.status === "pago" && emCaixa(c))
+      .reduce((s, c) => s + Number(c.valor_pago ?? c.valor), 0);
+    const recebidasTr = transferencias
+      .filter((t) => t.conta_destino_id === contaId)
+      .reduce((s, t) => s + Number(t.valor), 0);
+    const enviadasTr = transferencias
+      .filter((t) => t.conta_origem_id === contaId)
+      .reduce((s, t) => s + Number(t.valor), 0);
+    return Number(conta?.saldo_inicial ?? 0) + entradas - saidas + recebidasTr - enviadasTr;
+  };
+
+  const nomeConta = (id: string) => contas.find((c) => c.id === id)?.banco ?? "—";
+
+  const criarTransferencia = useMutation({
+    mutationFn: async () => {
+      const { error } = await tabela("transferencia_bancaria").insert({
+        empresa_id: empresa!.id,
+        conta_origem_id: tr.conta_origem_id,
+        conta_destino_id: tr.conta_destino_id,
+        valor: Number(tr.valor),
+        data: tr.data,
+        observacao: tr.observacao.trim() || null,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      setAberto(false);
+      setTr({ conta_origem_id: "", conta_destino_id: "", valor: "", data: hoje(), observacao: "" });
+      invalidarTransf();
+      toast.success("Transferência registrada.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const excluirTransferencia = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await tabela("transferencia_bancaria").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      invalidarTransf();
+      toast.success("Transferência excluída.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const transferenciaValida =
+    !!empresa &&
+    !!tr.conta_origem_id &&
+    !!tr.conta_destino_id &&
+    tr.conta_origem_id !== tr.conta_destino_id &&
+    Number(tr.valor) > 0 &&
+    !!tr.data;
 
   const criar = useMutation({
     mutationFn: async () => {
