@@ -982,6 +982,11 @@ function ContasBancarias() {
                       ))}
                   </SelectContent>
                 </Select>
+                {!!tr.conta_destino_id && tr.conta_destino_id === tr.conta_origem_id && (
+                  <p className="mt-1 text-xs text-destructive">
+                    A conta de destino deve ser diferente da conta de origem.
+                  </p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -989,9 +994,13 @@ function ContasBancarias() {
                   <Input
                     type="number"
                     step="0.01"
+                    min="0.01"
                     value={tr.valor}
                     onChange={(e) => setTr({ ...tr, valor: e.target.value })}
                   />
+                  {tr.valor !== "" && !(Number(tr.valor) > 0) && (
+                    <p className="mt-1 text-xs text-destructive">O valor deve ser maior que zero.</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground">Data</label>
