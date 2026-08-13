@@ -223,7 +223,6 @@ export const useTransferencias = (escopo?: Escopo) =>
     "id, conta_origem_id, conta_destino_id, valor, data, observacao",
     "data",
   );
-  useTabela<Parceiro>("fornecedor", escopo, "id, nome, contato, documento", "nome");
 
 export const useClientes = (escopo?: Escopo) =>
   useTabela<Parceiro>("cliente", escopo, "id, nome, contato, documento", "nome");
