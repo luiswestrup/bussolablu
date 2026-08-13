@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeftRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { SecaoVazia } from "@/components/ui-kit";
@@ -28,7 +28,7 @@ import { useEmpresa } from "@/lib/empresa";
 import { usePapel } from "@/lib/papel";
 import { Usuarios } from "@/components/Usuarios";
 import { Auditoria } from "@/components/Auditoria";
-import { brl, hoje } from "@/lib/format";
+import { brl, dataBR, hoje } from "@/lib/format";
 import {
   tabela,
   useCategorias,
