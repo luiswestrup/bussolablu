@@ -95,6 +95,16 @@ export type ContaBancaria = {
   saldo_inicial: number;
 };
 
+export type TransferenciaBancaria = {
+  id: string;
+  empresa_id: string;
+  conta_origem_id: string;
+  conta_destino_id: string;
+  valor: number;
+  data: string;
+  observacao: string | null;
+};
+
 /** Nome da natureza a partir da lista cadastrada. */
 export const nomeNatureza = (
   naturezas: Natureza[],
