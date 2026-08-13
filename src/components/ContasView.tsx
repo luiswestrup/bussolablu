@@ -95,6 +95,8 @@ export function ContasView({
 
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [filtroCheque, setFiltroCheque] = useState("todos");
+  const [dataDe, setDataDe] = useState("");
+  const [dataAte, setDataAte] = useState("");
   const [busca, setBusca] = useState("");
   const [aberto, setAberto] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -367,8 +369,10 @@ export function ContasView({
               ? !c.statusCheque
               : c.statusCheque === filtroCheque,
         )
-        .filter((c) => c.descricao.toLowerCase().includes(busca.trim().toLowerCase())),
-    [contas, filtroStatus, filtroCheque, busca, hj],
+        .filter((c) => c.descricao.toLowerCase().includes(busca.trim().toLowerCase()))
+        .filter((c) => (dataDe ? c.data_vencimento >= dataDe : true))
+        .filter((c) => (dataAte ? c.data_vencimento <= dataAte : true)),
+    [contas, filtroStatus, filtroCheque, busca, hj, dataDe, dataAte],
   );
 
   const totais = useMemo(() => {
@@ -436,6 +440,35 @@ export function ContasView({
                 ))}
               </SelectContent>
             </Select>
+
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-muted-foreground">Venc. de</label>
+              <Input
+                type="date"
+                value={dataDe}
+                onChange={(e) => setDataDe(e.target.value)}
+                className="w-[150px]"
+              />
+              <label className="text-xs text-muted-foreground">até</label>
+              <Input
+                type="date"
+                value={dataAte}
+                onChange={(e) => setDataAte(e.target.value)}
+                className="w-[150px]"
+              />
+              {(dataDe || dataAte) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setDataDe("");
+                    setDataAte("");
+                  }}
+                >
+                  Limpar
+                </Button>
+              )}
+            </div>
 
             <div className="ml-auto flex gap-2">
               <Button
