@@ -441,6 +441,35 @@ export function ContasView({
               </SelectContent>
             </Select>
 
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-muted-foreground">Venc. de</label>
+              <Input
+                type="date"
+                value={dataDe}
+                onChange={(e) => setDataDe(e.target.value)}
+                className="w-[150px]"
+              />
+              <label className="text-xs text-muted-foreground">até</label>
+              <Input
+                type="date"
+                value={dataAte}
+                onChange={(e) => setDataAte(e.target.value)}
+                className="w-[150px]"
+              />
+              {(dataDe || dataAte) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setDataDe("");
+                    setDataAte("");
+                  }}
+                >
+                  Limpar
+                </Button>
+              )}
+            </div>
+
             <div className="ml-auto flex gap-2">
               <Button
                 variant="outline"
