@@ -713,6 +713,12 @@ function ContasBancarias() {
 
   const criarTransferencia = useMutation({
     mutationFn: async () => {
+      if (!tr.conta_origem_id || !tr.conta_destino_id)
+        throw new Error("Selecione a conta de origem e a de destino.");
+      if (tr.conta_origem_id === tr.conta_destino_id)
+        throw new Error("A conta de destino deve ser diferente da conta de origem.");
+      if (!(Number(tr.valor) > 0)) throw new Error("Informe um valor maior que zero.");
+      if (!tr.data) throw new Error("Informe a data da transferência.");
       const { error } = await tabela("transferencia_bancaria").insert({
         empresa_id: empresa!.id,
         conta_origem_id: tr.conta_origem_id,
