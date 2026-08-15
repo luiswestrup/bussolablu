@@ -137,7 +137,7 @@ export async function sincronizarPlanilha(
           data_vencimento: dataRecebimento ?? new Date().toISOString().slice(0, 10),
           data_recebimento: dataRecebimento,
           status: "recebido",
-          numero_documento: campo("nfse") || null,
+          numero_documento: /^(false|true|-|não|nao)$/i.test(campo("nfse")) ? null : campo("nfse") || null,
           observacao: montarObservacao(campo("observacoes"), campo("dataPasseio")),
         };
 
