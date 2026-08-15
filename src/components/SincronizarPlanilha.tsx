@@ -258,6 +258,8 @@ export function SincronizarPlanilha({ empresaId }: { empresaId: string | null })
                           <div>
                             <Label className="text-xs">Cliente</Label>
                             <Input
+                              list="clientes-planilha"
+                              placeholder="Nome do cliente"
                               value={edicao[chaveDe(p)]?.cliente ?? ""}
                               onChange={(e) => alterar(p, "cliente", e.target.value)}
                             />
