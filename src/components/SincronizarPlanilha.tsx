@@ -207,6 +207,11 @@ export function SincronizarPlanilha({ empresaId }: { empresaId: string | null })
 
           {resultado && (
             <div className="space-y-4">
+              <datalist id="clientes-planilha">
+                {clientes.map((c) => (
+                  <option key={c.id} value={c.nome} />
+                ))}
+              </datalist>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {[
                   ["Novas", resultado.importadas],
