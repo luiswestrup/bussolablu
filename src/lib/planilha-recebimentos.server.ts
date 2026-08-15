@@ -1,23 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
- * Abas (meses) da planilha "Controle de recebimentos Principe de Joinville".
- * Atualize manualmente esta lista quando um novo mês for criado na planilha.
+ * Abas usadas apenas como fallback caso a descoberta automática falhe.
+ * A lista real é lida da própria planilha por `listarAbas()`.
  */
-export const ABAS_PLANILHA: string[] = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-];
+export const ABAS_PLANILHA: string[] = ["Julho2026", "Agosto2026"];
 
 const PLANILHA_ID = "1sQ1Smkcz_RsK-UXD9JujqhIi4TUnIAdr0G1SUYKgljI";
 
