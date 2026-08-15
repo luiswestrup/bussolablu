@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ContasView } from "@/components/ContasView";
+import { SincronizarPlanilha } from "@/components/SincronizarPlanilha";
 import { useEmpresa } from "@/lib/empresa";
 import { useClientes, useReceber } from "@/lib/dados";
 
@@ -16,7 +17,7 @@ export const Route = createFileRoute("/_authenticated/recebimentos")({
 });
 
 function RecebimentosPage() {
-  const { escopo } = useEmpresa();
+  const { escopo, empresa } = useEmpresa();
   const { data: contas = [], isLoading } = useReceber(escopo);
   const { data: clientes = [] } = useClientes(escopo);
 
@@ -36,6 +37,7 @@ function RecebimentosPage() {
       contas={contas}
       parceiros={clientes}
       carregando={isLoading}
+      acoes={<SincronizarPlanilha empresaId={empresa?.id ?? null} />}
     />
   );
 }
