@@ -767,6 +767,54 @@ export type Database = {
           },
         ]
       }
+      recebimento_planilha_importado: {
+        Row: {
+          aba: string
+          conta_receber_id: string | null
+          empresa_id: string
+          hash_conteudo: string
+          id: string
+          ignorado: boolean
+          importado_em: string
+          linha_numero: number
+        }
+        Insert: {
+          aba: string
+          conta_receber_id?: string | null
+          empresa_id: string
+          hash_conteudo: string
+          id?: string
+          ignorado?: boolean
+          importado_em?: string
+          linha_numero: number
+        }
+        Update: {
+          aba?: string
+          conta_receber_id?: string | null
+          empresa_id?: string
+          hash_conteudo?: string
+          id?: string
+          ignorado?: boolean
+          importado_em?: string
+          linha_numero?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recebimento_planilha_importado_conta_receber_id_fkey"
+            columns: ["conta_receber_id"]
+            isOneToOne: false
+            referencedRelation: "conta_receber"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recebimento_planilha_importado_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transferencia_bancaria: {
         Row: {
           conta_destino_id: string

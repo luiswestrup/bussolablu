@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -81,11 +81,13 @@ export function ContasView({
   contas,
   parceiros,
   carregando,
+  acoes,
 }: {
   config: Config;
   contas: (Conta & Record<string, unknown>)[];
   parceiros: Parceiro[];
   carregando: boolean;
+  acoes?: ReactNode;
 }) {
   const { empresa, escopo, consolidado, nomeEmpresa } = useEmpresa();
   const { data: categorias = [] } = useCategorias(escopo);
@@ -471,6 +473,7 @@ export function ContasView({
             </div>
 
             <div className="ml-auto flex gap-2">
+              {acoes}
               <Button
                 variant="outline"
                 onClick={() =>
