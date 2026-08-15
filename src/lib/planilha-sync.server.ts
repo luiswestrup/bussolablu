@@ -5,6 +5,7 @@ import {
   acharOuCriarCliente,
   baixarAba,
   hashLinha,
+  listarAbas,
   mapaColunas,
   montarObservacao,
   parseData,
@@ -52,7 +53,18 @@ export async function sincronizarPlanilha(
     ((registrosData ?? []) as Registro[]).map((r) => [`${r.aba}#${r.linha_numero}`, r]),
   );
 
-  for (const aba of ABAS_PLANILHA) {
+  let abas: string[];
+  try {
+    abas = await listarAbas();
+  } catch {
+    abas = ABAS_PLANILHA;
+    resultado.erros.push({
+      aba: "planilha",
+      mensagem: "não foi possível listar as abas automaticamente — usando a lista padrão",
+    });
+  }
+
+  for (const aba of abas) {
     let linhas: string[][];
     try {
       linhas = await baixarAba(aba);

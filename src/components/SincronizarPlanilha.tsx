@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useContasBancarias } from "@/lib/dados";
+import { useClientes, useContasBancarias } from "@/lib/dados";
 import { hoje } from "@/lib/format";
 import {
   ignorarLinhaPlanilha,
@@ -57,12 +57,24 @@ const soNumero = (t: string) => {
   return Number.isFinite(n) ? n : 0;
 };
 
+/** Aceita "14/07/2026" ou "2026-07-14" e devolve yyyy-mm-dd. */
+const paraISO = (t: string): string | null => {
+  const br = t.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if (br) {
+    const ano = br[3]!.length === 2 ? `20${br[3]}` : br[3]!;
+    return `${ano}-${br[2]!.padStart(2, "0")}-${br[1]!.padStart(2, "0")}`;
+  }
+  const iso = t.trim().match(/^\d{4}-\d{2}-\d{2}/);
+  return iso ? iso[0] : null;
+};
+
 export function SincronizarPlanilha({ empresaId }: { empresaId: string | null }) {
   const sincronizar = useServerFn(sincronizarRecebimentosPlanilha);
   const ignorar = useServerFn(ignorarLinhaPlanilha);
   const resolver = useServerFn(resolverLinhaPlanilha);
   const queryClient = useQueryClient();
   const { data: contas = [] } = useContasBancarias(empresaId ?? undefined);
+  const { data: clientes = [] } = useClientes(empresaId ?? undefined);
 
   const [aberto, setAberto] = useState(false);
   const [carregando, setCarregando] = useState(false);
@@ -86,7 +98,7 @@ export function SincronizarPlanilha({ empresaId }: { empresaId: string | null })
             {
               cliente: p.cliente,
               conta: contas.find((c) => c.banco.trim().toLowerCase() === p.banco.trim().toLowerCase())?.id ?? "",
-              data: p.dataPagamento && /\d{4}-\d{2}-\d{2}/.test(p.dataPagamento) ? p.dataPagamento : hoje(),
+              data: paraISO(p.dataPagamento) ?? hoje(),
               valor: String(soNumero(p.valorTexto) || ""),
             },
           ]),
@@ -195,6 +207,11 @@ export function SincronizarPlanilha({ empresaId }: { empresaId: string | null })
 
           {resultado && (
             <div className="space-y-4">
+              <datalist id="clientes-planilha">
+                {clientes.map((c) => (
+                  <option key={c.id} value={c.nome} />
+                ))}
+              </datalist>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {[
                   ["Novas", resultado.importadas],
@@ -246,6 +263,8 @@ export function SincronizarPlanilha({ empresaId }: { empresaId: string | null })
                           <div>
                             <Label className="text-xs">Cliente</Label>
                             <Input
+                              list="clientes-planilha"
+                              placeholder="Nome do cliente"
                               value={edicao[chaveDe(p)]?.cliente ?? ""}
                               onChange={(e) => alterar(p, "cliente", e.target.value)}
                             />
