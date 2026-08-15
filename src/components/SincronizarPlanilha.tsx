@@ -124,10 +124,19 @@ export function SincronizarPlanilha({ empresaId }: { empresaId: string | null })
   const aoResolver = async (p: Pendencia) => {
     if (!empresaId) return;
     const dados = edicao[chaveDe(p)];
-    if (!dados?.cliente.trim()) return toast.error("Informe o cliente.");
-    if (!dados.conta) return toast.error("Selecione a conta bancária.");
+    if (!dados?.cliente.trim()) {
+      toast.error("Informe o cliente.");
+      return;
+    }
+    if (!dados.conta) {
+      toast.error("Selecione a conta bancária.");
+      return;
+    }
     const valor = soNumero(dados.valor);
-    if (!(valor > 0)) return toast.error("Informe um valor maior que zero.");
+    if (!(valor > 0)) {
+      toast.error("Informe um valor maior que zero.");
+      return;
+    }
     try {
       await resolver({
         data: {
