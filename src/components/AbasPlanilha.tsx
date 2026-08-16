@@ -98,7 +98,7 @@ export function AbasPlanilha() {
         </div>
 
         {abas.length === 0 ? (
-          <SecaoVazia mensagem="Nenhuma aba cadastrada — a sincronização usará a lista padrão." />
+          <SecaoVazia texto="Nenhuma aba cadastrada — a sincronização usará a lista padrão." />
         ) : (
           <Table className="mt-4">
             <TableHeader>
