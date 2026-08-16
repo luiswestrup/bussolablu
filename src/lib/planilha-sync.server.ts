@@ -95,7 +95,7 @@ export async function sincronizarPlanilha(
       if (amostra.length > 0 && batem <= amostra.length / 2) {
         resultado.erros.push({
           aba,
-          mensagem: `os dados retornados para a aba ${aba} não correspondem ao período esperado (pode ser um problema de nome de aba no Google Sheets) — sincronização dessa aba cancelada por segurança`,
+          mensagem: `os dados retornados para a aba ${aba} não correspondem ao período esperado (pode ser um problema de nome de aba no Google Sheets) — sincronização dessa aba cancelada por falta de correspondência de período`,
         });
         continue;
       }
@@ -120,6 +120,14 @@ export async function sincronizarPlanilha(
       const banco = campo("banco");
       const status = campo("status");
       const dataPagamento = campo("dataPagamento");
+
+      // Nova checagem: se tanto Data de pagamento quanto Cliente estiverem vazios, trate a linha como em branco e pule completamente.
+      const pagamentoVazio = dataPagamento === "";
+      const clienteVazio = cliente === "";
+      if (pagamentoVazio && clienteVazio) {
+        // pula sem marcar como pendente nem registrar erro
+        continue;
+      }
 
       const valor = parseValor(valorTexto);
       const contaBanco = banco ? acharConta(contas, banco) : null;
