@@ -658,6 +658,44 @@ export type Database = {
           },
         ]
       }
+      planilha_aba_config: {
+        Row: {
+          ativo: boolean
+          criado_em: string
+          empresa_id: string
+          gid: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          criado_em?: string
+          empresa_id: string
+          gid: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          criado_em?: string
+          empresa_id?: string
+          gid?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planilha_aba_config_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produto: {
         Row: {
           ativo: boolean
