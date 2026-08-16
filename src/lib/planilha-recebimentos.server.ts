@@ -1,80 +1,48 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+export type AbaPlanilha = { nome: string; gid: string };
+
 /**
- * Abas usadas apenas como fallback caso a descoberta automática falhe.
- * A lista real é lida da própria planilha por `listarAbas()`.
+ * Fallback usado apenas quando a empresa ainda não cadastrou as abas
+ * em Cadastros › Abas da planilha.
  */
-export const ABAS_PLANILHA: string[] = ["Julho2026", "Agosto2026"];
+export const ABAS_PLANILHA: AbaPlanilha[] = [
+  { nome: "Julho/2026", gid: "0" },
+];
 
 const PLANILHA_ID = "1sQ1Smkcz_RsK-UXD9JujqhIi4TUnIAdr0G1SUYKgljI";
 
-const URL_XLSX = `https://docs.google.com/spreadsheets/d/${PLANILHA_ID}/export?format=xlsx`;
+/** Seleção por gid: nomes com "/" quebram o endpoint por nome e caem na primeira aba. */
+export const urlAba = (gid: string) =>
+  `https://docs.google.com/spreadsheets/d/${PLANILHA_ID}/export?format=csv&gid=${encodeURIComponent(gid)}`;
 
-async function inflarRaw(dados: Uint8Array): Promise<Uint8Array> {
-  const ds = new DecompressionStream("deflate-raw");
-  const stream = new Blob([dados as unknown as BlobPart]).stream().pipeThrough(ds);
-  return new Uint8Array(await new Response(stream).arrayBuffer());
+const MESES = [
+  "janeiro",
+  "fevereiro",
+  "marco",
+  "abril",
+  "maio",
+  "junho",
+  "julho",
+  "agosto",
+  "setembro",
+  "outubro",
+  "novembro",
+  "dezembro",
+];
+
+/** "Agosto/2026" → { mes: 8, ano: 2026 }. Devolve null quando não dá para inferir. */
+export function periodoDaAba(nome: string): { mes: number; ano: number } | null {
+  const limpo = nome
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const m = limpo.match(
+    /(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\D*(\d{4})/,
+  );
+  if (!m) return null;
+  return { mes: MESES.indexOf(m[1]!) + 1, ano: Number(m[2]) };
 }
-
-/**
- * Lê os nomes reais das abas da planilha a partir do arquivo xlsx exportado.
- * Necessário porque o endpoint CSV devolve a primeira aba quando o nome não existe,
- * o que causaria importações duplicadas.
- */
-export async function listarAbas(): Promise<string[]> {
-  const resposta = await fetch(URL_XLSX);
-  if (!resposta.ok) throw new Error("não foi possível ler as abas da planilha");
-  const buf = new Uint8Array(await resposta.arrayBuffer());
-  const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
-
-  // End of central directory
-  let eocd = -1;
-  for (let i = buf.length - 22; i >= 0 && i > buf.length - 66000; i--) {
-    if (dv.getUint32(i, true) === 0x06054b50) {
-      eocd = i;
-      break;
-    }
-  }
-  if (eocd < 0) throw new Error("não foi possível ler as abas da planilha");
-
-  const total = dv.getUint16(eocd + 10, true);
-  let ponteiro = dv.getUint32(eocd + 16, true);
-  const decoder = new TextDecoder();
-
-  for (let n = 0; n < total; n++) {
-    if (dv.getUint32(ponteiro, true) !== 0x02014b50) break;
-    const metodo = dv.getUint16(ponteiro + 10, true);
-    const compTam = dv.getUint32(ponteiro + 20, true);
-    const nomeTam = dv.getUint16(ponteiro + 28, true);
-    const extraTam = dv.getUint16(ponteiro + 30, true);
-    const comentTam = dv.getUint16(ponteiro + 32, true);
-    const offsetLocal = dv.getUint32(ponteiro + 42, true);
-    const nome = decoder.decode(buf.subarray(ponteiro + 46, ponteiro + 46 + nomeTam));
-
-    if (nome === "xl/workbook.xml") {
-      const nomeLocal = dv.getUint16(offsetLocal + 26, true);
-      const extraLocal = dv.getUint16(offsetLocal + 28, true);
-      const inicio = offsetLocal + 30 + nomeLocal + extraLocal;
-      const bruto = buf.subarray(inicio, inicio + compTam);
-      const xml = decoder.decode(metodo === 0 ? bruto : await inflarRaw(bruto));
-      const abas = [...xml.matchAll(/<sheet[^>]*name="([^"]+)"/g)].map((m) =>
-        m[1]!
-          .replace(/&amp;/g, "&")
-          .replace(/&lt;/g, "<")
-          .replace(/&gt;/g, ">")
-          .replace(/&quot;/g, '"')
-          .replace(/&apos;/g, "'"),
-      );
-      if (abas.length) return abas;
-      break;
-    }
-    ponteiro += 46 + nomeTam + extraTam + comentTam;
-  }
-  throw new Error("não foi possível ler as abas da planilha");
-}
-
-export const urlAba = (aba: string) =>
-  `https://docs.google.com/spreadsheets/d/${PLANILHA_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(aba)}`;
 
 export type Pendencia = {
   aba: string;
