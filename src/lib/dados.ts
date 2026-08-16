@@ -227,6 +227,17 @@ export const useTransferencias = (escopo?: Escopo) =>
 export const useClientes = (escopo?: Escopo) =>
   useTabela<Parceiro>("cliente", escopo, "id, nome, contato, documento", "nome");
 
+export type PlanilhaAba = {
+  id: string;
+  empresa_id: string;
+  nome: string;
+  gid: string;
+  ativo: boolean;
+};
+
+export const usePlanilhaAbas = (escopo?: Escopo) =>
+  useTabela<PlanilhaAba>("planilha_aba_config", escopo, "id, nome, gid, ativo", "nome");
+
 export const useMovimentos = (escopo?: Escopo) =>
   useTabela<Movimento>(
     "movimento_estoque",

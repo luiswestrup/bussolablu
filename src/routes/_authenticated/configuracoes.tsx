@@ -28,6 +28,7 @@ import { useEmpresa } from "@/lib/empresa";
 import { usePapel } from "@/lib/papel";
 import { Usuarios } from "@/components/Usuarios";
 import { Auditoria } from "@/components/Auditoria";
+import { AbasPlanilha } from "@/components/AbasPlanilha";
 import { brl, dataBR, hoje } from "@/lib/format";
 import {
   tabela,
@@ -449,6 +450,7 @@ function ConfiguracoesConteudo() {
           <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
           <TabsTrigger value="clientes">Clientes</TabsTrigger>
           <TabsTrigger value="contas">Contas bancárias</TabsTrigger>
+          <TabsTrigger value="abas">Abas da planilha</TabsTrigger>
           {eAdmin && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
           {eAdmin && <TabsTrigger value="auditoria">Auditoria</TabsTrigger>}
         </TabsList>
@@ -641,6 +643,10 @@ function ConfiguracoesConteudo() {
 
         <TabsContent value="contas" className="mt-4">
           <ContasBancarias />
+        </TabsContent>
+
+        <TabsContent value="abas" className="mt-4">
+          <AbasPlanilha />
         </TabsContent>
 
         {eAdmin && (

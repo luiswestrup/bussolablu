@@ -5,11 +5,12 @@ import {
   acharOuCriarCliente,
   baixarAba,
   hashLinha,
-  listarAbas,
   mapaColunas,
   montarObservacao,
   parseData,
   parseValor,
+  periodoDaAba,
+  type AbaPlanilha,
   type Cliente,
   type ContaBanco,
   type Pendencia,
@@ -53,21 +54,20 @@ export async function sincronizarPlanilha(
     ((registrosData ?? []) as Registro[]).map((r) => [`${r.aba}#${r.linha_numero}`, r]),
   );
 
-  let abas: string[];
-  try {
-    abas = await listarAbas();
-  } catch {
-    abas = ABAS_PLANILHA;
-    resultado.erros.push({
-      aba: "planilha",
-      mensagem: "não foi possível listar as abas automaticamente — usando a lista padrão",
-    });
-  }
+  const { data: abasData } = await supabase
+    .from("planilha_aba_config")
+    .select("nome, gid, ativo")
+    .eq("empresa_id", empresaId)
+    .eq("ativo", true)
+    .order("nome");
+  const abas: AbaPlanilha[] = ((abasData ?? []) as AbaPlanilha[]).length
+    ? ((abasData ?? []) as AbaPlanilha[])
+    : ABAS_PLANILHA;
 
-  for (const aba of abas) {
+  for (const { nome: aba, gid } of abas) {
     let linhas: string[][];
     try {
-      linhas = await baixarAba(aba);
+      linhas = await baixarAba(gid);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (!msg.includes("aba não encontrada")) resultado.erros.push({ aba, mensagem: msg });
@@ -78,6 +78,27 @@ export async function sincronizarPlanilha(
     if (col["cliente"] === undefined || col["valor"] === undefined) {
       resultado.erros.push({ aba, mensagem: "cabeçalho sem as colunas Cliente e Valor da Reserva" });
       continue;
+    }
+
+    // Validação defensiva: os dados retornados precisam bater com o mês/ano do nome da aba.
+    const esperado = periodoDaAba(aba);
+    if (esperado && col["dataPagamento"] !== undefined) {
+      const amostra: string[] = [];
+      for (let i = 1; i < linhas.length && amostra.length < 10; i++) {
+        const iso = parseData((linhas[i]![col["dataPagamento"]!] ?? "").trim());
+        if (iso) amostra.push(iso);
+      }
+      const batem = amostra.filter(
+        (iso) =>
+          Number(iso.slice(0, 4)) === esperado.ano && Number(iso.slice(5, 7)) === esperado.mes,
+      ).length;
+      if (amostra.length > 0 && batem <= amostra.length / 2) {
+        resultado.erros.push({
+          aba,
+          mensagem: `os dados retornados para a aba ${aba} não correspondem ao período esperado (pode ser um problema de nome de aba no Google Sheets) — sincronização dessa aba cancelada por segurança`,
+        });
+        continue;
+      }
     }
 
     for (let i = 1; i < linhas.length; i++) {
@@ -112,7 +133,9 @@ export async function sincronizarPlanilha(
             ? "status não reconhecido"
             : !contaBanco
               ? "banco não reconhecido"
-              : null;
+              : !dataRecebimento
+                ? "data de pagamento inválida ou ausente"
+                : null;
 
       if (motivo) {
         resultado.pendentes.push({
@@ -146,7 +169,7 @@ export async function sincronizarPlanilha(
           valor_recebido: valor,
           cliente_id: clienteId,
           conta_bancaria_id: contaBanco!.id,
-          data_vencimento: dataRecebimento ?? new Date().toISOString().slice(0, 10),
+          data_vencimento: dataRecebimento!,
           data_recebimento: dataRecebimento,
           status: "recebido",
           numero_documento: /^(false|true|-|não|nao)$/i.test(campo("nfse")) ? null : campo("nfse") || null,
