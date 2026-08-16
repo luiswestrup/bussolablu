@@ -202,10 +202,10 @@ export function montarObservacao(observacoes: string, dataPasseio: string): stri
   return partes.length ? partes.join(" — ") : null;
 }
 
-export async function baixarAba(aba: string): Promise<string[][]> {
+export async function baixarAba(gid: string): Promise<string[][]> {
   let resposta: Response;
   try {
-    resposta = await fetch(urlAba(aba));
+    resposta = await fetch(urlAba(gid));
   } catch {
     throw new Error(
       "não foi possível acessar a planilha — verifique se o link de compartilhamento ainda está ativo como 'qualquer pessoa com o link pode visualizar'",
