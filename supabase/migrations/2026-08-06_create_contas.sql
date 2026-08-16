@@ -31,6 +31,7 @@ alter table public.conta_pagar enable row level security;
 alter table public.conta_receber enable row level security;
 alter table public.conta_pagar add column observacao text;
 alter table public.conta_receber add column observacao text;
+NOTIFY pgrst, 'reload schema';
 
 -- 3. Policies de isolamento por empresa (via usuario_empresa.user_id = auth.uid())
 
