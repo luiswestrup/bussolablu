@@ -29,8 +29,8 @@ create table if not exists public.conta_receber (
 -- 2. Habilitar RLS
 alter table public.conta_pagar enable row level security;
 alter table public.conta_receber enable row level security;
-ALTER TABLE public.conta_pagar ADD COLUMN observacao text;
-ALTER TABLE public.conta_receber ADD COLUMN observacao text;
+alter table public.conta_pagar add column observacao text;
+alter table public.conta_receber add column observacao text;
 
 -- 3. Policies de isolamento por empresa (via usuario_empresa.user_id = auth.uid())
 
