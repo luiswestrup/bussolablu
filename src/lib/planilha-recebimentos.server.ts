@@ -220,3 +220,30 @@ export async function baixarAba(gid: string): Promise<string[][]> {
   }
   return parseCSV(await resposta.text());
 }
+
+/** Lê os nomes e gids reais das abas a partir da visualização HTML pública da planilha. */
+export async function descobrirAbas(): Promise<AbaPlanilha[]> {
+  let resposta: Response;
+  try {
+    resposta = await fetch(
+      `https://docs.google.com/spreadsheets/d/${PLANILHA_ID}/htmlview`,
+    );
+  } catch {
+    throw new Error(
+      "não foi possível acessar a planilha — verifique se o link de compartilhamento ainda está ativo como 'qualquer pessoa com o link pode visualizar'",
+    );
+  }
+  if (!resposta.ok) {
+    throw new Error("não foi possível ler as abas da planilha");
+  }
+  const html = await resposta.text();
+  const abas: AbaPlanilha[] = [];
+  const re = /name:\s*"((?:[^"\\]|\\.)*)"[\s\S]{0,400}?gid:\s*"(\d+)"/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html))) {
+    const nome = m[1]!.replace(/\\\//g, "/").replace(/\\"/g, '"').trim();
+    const gid = m[2]!;
+    if (nome && !abas.some((a) => a.gid === gid)) abas.push({ nome, gid });
+  }
+  return abas;
+}

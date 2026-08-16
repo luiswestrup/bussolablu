@@ -2,6 +2,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { ResultadoSync } from "./planilha-recebimentos.server";
 
+export const descobrirAbasPlanilha = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async (): Promise<{ nome: string; gid: string }[]> => {
+    const { descobrirAbas } = await import("./planilha-recebimentos.server");
+    return descobrirAbas();
+  });
+
 export const sincronizarRecebimentosPlanilha = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { empresaId: string }) => data)
