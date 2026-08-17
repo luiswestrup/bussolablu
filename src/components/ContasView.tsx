@@ -307,12 +307,9 @@ export function ContasView({
           ...(baixa.conta_bancaria_id ? { conta_bancaria_id: baixa.conta_bancaria_id } : {}),
           ...(config.tipo === "receber"
             ? {
-                percentual_taxa_maquininha: ehCartao(baixa.forma)
-                  ? Number(baixa.percentualTaxa || 0)
-                  : null,
-                valor_taxa_maquininha: ehCartao(baixa.forma)
-                  ? Number(baixa.valorTaxa || 0)
-                  : null,
+                percentual_taxa_maquininha: Number(baixa.percentualTaxa || 0) || null,
+                valor_taxa_maquininha: Number(baixa.valorTaxa || 0) || null,
+                [config.campoForma]: baixa.forma || null,
               }
             : {}),
         })
@@ -849,7 +846,7 @@ export function ContasView({
                       <TableCell>{dataBR(c.data_vencimento)}</TableCell>
                       <TableCell className="text-right tabular-nums">
                         {config.tipo === "receber" &&
-                        ehCartao((c as Record<string, unknown>)[config.campoForma]) ? (
+                        Number((c as Record<string, unknown>)["valor_taxa_maquininha"] ?? 0) > 0 ? (
                           <span
                             title={`Bruto ${brl(Number(c.valor))} · taxa ${brl(
                               Number((c as Record<string, unknown>)["valor_taxa_maquininha"] ?? 0),
@@ -1072,9 +1069,42 @@ export function ContasView({
                 )}
               </div>
 
-              {config.tipo === "receber" && ehCartao(baixa.forma) && (
+              {config.tipo === "receber" && (
+                <div className="sm:col-span-2">
+                  <Label>Forma de recebimento</Label>
+                  <Select
+                    value={baixa.forma}
+                    onValueChange={(v) => {
+                      const perc = percentualTaxaPadrao(taxas, v);
+                      const bruto = Number(baixa.pago || baixa.valor);
+                      setBaixa({
+                        ...baixa,
+                        forma: v,
+                        percentualTaxa: perc > 0 ? String(perc) : "",
+                        valorTaxa: perc > 0 ? ((bruto * perc) / 100).toFixed(2) : "",
+                      });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Como o valor foi recebido" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FORMAS.map((f) => (
+                        <SelectItem key={f} value={f}>
+                          {f}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {config.tipo === "receber" &&
+                (percentualTaxaPadrao(taxas, baixa.forma) > 0 ||
+                  Number(baixa.percentualTaxa || 0) > 0 ||
+                  Number(baixa.valorTaxa || 0) > 0) && (
                 <div className="sm:col-span-2 grid gap-4 rounded-lg border border-dashed p-4 sm:grid-cols-2">
-                  <p className="sm:col-span-2 text-sm font-medium">Taxa da maquininha</p>
+                  <p className="sm:col-span-2 text-sm font-medium">Taxa de recebimento</p>
                   <div>
                     <Label htmlFor="perc-taxa">Percentual (%)</Label>
                     <Input
@@ -1118,7 +1148,7 @@ export function ContasView({
                       className="bg-muted"
                     />
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Bruto {brl(Number(baixa.pago || baixa.valor))} menos a taxa da maquininha. É
+                      Bruto {brl(Number(baixa.pago || baixa.valor))} menos a taxa de recebimento. É
                       esse valor que entra no caixa.
                     </p>
                   </div>
