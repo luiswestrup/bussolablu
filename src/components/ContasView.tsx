@@ -934,26 +934,24 @@ export function ContasView({
                                     ((c as Record<string, unknown>)[config.campoForma] as string) ??
                                     "",
                                   percentualTaxa: String(
-                                    (c as Record<string, unknown>)["percentual_taxa_maquininha"] ??
+                                    ((c as Record<string, unknown>)[
+                                      "percentual_taxa_maquininha"
+                                    ] ??
                                       percentualTaxaPadrao(
                                         taxas,
                                         (c as Record<string, unknown>)[config.campoForma] as string,
-                                      ) ||
-                                      "",
+                                      )) || "",
                                   ),
                                   valorTaxa: String(
-                                    (c as Record<string, unknown>)["valor_taxa_maquininha"] ??
-                                      (
-                                        (Number(c.valor) *
-                                          percentualTaxaPadrao(
-                                            taxas,
-                                            (c as Record<string, unknown>)[
-                                              config.campoForma
-                                            ] as string,
-                                          )) /
-                                        100
-                                      ).toFixed(2) ||
-                                      "",
+                                    ((c as Record<string, unknown>)["valor_taxa_maquininha"] ??
+                                      (Number(c.valor) *
+                                        percentualTaxaPadrao(
+                                          taxas,
+                                          (c as Record<string, unknown>)[
+                                            config.campoForma
+                                          ] as string,
+                                        )) /
+                                        100) || "",
                                   ),
                                 })
                               }
