@@ -651,6 +651,10 @@ function ConfiguracoesConteudo() {
           <AbasPlanilha />
         </TabsContent>
 
+        <TabsContent value="taxas" className="mt-4">
+          <TaxasRecebimento />
+        </TabsContent>
+
         {eAdmin && (
           <TabsContent value="usuarios" className="mt-4">
             <Usuarios />
