@@ -39,10 +39,11 @@ import {
   situacao,
   tabela,
   datasParcelas,
-  ehCartao,
   liquidoRecebimento,
+  percentualTaxaPadrao,
   useCategorias,
   useContasBancarias,
+  useTaxasRecebimento,
   type Categoria,
   type Parceiro,
   type StatusCheque,
@@ -70,7 +71,16 @@ type Config = {
   tipoCategoria: Categoria["tipo"];
 };
 
-const FORMAS = ["Pix", "Boleto", "Transferência", "Cartão", "Dinheiro", "Cheque"];
+const FORMAS = [
+  "Pix",
+  "Débito",
+  "Crédito",
+  "Transferência",
+  "Boleto",
+  "Dinheiro",
+  "Cartão",
+  "Cheque",
+];
 
 const STATUS_CHEQUE: StatusCheque[] = ["emitido", "compensado", "devolvido", "cancelado"];
 
@@ -92,6 +102,7 @@ export function ContasView({
   const { empresa, escopo, consolidado, nomeEmpresa } = useEmpresa();
   const { data: categorias = [] } = useCategorias(escopo);
   const { data: contasBancarias = [] } = useContasBancarias(escopo);
+  const { data: taxas = [] } = useTaxasRecebimento(escopo);
   const queryClient = useQueryClient();
   const hj = hoje();
 
