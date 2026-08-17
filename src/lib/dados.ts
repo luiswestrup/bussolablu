@@ -238,6 +238,31 @@ export type PlanilhaAba = {
 export const usePlanilhaAbas = (escopo?: Escopo) =>
   useTabela<PlanilhaAba>("planilha_aba_config", escopo, "id, nome, gid, ativo", "nome");
 
+export type TaxaRecebimento = {
+  id: string;
+  empresa_id: string;
+  forma_recebimento: string;
+  percentual: number;
+  ativo: boolean;
+};
+
+export const useTaxasRecebimento = (escopo?: Escopo) =>
+  useTabela<TaxaRecebimento>(
+    "taxa_recebimento",
+    escopo,
+    "id, forma_recebimento, percentual, ativo",
+    "forma_recebimento",
+  );
+
+/** Percentual padrão configurado para um meio de pagamento (0 quando não há). */
+export const percentualTaxaPadrao = (
+  taxas: TaxaRecebimento[],
+  forma: string | null | undefined,
+): number => {
+  const t = taxas.find((x) => x.ativo && x.forma_recebimento === forma);
+  return t ? Number(t.percentual) : 0;
+};
+
 export const useMovimentos = (escopo?: Escopo) =>
   useTabela<Movimento>(
     "movimento_estoque",
@@ -248,7 +273,7 @@ export const useMovimentos = (escopo?: Escopo) =>
 
 /** Situação real considerando vencimento (contas vencidas destacadas). */
 
-/** Recebimento por cartão entra no caixa já descontada a taxa da maquininha. */
+/** Recebimento com taxa entra no caixa já descontado o valor da taxa. */
 export const ehCartao = (forma: unknown) => forma === "Cartão";
 
 export function liquidoRecebimento(c: {
@@ -258,7 +283,7 @@ export function liquidoRecebimento(c: {
   valor_taxa_maquininha?: number | string | null;
 }): number {
   const bruto = Number(c.valor_recebido ?? c.valor);
-  return ehCartao(c.forma_recebimento) ? bruto - Number(c.valor_taxa_maquininha ?? 0) : bruto;
+  return bruto - Number(c.valor_taxa_maquininha ?? 0);
 }
 type Erro = { message: string } | null;
 type LooseTable = {

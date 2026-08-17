@@ -853,6 +853,41 @@ export type Database = {
           },
         ]
       }
+      taxa_recebimento: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          empresa_id: string
+          forma_recebimento: string
+          id: string
+          percentual: number
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          empresa_id: string
+          forma_recebimento: string
+          id?: string
+          percentual?: number
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          empresa_id?: string
+          forma_recebimento?: string
+          id?: string
+          percentual?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "taxa_recebimento_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transferencia_bancaria: {
         Row: {
           conta_destino_id: string
