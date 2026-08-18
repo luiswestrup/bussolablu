@@ -232,6 +232,28 @@ function DashboardPage() {
         </div>
       )}
 
+      {financeiro &&
+        divergenciasExtrato({
+          contas: contasBancarias,
+          receber: receberTodos,
+          pagar: pagarTodos,
+          transferencias,
+          extratos,
+        }).map((d) => (
+          <div
+            key={d.conta.id}
+            className="mt-4 flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm"
+          >
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <span>
+              <strong>{d.conta.banco}</strong> com divergência de extrato em{" "}
+              {d.data.slice(8, 10)}/{d.data.slice(5, 7)}/{d.data.slice(0, 4)}: sistema{" "}
+              {d.diferenca > 0 ? "a menos" : "a mais"} que o banco em {brl(Math.abs(d.diferenca))} —
+              revise em Cadastros › Contas bancárias.
+            </span>
+          </div>
+        ))}
+
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         {financeiro && <Card>
           <CardHeader>
