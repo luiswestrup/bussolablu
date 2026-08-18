@@ -199,6 +199,7 @@ export type Database = {
           id: string
           numero_cheque: string | null
           numero_documento: string | null
+          observacao: string | null
           parcela: string | null
           status: Database["public"]["Enums"]["status_pagar"]
           status_cheque: Database["public"]["Enums"]["status_cheque"] | null
@@ -228,6 +229,7 @@ export type Database = {
           id?: string
           numero_cheque?: string | null
           numero_documento?: string | null
+          observacao?: string | null
           parcela?: string | null
           status?: Database["public"]["Enums"]["status_pagar"]
           status_cheque?: Database["public"]["Enums"]["status_cheque"] | null
@@ -257,6 +259,7 @@ export type Database = {
           id?: string
           numero_cheque?: string | null
           numero_documento?: string | null
+          observacao?: string | null
           parcela?: string | null
           status?: Database["public"]["Enums"]["status_pagar"]
           status_cheque?: Database["public"]["Enums"]["status_cheque"] | null
@@ -323,6 +326,7 @@ export type Database = {
           id: string
           numero_cheque: string | null
           numero_documento: string | null
+          observacao: string | null
           parcela: string | null
           percentual_taxa_maquininha: number | null
           status: Database["public"]["Enums"]["status_receber"]
@@ -351,6 +355,7 @@ export type Database = {
           id?: string
           numero_cheque?: string | null
           numero_documento?: string | null
+          observacao?: string | null
           parcela?: string | null
           percentual_taxa_maquininha?: number | null
           status?: Database["public"]["Enums"]["status_receber"]
@@ -379,6 +384,7 @@ export type Database = {
           id?: string
           numero_cheque?: string | null
           numero_documento?: string | null
+          observacao?: string | null
           parcela?: string | null
           percentual_taxa_maquininha?: number | null
           status?: Database["public"]["Enums"]["status_receber"]
