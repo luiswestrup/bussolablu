@@ -946,11 +946,12 @@ function ContasBancarias() {
           </div>
         </div>
 
+        <VerificacaoExtrato />
+
         <Dialog open={aberto} onOpenChange={setAberto}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Nova transferência</DialogTitle>
-            </DialogHeader>
             </DialogHeader>
             <div className="space-y-3">
               <div>
