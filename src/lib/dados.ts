@@ -290,6 +290,35 @@ export function saldoContaAte(
   return Number(conta?.saldo_inicial ?? 0) + entradas - saidas + recebidasTr - enviadasTr;
 }
 
+export type DivergenciaExtrato = {
+  conta: ContaBancaria;
+  data: string;
+  diferenca: number;
+};
+
+/**
+ * Contas cuja verificação de extrato mais recente ainda diverge do sistema
+ * e não foi marcada como revisada.
+ */
+export function divergenciasExtrato(dados: {
+  contas: ContaBancaria[];
+  receber: ContaReceber[];
+  pagar: ContaPagar[];
+  transferencias: TransferenciaBancaria[];
+  extratos: ExtratoSaldoDiario[];
+}): DivergenciaExtrato[] {
+  const saida: DivergenciaExtrato[] = [];
+  for (const conta of dados.contas) {
+    const ultimo = dados.extratos
+      .filter((e) => e.conta_bancaria_id === conta.id)
+      .sort((a, b) => (a.data < b.data ? 1 : a.data > b.data ? -1 : 0))[0];
+    if (!ultimo || ultimo.revisado) continue;
+    const diferenca = Number(ultimo.saldo_extrato) - saldoContaAte(conta.id, ultimo.data, dados);
+    if (Math.abs(diferenca) >= 0.01) saida.push({ conta, data: ultimo.data, diferenca });
+  }
+  return saida;
+}
+
 export const useClientes = (escopo?: Escopo) =>
   useTabela<Parceiro>("cliente", escopo, "id, nome, contato, documento", "nome");
 
