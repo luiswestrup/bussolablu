@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEmpresa } from "@/lib/empresa";
 import { brl, hoje, num, rotuloMes } from "@/lib/format";
-import { liquidoRecebimento, nomeNatureza, useCategorias, useContasBancarias, useNaturezas, usePagar, useProdutos, useReceber } from "@/lib/dados";
+import { divergenciasExtrato, liquidoRecebimento, nomeNatureza, useCategorias, useContasBancarias, useExtratosSaldo, useNaturezas, usePagar, useProdutos, useReceber, useTransferencias } from "@/lib/dados";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -57,6 +57,8 @@ function DashboardPage() {
   const { data: categorias = [] } = useCategorias(escopo);
   const { data: naturezas = [] } = useNaturezas(escopo);
   const { data: contasBancarias = [] } = useContasBancarias(escopo);
+  const { data: transferencias = [] } = useTransferencias(escopo);
+  const { data: extratos = [] } = useExtratosSaldo(escopo);
   const hj = hoje();
 
   // Filtro rápido da visão consolidada: "todas" soma os totais, sem misturar registros.
@@ -229,6 +231,28 @@ function DashboardPage() {
           </span>
         </div>
       )}
+
+      {financeiro &&
+        divergenciasExtrato({
+          contas: contasBancarias,
+          receber: receberTodos,
+          pagar: pagarTodos,
+          transferencias,
+          extratos,
+        }).map((d) => (
+          <div
+            key={d.conta.id}
+            className="mt-4 flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm"
+          >
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <span>
+              <strong>{d.conta.banco}</strong> com divergência de extrato em{" "}
+              {d.data.slice(8, 10)}/{d.data.slice(5, 7)}/{d.data.slice(0, 4)}: sistema{" "}
+              {d.diferenca > 0 ? "a menos" : "a mais"} que o banco em {brl(Math.abs(d.diferenca))} —
+              revise em Cadastros › Contas bancárias.
+            </span>
+          </div>
+        ))}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         {financeiro && <Card>
