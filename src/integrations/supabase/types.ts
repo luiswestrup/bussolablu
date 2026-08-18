@@ -492,6 +492,57 @@ export type Database = {
         }
         Relationships: []
       }
+      extrato_saldo_diario: {
+        Row: {
+          conta_bancaria_id: string
+          criado_em: string
+          data: string
+          empresa_id: string
+          id: string
+          observacao: string | null
+          revisado: boolean
+          revisado_em: string | null
+          saldo_extrato: number
+        }
+        Insert: {
+          conta_bancaria_id: string
+          criado_em?: string
+          data: string
+          empresa_id: string
+          id?: string
+          observacao?: string | null
+          revisado?: boolean
+          revisado_em?: string | null
+          saldo_extrato?: number
+        }
+        Update: {
+          conta_bancaria_id?: string
+          criado_em?: string
+          data?: string
+          empresa_id?: string
+          id?: string
+          observacao?: string | null
+          revisado?: boolean
+          revisado_em?: string | null
+          saldo_extrato?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extrato_saldo_diario_conta_bancaria_id_fkey"
+            columns: ["conta_bancaria_id"]
+            isOneToOne: false
+            referencedRelation: "conta_bancaria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extrato_saldo_diario_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fornecedor: {
         Row: {
           contato: string | null
