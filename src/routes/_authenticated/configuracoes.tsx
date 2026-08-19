@@ -945,8 +945,6 @@ function ContasBancarias() {
           </div>
         </div>
 
-        <VerificacaoExtrato />
-
         <Dialog open={aberto} onOpenChange={setAberto}>
           <DialogContent>
             <DialogHeader>
