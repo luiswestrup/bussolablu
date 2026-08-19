@@ -136,7 +136,7 @@ export function FormularioExtrato({
 }
 
 /** Histórico de verificações de extrato, opcionalmente filtrado por conta. */
-export function HistoricoExtrato({ contaId }: { contaId?: string }) {
+export function HistoricoExtrato({ contaId }: { contaId?: string | undefined }) {
   const { empresa } = useEmpresa();
   const queryClient = useQueryClient();
   const { data: contas = [] } = useContasBancarias(empresa?.id);
