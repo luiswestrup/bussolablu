@@ -243,13 +243,7 @@ function ConciliacaoPage() {
           <Kpi
             titulo="Diferença (extrato − sistema)"
             valor={diferenca !== null ? brl(diferenca) : "—"}
-            tom={
-              diferenca === null
-                ? undefined
-                : Math.abs(diferenca) < 0.01
-                  ? "positivo"
-                  : "negativo"
-            }
+            tom={diferenca === null ? "neutro" : Math.abs(diferenca) < 0.01 ? "positivo" : "negativo"}
           />
         </div>
       )}
