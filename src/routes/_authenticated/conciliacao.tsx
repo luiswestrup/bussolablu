@@ -357,6 +357,15 @@ function ConciliacaoPage() {
           );
         })
       )}
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-base">Histórico de verificações de extrato</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <HistoricoExtrato contaId={contaSel || undefined} />
+        </CardContent>
+      </Card>
     </AppShell>
   );
 }
