@@ -39,8 +39,104 @@ import {
   useTransferencias,
 } from "@/lib/dados";
 
-/** Confronto do saldo final do dia informado pelo banco com o saldo calculado pelo sistema. */
-export function VerificacaoExtrato() {
+/** Formulário de registro do saldo final do extrato, com conta/data controladas por fora. */
+export function FormularioExtrato({
+  contaId,
+  onContaId,
+  data,
+  onData,
+}: {
+  contaId: string;
+  onContaId: (v: string) => void;
+  data: string;
+  onData: (v: string) => void;
+}) {
+  const { empresa } = useEmpresa();
+  const queryClient = useQueryClient();
+  const { data: contas = [] } = useContasBancarias(empresa?.id);
+  const [saldoExtrato, setSaldoExtrato] = useState("");
+  const [observacao, setObservacao] = useState("");
+
+  const invalidar = () => queryClient.invalidateQueries({ queryKey: ["extrato_saldo_diario"] });
+
+  const salvar = useMutation({
+    mutationFn: async () => {
+      if (!contaId) throw new Error("Selecione a conta bancária.");
+      if (!data) throw new Error("Informe a data do extrato.");
+      if (saldoExtrato.trim() === "" || Number.isNaN(Number(saldoExtrato)))
+        throw new Error("Informe o saldo final do extrato.");
+      const { error } = await tabela("extrato_saldo_diario").insert({
+        empresa_id: empresa!.id,
+        conta_bancaria_id: contaId,
+        data,
+        saldo_extrato: Number(saldoExtrato),
+        observacao: observacao.trim() || null,
+      });
+      if (error)
+        throw new Error(
+          error.message.includes("duplicate")
+            ? "Já existe um saldo de extrato para esta conta nesta data."
+            : error.message,
+        );
+    },
+    onSuccess: () => {
+      setSaldoExtrato("");
+      setObservacao("");
+      invalidar();
+      toast.success("Saldo de extrato registrado.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <div>
+        <label className="text-xs text-muted-foreground">Conta</label>
+        <Select value={contaId} onValueChange={onContaId}>
+          <SelectTrigger className="w-[220px]">
+            <SelectValue placeholder="Selecione" />
+          </SelectTrigger>
+          <SelectContent>
+            {contas.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.banco} {c.conta ? `· ${c.conta}` : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <label className="text-xs text-muted-foreground">Data do extrato</label>
+        <Input
+          type="date"
+          className="w-[160px]"
+          value={data}
+          onChange={(e) => onData(e.target.value)}
+        />
+      </div>
+      <div>
+        <label className="text-xs text-muted-foreground">Saldo do extrato</label>
+        <Input
+          type="number"
+          step="0.01"
+          className="w-[170px]"
+          value={saldoExtrato}
+          onChange={(e) => setSaldoExtrato(e.target.value)}
+        />
+      </div>
+      <div className="flex-1 min-w-[180px]">
+        <label className="text-xs text-muted-foreground">Observação (opcional)</label>
+        <Input maxLength={200} value={observacao} onChange={(e) => setObservacao(e.target.value)} />
+      </div>
+      <Button onClick={() => salvar.mutate()} disabled={!empresa || salvar.isPending}>
+        <Plus className="mr-2 h-4 w-4" /> Registrar
+      </Button>
+    </div>
+  );
+}
+
+/** Histórico de verificações de extrato, opcionalmente filtrado por conta. */
+export function HistoricoExtrato({ contaId }: { contaId?: string }) {
   const { empresa } = useEmpresa();
   const queryClient = useQueryClient();
   const { data: contas = [] } = useContasBancarias(empresa?.id);
@@ -49,12 +145,6 @@ export function VerificacaoExtrato() {
   const { data: transferencias = [] } = useTransferencias(empresa?.id);
   const { data: extratos = [] } = useExtratosSaldo(empresa?.id);
 
-  const [form, setForm] = useState({
-    conta_bancaria_id: "",
-    data: hoje(),
-    saldo_extrato: "",
-    observacao: "",
-  });
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
   const [revisar, setRevisar] = useState<{ id: string; observacao: string } | null>(null);
@@ -63,6 +153,7 @@ export function VerificacaoExtrato() {
 
   const linhas = useMemo(() => {
     return extratos
+      .filter((e) => (!contaId || e.conta_bancaria_id === contaId))
       .filter((e) => (!de || e.data >= de) && (!ate || e.data <= ate))
       .map((e) => {
         const sistema = saldoContaAte(e.conta_bancaria_id, e.data, {
@@ -75,50 +166,12 @@ export function VerificacaoExtrato() {
         return { extrato: e, sistema, diferenca, confere: Math.abs(diferenca) < 0.01 };
       })
       .sort((a, b) => (a.extrato.data < b.extrato.data ? 1 : -1));
-  }, [extratos, de, ate, contas, receber, pagar, transferencias]);
+  }, [extratos, contaId, de, ate, contas, receber, pagar, transferencias]);
 
   const nomeConta = (id: string) => {
     const c = contas.find((x) => x.id === id);
     return c ? `${c.banco}${c.conta ? ` · ${c.conta}` : ""}` : "—";
   };
-
-  const previsto =
-    form.conta_bancaria_id && form.data
-      ? saldoContaAte(form.conta_bancaria_id, form.data, {
-          contas,
-          receber,
-          pagar,
-          transferencias,
-        })
-      : null;
-
-  const salvar = useMutation({
-    mutationFn: async () => {
-      if (!form.conta_bancaria_id) throw new Error("Selecione a conta bancária.");
-      if (!form.data) throw new Error("Informe a data do extrato.");
-      if (form.saldo_extrato.trim() === "" || Number.isNaN(Number(form.saldo_extrato)))
-        throw new Error("Informe o saldo final do extrato.");
-      const { error } = await tabela("extrato_saldo_diario").insert({
-        empresa_id: empresa!.id,
-        conta_bancaria_id: form.conta_bancaria_id,
-        data: form.data,
-        saldo_extrato: Number(form.saldo_extrato),
-        observacao: form.observacao.trim() || null,
-      });
-      if (error)
-        throw new Error(
-          error.message.includes("duplicate")
-            ? "Já existe um saldo de extrato para esta conta nesta data."
-            : error.message,
-        );
-    },
-    onSuccess: () => {
-      setForm({ ...form, saldo_extrato: "", observacao: "" });
-      invalidar();
-      toast.success("Saldo de extrato registrado.");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   const marcarRevisado = useMutation({
     mutationFn: async ({ id, observacao }: { id: string; observacao: string }) => {
@@ -152,71 +205,8 @@ export function VerificacaoExtrato() {
   });
 
   return (
-    <div className="mt-8">
-      <h3 className="text-sm font-semibold">Verificação de extrato</h3>
-      <p className="text-xs text-muted-foreground">
-        Compare o saldo final do dia informado pelo banco com o saldo calculado pelo sistema.
-      </p>
-
-      <div className="mt-3 flex flex-wrap items-end gap-2">
-        <div>
-          <label className="text-xs text-muted-foreground">Conta</label>
-          <Select
-            value={form.conta_bancaria_id}
-            onValueChange={(v) => setForm({ ...form, conta_bancaria_id: v })}
-          >
-            <SelectTrigger className="w-[220px]">
-              <SelectValue placeholder="Selecione" />
-            </SelectTrigger>
-            <SelectContent>
-              {contas.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.banco} {c.conta ? `· ${c.conta}` : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <label className="text-xs text-muted-foreground">Data</label>
-          <Input
-            type="date"
-            className="w-[160px]"
-            value={form.data}
-            onChange={(e) => setForm({ ...form, data: e.target.value })}
-          />
-        </div>
-        <div>
-          <label className="text-xs text-muted-foreground">Saldo do extrato</label>
-          <Input
-            type="number"
-            step="0.01"
-            className="w-[170px]"
-            value={form.saldo_extrato}
-            onChange={(e) => setForm({ ...form, saldo_extrato: e.target.value })}
-          />
-        </div>
-        <div className="flex-1 min-w-[180px]">
-          <label className="text-xs text-muted-foreground">Observação (opcional)</label>
-          <Input
-            maxLength={200}
-            value={form.observacao}
-            onChange={(e) => setForm({ ...form, observacao: e.target.value })}
-          />
-        </div>
-        <Button onClick={() => salvar.mutate()} disabled={!empresa || salvar.isPending}>
-          <Plus className="mr-2 h-4 w-4" /> Registrar
-        </Button>
-      </div>
-
-      {previsto !== null && (
-        <p className="mt-2 text-xs text-muted-foreground">
-          Saldo do sistema em {dataBR(form.data)}:{" "}
-          <span className="font-medium tabular-nums text-foreground">{brl(previsto)}</span>
-        </p>
-      )}
-
-      <div className="mt-4 flex flex-wrap items-end gap-2">
+    <div>
+      <div className="flex flex-wrap items-end gap-2">
         <div>
           <label className="text-xs text-muted-foreground">Período de</label>
           <Input type="date" className="w-[160px]" value={de} onChange={(e) => setDe(e.target.value)} />
