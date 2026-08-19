@@ -249,7 +249,7 @@ function DashboardPage() {
               <strong>{d.conta.banco}</strong> com divergência de extrato em{" "}
               {d.data.slice(8, 10)}/{d.data.slice(5, 7)}/{d.data.slice(0, 4)}: sistema{" "}
               {d.diferenca > 0 ? "a menos" : "a mais"} que o banco em {brl(Math.abs(d.diferenca))} —
-              revise em Cadastros › Contas bancárias.
+              revise em Conciliação bancária.
             </span>
           </div>
         ))}
