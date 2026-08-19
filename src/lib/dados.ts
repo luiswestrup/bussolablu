@@ -338,12 +338,6 @@ export function saldoConciliadoAte(
   return Number(conta?.saldo_inicial ?? 0) + entradas - saidas + recebidasTr - enviadasTr;
 }
 
-type _DivergenciaExtratoOld = {
-  conta: ContaBancaria;
-  data: string;
-  diferenca: number;
-};
-
 /**
  * Contas cuja verificação de extrato mais recente ainda diverge do sistema
  * e não foi marcada como revisada.
