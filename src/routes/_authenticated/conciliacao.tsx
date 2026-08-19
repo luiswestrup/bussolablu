@@ -21,7 +21,24 @@ import {
 import { cn } from "@/lib/utils";
 import { useEmpresa } from "@/lib/empresa";
 import { brl, dataBR, fimDoMes, hoje, inicioDoMes } from "@/lib/format";
-import { atualizarEmLote, useContasBancarias, usePagar, useReceber } from "@/lib/dados";
+import {
+  atualizarEmLote,
+  saldoConciliadoAte,
+  saldoContaAte,
+  useContasBancarias,
+  useExtratosSaldo,
+  usePagar,
+  useReceber,
+  useTransferencias,
+} from "@/lib/dados";
+import { FormularioExtrato, HistoricoExtrato } from "@/components/VerificacaoExtrato";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/conciliacao")({
   head: () => ({
@@ -62,9 +79,12 @@ function ConciliacaoPage() {
   const { data: pagar = [] } = usePagar(escopo);
   const { data: receber = [] } = useReceber(escopo);
   const { data: contas = [] } = useContasBancarias(escopo);
+  const { data: transferencias = [] } = useTransferencias(escopo);
+  useExtratosSaldo(escopo);
 
   const [inicio, setInicio] = useState(inicioDoMes());
   const [fim, setFim] = useState(fimDoMes());
+  const [contaSel, setContaSel] = useState("");
   const [selecao, setSelecao] = useState<Record<string, boolean>>({});
   const [salvando, setSalvando] = useState(false);
 
@@ -94,8 +114,20 @@ function ConciliacaoPage() {
         conta_bancaria_id: c.conta_bancaria_id,
         conciliado: !!c.conciliado,
       }));
-    return [...a, ...b].sort((x, y) => y.data.localeCompare(x.data));
-  }, [pagar, receber, inicio, fim]);
+    return [...a, ...b]
+      .filter((l) => !contaSel || l.conta_bancaria_id === contaSel)
+      .sort((x, y) => y.data.localeCompare(x.data));
+  }, [pagar, receber, inicio, fim, contaSel]);
+
+  const dadosSaldo = { contas, receber, pagar, transferencias };
+  const saldoSistema = contaSel ? saldoContaAte(contaSel, fim, dadosSaldo) : null;
+  const saldoConciliado = contaSel ? saldoConciliadoAte(contaSel, fim, dadosSaldo) : null;
+  const extratoDoDia = useExtratosSaldo(escopo).data?.find(
+    (e) => e.conta_bancaria_id === contaSel && e.data === fim,
+  );
+  const saldoExtrato = extratoDoDia ? Number(extratoDoDia.saldo_extrato) : null;
+  const diferenca =
+    saldoExtrato !== null && saldoSistema !== null ? saldoExtrato - saldoSistema : null;
 
   const grupos = useMemo(() => {
     const mapa = new Map<string, { titulo: string; itens: Linha[] }>();
@@ -152,14 +184,37 @@ function ConciliacaoPage() {
   return (
     <AppShell titulo="Conciliação bancária">
       <Card>
-        <CardContent className="flex flex-wrap items-end gap-4 p-4">
+        <CardContent className="space-y-4 p-4">
+          <FormularioExtrato
+            contaId={contaSel}
+            onContaId={setContaSel}
+            data={fim}
+            onData={setFim}
+          />
+          <div className="flex flex-wrap items-end gap-4">
           <div>
             <Label htmlFor="ini">Início</Label>
             <Input id="ini" type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} />
           </div>
           <div>
-            <Label htmlFor="fim">Fim</Label>
+            <Label htmlFor="fim">Fim (data do extrato)</Label>
             <Input id="fim" type="date" value={fim} onChange={(e) => setFim(e.target.value)} />
+          </div>
+          <div>
+            <Label>Conta bancária</Label>
+            <Select value={contaSel || "todas"} onValueChange={(v) => setContaSel(v === "todas" ? "" : v)}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas as contas</SelectItem>
+                {contas.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.banco} {c.conta ? `· ${c.conta}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="ml-auto flex flex-wrap gap-2">
             <Button disabled={!marcados.length || salvando} onClick={() => aplicar(true)}>
@@ -173,8 +228,25 @@ function ConciliacaoPage() {
               <CircleSlash className="mr-2 h-4 w-4" /> Desmarcar
             </Button>
           </div>
+          </div>
         </CardContent>
       </Card>
+
+      {contaSel && (
+        <div className="mt-4 grid gap-4 sm:grid-cols-4">
+          <Kpi
+            titulo={`Saldo do extrato (${dataBR(fim)})`}
+            valor={saldoExtrato !== null ? brl(saldoExtrato) : "—"}
+          />
+          <Kpi titulo="Saldo do sistema" valor={brl(saldoSistema ?? 0)} />
+          <Kpi titulo="Saldo conciliado" valor={brl(saldoConciliado ?? 0)} />
+          <Kpi
+            titulo="Diferença (extrato − sistema)"
+            valor={diferenca !== null ? brl(diferenca) : "—"}
+            tom={diferenca === null ? "neutro" : Math.abs(diferenca) < 0.01 ? "positivo" : "negativo"}
+          />
+        </div>
+      )}
 
       <div className="mt-4 grid gap-4 sm:grid-cols-3">
         <Kpi titulo="Lançamentos no período" valor={String(linhas.length)} />
@@ -285,6 +357,15 @@ function ConciliacaoPage() {
           );
         })
       )}
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-base">Histórico de verificações de extrato</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <HistoricoExtrato contaId={contaSel || undefined} />
+        </CardContent>
+      </Card>
     </AppShell>
   );
 }

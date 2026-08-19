@@ -296,6 +296,48 @@ export type DivergenciaExtrato = {
   diferenca: number;
 };
 
+/** Saldo considerando apenas lançamentos já conciliados (transferências sempre entram). */
+export function saldoConciliadoAte(
+  contaId: string,
+  ate: string | undefined,
+  dados: {
+    contas: ContaBancaria[];
+    receber: ContaReceber[];
+    pagar: ContaPagar[];
+    transferencias: TransferenciaBancaria[];
+  },
+): number {
+  const dentro = (d: string | null | undefined) => !!d && (!ate || d <= ate);
+  const conta = dados.contas.find((c) => c.id === contaId);
+  const entradas = dados.receber
+    .filter(
+      (c) =>
+        c.conta_bancaria_id === contaId &&
+        c.status === "recebido" &&
+        c.conciliado &&
+        chequeEmCaixa(c) &&
+        dentro(c.data_recebimento),
+    )
+    .reduce((s, c) => s + liquidoRecebimento(c), 0);
+  const saidas = dados.pagar
+    .filter(
+      (c) =>
+        c.conta_bancaria_id === contaId &&
+        c.status === "pago" &&
+        c.conciliado &&
+        chequeEmCaixa(c) &&
+        dentro(c.data_pagamento),
+    )
+    .reduce((s, c) => s + Number(c.valor_pago ?? c.valor), 0);
+  const recebidasTr = dados.transferencias
+    .filter((t) => t.conta_destino_id === contaId && dentro(t.data))
+    .reduce((s, t) => s + Number(t.valor), 0);
+  const enviadasTr = dados.transferencias
+    .filter((t) => t.conta_origem_id === contaId && dentro(t.data))
+    .reduce((s, t) => s + Number(t.valor), 0);
+  return Number(conta?.saldo_inicial ?? 0) + entradas - saidas + recebidasTr - enviadasTr;
+}
+
 /**
  * Contas cuja verificação de extrato mais recente ainda diverge do sistema
  * e não foi marcada como revisada.

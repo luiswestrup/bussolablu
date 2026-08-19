@@ -30,7 +30,6 @@ import { Usuarios } from "@/components/Usuarios";
 import { Auditoria } from "@/components/Auditoria";
 import { AbasPlanilha } from "@/components/AbasPlanilha";
 import { TaxasRecebimento } from "@/components/TaxasRecebimento";
-import { VerificacaoExtrato } from "@/components/VerificacaoExtrato";
 import { brl, dataBR, hoje } from "@/lib/format";
 import {
   tabela,
@@ -945,8 +944,6 @@ function ContasBancarias() {
             )}
           </div>
         </div>
-
-        <VerificacaoExtrato />
 
         <Dialog open={aberto} onOpenChange={setAberto}>
           <DialogContent>
