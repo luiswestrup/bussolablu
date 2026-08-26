@@ -962,9 +962,17 @@ export function ContasView({
                           <Button
                             size="icon"
                             variant="ghost"
-                            title="Editar lançamento"
+                            title={
+                              c.situacao === config.statusFinal
+                                ? "Editar título baixado"
+                                : "Editar lançamento"
+                            }
                             disabled={consolidado}
-                            onClick={() => abrirEdicao(c as unknown as Record<string, unknown>)}
+                            onClick={() =>
+                              c.situacao === config.statusFinal
+                                ? setEditandoBaixado(c as unknown as Record<string, unknown>)
+                                : abrirEdicao(c as unknown as Record<string, unknown>)
+                            }
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
