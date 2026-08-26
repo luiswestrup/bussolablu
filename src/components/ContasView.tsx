@@ -218,6 +218,8 @@ export function ContasView({
     });
     setParcelarCheque(false);
     setCheques([]);
+    setParcelarPag(false);
+    setParcelas([]);
     setAberto(true);
   };
 
