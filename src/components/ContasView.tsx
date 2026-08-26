@@ -87,6 +87,9 @@ const STATUS_CHEQUE: StatusCheque[] = ["emitido", "compensado", "devolvido", "ca
 
 type ChequeLinha = { data: string; numero: string };
 
+/** Parcela manual: valor e vencimento livres, categoria opcional por linha. */
+type ParcelaLinha = { valor: string; data: string; categoria_id: string };
+
 export function ContasView({
   config,
   contas,
