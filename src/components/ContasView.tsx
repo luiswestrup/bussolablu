@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -87,6 +87,9 @@ const STATUS_CHEQUE: StatusCheque[] = ["emitido", "compensado", "devolvido", "ca
 
 type ChequeLinha = { data: string; numero: string };
 
+/** Parcela manual: valor e vencimento livres, categoria opcional por linha. */
+type ParcelaLinha = { valor: string; data: string; categoria_id: string };
+
 export function ContasView({
   config,
   contas,
@@ -133,7 +136,35 @@ export function ContasView({
   const [intervalo, setIntervalo] = useState<"mensal" | "quinzenal" | "semanal">("mensal");
   const [cheques, setCheques] = useState<ChequeLinha[]>([]);
 
+  // Parcelamento manual (Contas a pagar): valor e vencimento livres por parcela.
+  const [parcelarPag, setParcelarPag] = useState(false);
+  const [qtdParcelas, setQtdParcelas] = useState("2");
+  const [totalEsperado, setTotalEsperado] = useState("");
+  const [categoriaPorParcela, setCategoriaPorParcela] = useState(false);
+  const [parcelas, setParcelas] = useState<ParcelaLinha[]>([]);
+  const [grupoAberto, setGrupoAberto] = useState<string | null>(null);
+
   const ehCheque = form.forma === "Cheque";
+  const podeParcelar = config.tipo === "pagar" && !editandoId;
+
+  const gerarParcelas = (quantidade?: number) => {
+    const qtd = Math.max(2, Math.min(36, Number(quantidade ?? qtdParcelas) || 2));
+    setParcelas((atual) =>
+      Array.from({ length: qtd }, (_, i) => ({
+        valor: atual[i]?.valor ?? "",
+        data: atual[i]?.data ?? form.data_vencimento,
+        categoria_id: atual[i]?.categoria_id ?? "",
+      })),
+    );
+  };
+
+  const somaParcelas = parcelas.reduce((s, p) => s + (Number(p.valor) || 0), 0);
+  const esperado = Number(totalEsperado) || 0;
+  const divergeTotal = esperado > 0 && Math.abs(somaParcelas - esperado) >= 0.01;
+  const parcelasValidas =
+    parcelas.length >= 2 &&
+    parcelas.length <= 36 &&
+    parcelas.every((p) => Number(p.valor) > 0 && !!p.data);
 
   const gerarDatas = () => {
     const qtd = Math.max(1, Math.min(48, Number(qtdCheques) || 1));
@@ -163,6 +194,11 @@ export function ContasView({
     setQtdCheques("2");
     setIntervalo("mensal");
     setCheques([]);
+    setParcelarPag(false);
+    setQtdParcelas("2");
+    setTotalEsperado("");
+    setCategoriaPorParcela(false);
+    setParcelas([]);
   };
 
   const abrirEdicao = (c: Record<string, unknown>) => {
@@ -182,6 +218,8 @@ export function ContasView({
     });
     setParcelarCheque(false);
     setCheques([]);
+    setParcelarPag(false);
+    setParcelas([]);
     setAberto(true);
   };
 
@@ -246,6 +284,34 @@ export function ContasView({
           })
           .eq("id", editandoId);
         if (error) throw new Error(error.message);
+        return;
+      }
+
+      // Parcelamento manual: valores e vencimentos definidos linha a linha.
+      if (podeParcelar && parcelarPag) {
+        if (!parcelasValidas) {
+          throw new Error(
+            "Cada parcela precisa de valor maior que zero e data de vencimento válida (2 a 36 parcelas).",
+          );
+        }
+        const grupo = crypto.randomUUID();
+        const total = parcelas.length;
+        for (let i = 0; i < total; i++) {
+          const p = parcelas[i]!;
+          const { error } = await tabela(config.tabelaNome).insert({
+            ...base,
+            categoria_id:
+              (categoriaPorParcela ? p.categoria_id : form.categoria_id) || form.categoria_id || null,
+            valor: Number(p.valor),
+            data_vencimento: p.data,
+            parcela: `${i + 1}/${total}`,
+            numero_parcela: i + 1,
+            total_parcelas: total,
+            grupo_parcelamento_id: grupo,
+            ...(ehCheque ? { numero_cheque: null } : {}),
+          });
+          if (error) throw new Error(error.message);
+        }
         return;
       }
 
@@ -653,6 +719,162 @@ export function ContasView({
                       </Select>
                     </div>
 
+                    {podeParcelar && (
+                      <div className="sm:col-span-2 space-y-4 rounded-lg border border-dashed p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-medium">Parcelar este pagamento?</p>
+                            <p className="text-xs text-muted-foreground">
+                              Cada parcela tem valor e vencimento definidos manualmente.
+                            </p>
+                          </div>
+                          <Select
+                            value={parcelarPag ? "sim" : "nao"}
+                            onValueChange={(v) => {
+                              const sim = v === "sim";
+                              setParcelarPag(sim);
+                              if (sim && parcelas.length === 0) gerarParcelas();
+                            }}
+                          >
+                            <SelectTrigger className="w-[110px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="nao">Não</SelectItem>
+                              <SelectItem value="sim">Sim</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {parcelarPag && (
+                          <div className="space-y-3">
+                            <div className="grid gap-3 sm:grid-cols-3">
+                              <div>
+                                <Label htmlFor="qtd-parcelas">Número de parcelas</Label>
+                                <Input
+                                  id="qtd-parcelas"
+                                  type="number"
+                                  min="2"
+                                  max="36"
+                                  value={qtdParcelas}
+                                  onChange={(e) => {
+                                    setQtdParcelas(e.target.value);
+                                    const n = Number(e.target.value);
+                                    if (n >= 2 && n <= 36) gerarParcelas(n);
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="total-esperado">
+                                  Valor total esperado{" "}
+                                  <span className="text-muted-foreground">(opcional)</span>
+                                </Label>
+                                <Input
+                                  id="total-esperado"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={totalEsperado}
+                                  onChange={(e) => setTotalEsperado(e.target.value)}
+                                />
+                              </div>
+                              <div className="flex items-end">
+                                <label className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-primary"
+                                    checked={categoriaPorParcela}
+                                    onChange={(e) => setCategoriaPorParcela(e.target.checked)}
+                                  />
+                                  Categoria individual por parcela
+                                </label>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              {parcelas.map((p, i) => (
+                                <div
+                                  key={i}
+                                  className={`grid items-center gap-2 ${
+                                    categoriaPorParcela
+                                      ? "grid-cols-[54px_1fr_1fr] sm:grid-cols-[54px_1fr_1fr_1.4fr]"
+                                      : "grid-cols-[54px_1fr_1fr]"
+                                  }`}
+                                >
+                                  <span className="text-xs text-muted-foreground">
+                                    {i + 1}/{parcelas.length}
+                                  </span>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="Valor"
+                                    value={p.valor}
+                                    onChange={(e) =>
+                                      setParcelas(
+                                        parcelas.map((x, j) =>
+                                          j === i ? { ...x, valor: e.target.value } : x,
+                                        ),
+                                      )
+                                    }
+                                  />
+                                  <Input
+                                    type="date"
+                                    value={p.data}
+                                    onChange={(e) =>
+                                      setParcelas(
+                                        parcelas.map((x, j) =>
+                                          j === i ? { ...x, data: e.target.value } : x,
+                                        ),
+                                      )
+                                    }
+                                  />
+                                  {categoriaPorParcela && (
+                                    <SeletorCategoria
+                                      categorias={categorias}
+                                      value={p.categoria_id || form.categoria_id}
+                                      onChange={(v: string) =>
+                                        setParcelas(
+                                          parcelas.map((x, j) =>
+                                            j === i ? { ...x, categoria_id: v } : x,
+                                          ),
+                                        )
+                                      }
+                                      tipo={config.tipoCategoria}
+                                      empresaId={empresa?.id}
+                                    />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+
+                            <p className="text-sm">
+                              Soma das parcelas:{" "}
+                              <span className="font-semibold tabular-nums">{brl(somaParcelas)}</span>
+                              {esperado > 0 && (
+                                <span className="text-muted-foreground">
+                                  {" "}
+                                  · esperado {brl(esperado)}
+                                </span>
+                              )}
+                            </p>
+                            {divergeTotal && (
+                              <p className="text-xs text-warning-foreground">
+                                A soma das parcelas difere do valor total esperado em{" "}
+                                {brl(Math.abs(somaParcelas - esperado))}. Você ainda pode salvar.
+                              </p>
+                            )}
+                            {!parcelasValidas && (
+                              <p className="text-xs text-muted-foreground">
+                                Informe de 2 a 36 parcelas, todas com valor maior que zero e data de
+                                vencimento preenchida.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {ehCheque && (
                       <div className="sm:col-span-2 space-y-4 rounded-lg border border-dashed p-4">
                         <p className="text-sm font-medium">Dados do cheque</p>
@@ -783,7 +1005,9 @@ export function ContasView({
                       onClick={() => criar.mutate()}
                       disabled={
                         !form.descricao.trim() ||
-                        Number(form.valor) <= 0 ||
+                        (podeParcelar && parcelarPag
+                          ? !parcelasValidas
+                          : Number(form.valor) <= 0) ||
                         !form.categoria_id ||
                         criar.isPending
                       }
@@ -820,7 +1044,8 @@ export function ContasView({
                 </TableHeader>
                 <TableBody>
                   {lista.map((c) => (
-                    <TableRow key={c.id}>
+                    <Fragment key={c.id}>
+                    <TableRow>
                       {consolidado && (
                         <TableCell className="whitespace-nowrap text-muted-foreground">
                           {nomeEmpresa(c.empresa_id)}
@@ -831,7 +1056,26 @@ export function ContasView({
                         {(c as Record<string, unknown>)["numero_documento"] as string ?? "—"}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-muted-foreground">
-                        {(c as Record<string, unknown>)["parcela"] as string ?? "—"}
+                        {(() => {
+                          const reg = c as Record<string, unknown>;
+                          const grupo = reg["grupo_parcelamento_id"] as string | null;
+                          const rotulo =
+                            (reg["parcela"] as string) ||
+                            (reg["numero_parcela"] && reg["total_parcelas"]
+                              ? `${reg["numero_parcela"]}/${reg["total_parcelas"]}`
+                              : "");
+                          if (!grupo) return rotulo || "—";
+                          return (
+                            <button
+                              type="button"
+                              className="inline-flex items-center rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+                              title="Ver parcelas do mesmo parcelamento"
+                              onClick={() => setGrupoAberto(grupoAberto === grupo ? null : grupo)}
+                            >
+                              Parcela {rotulo || "—"}
+                            </button>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>
                         {c.categoria_id ? (
@@ -989,6 +1233,56 @@ export function ContasView({
                         </div>
                       </TableCell>
                     </TableRow>
+                    {grupoAberto &&
+                      grupoAberto === (c as Record<string, unknown>)["grupo_parcelamento_id"] && (
+                        <TableRow className="bg-muted/40">
+                          <TableCell colSpan={consolidado ? 11 : 10}>
+                            <p className="mb-2 text-xs font-medium text-muted-foreground">
+                              Parcelas deste parcelamento
+                            </p>
+                            <div className="space-y-1">
+                              {contas
+                                .filter(
+                                  (o) =>
+                                    (o as Record<string, unknown>)["grupo_parcelamento_id"] ===
+                                    grupoAberto,
+                                )
+                                .sort((a, b) =>
+                                  a.data_vencimento < b.data_vencimento
+                                    ? -1
+                                    : a.data_vencimento > b.data_vencimento
+                                      ? 1
+                                      : 0,
+                                )
+                                .map((o) => (
+                                  <div
+                                    key={o.id}
+                                    className={`flex flex-wrap items-center gap-3 text-sm ${
+                                      o.id === c.id ? "font-semibold" : "text-muted-foreground"
+                                    }`}
+                                  >
+                                    <span className="w-14">
+                                      {((o as Record<string, unknown>)["parcela"] as string) ?? "—"}
+                                    </span>
+                                    <span className="w-24">{dataBR(o.data_vencimento)}</span>
+                                    <span className="w-28 tabular-nums">{brl(Number(o.valor))}</span>
+                                    <StatusBadge
+                                      status={situacao(
+                                        o.status,
+                                        o.data_vencimento,
+                                        hj,
+                                        (o as Record<string, unknown>)[
+                                          "status_cheque"
+                                        ] as StatusCheque | null,
+                                      )}
+                                    />
+                                  </div>
+                                ))}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </Fragment>
                   ))}
                 </TableBody>
               </Table>

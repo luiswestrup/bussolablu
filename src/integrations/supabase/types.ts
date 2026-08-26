@@ -199,10 +199,12 @@ export type Database = {
           id: string
           numero_cheque: string | null
           numero_documento: string | null
+          numero_parcela: number | null
           observacao: string | null
           parcela: string | null
           status: Database["public"]["Enums"]["status_pagar"]
           status_cheque: Database["public"]["Enums"]["status_cheque"] | null
+          total_parcelas: number | null
           updated_at: string
           valor: number
           valor_desconto: number
@@ -229,10 +231,12 @@ export type Database = {
           id?: string
           numero_cheque?: string | null
           numero_documento?: string | null
+          numero_parcela?: number | null
           observacao?: string | null
           parcela?: string | null
           status?: Database["public"]["Enums"]["status_pagar"]
           status_cheque?: Database["public"]["Enums"]["status_cheque"] | null
+          total_parcelas?: number | null
           updated_at?: string
           valor: number
           valor_desconto?: number
@@ -259,10 +263,12 @@ export type Database = {
           id?: string
           numero_cheque?: string | null
           numero_documento?: string | null
+          numero_parcela?: number | null
           observacao?: string | null
           parcela?: string | null
           status?: Database["public"]["Enums"]["status_pagar"]
           status_cheque?: Database["public"]["Enums"]["status_cheque"] | null
+          total_parcelas?: number | null
           updated_at?: string
           valor?: number
           valor_desconto?: number
