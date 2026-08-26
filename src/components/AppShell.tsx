@@ -46,6 +46,7 @@ const itens = [
   { to: "/calendario", label: "Calendário", icon: CalendarDays },
   { to: "/conciliacao", label: "Conciliação", icon: ListChecks },
   { to: "/importar-notas", label: "Importar NF-e", icon: FileUp },
+  { to: "/importar-nfse", label: "Importar NFS-e", icon: FileText },
   { to: "/relatorios", label: "Relatórios", icon: FileBarChart },
   { to: "/configuracoes", label: "Configurações", icon: Building2 },
 ] as const;
