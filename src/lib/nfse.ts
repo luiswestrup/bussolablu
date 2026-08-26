@@ -21,7 +21,8 @@ const texto = (el: Element | Document | null | undefined, tag: string): string =
 };
 
 const numero = (valor: string): number => {
-  const n = Number(valor.replace(/\./g, (m, i, s: string) => (s.includes(",") ? "" : m)).replace(",", "."));
+  const limpo = valor.includes(",") ? valor.replace(/\./g, "").replace(",", ".") : valor;
+  const n = Number(limpo);
   return Number.isFinite(n) ? n : 0;
 };
 
