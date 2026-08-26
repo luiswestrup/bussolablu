@@ -719,6 +719,162 @@ export function ContasView({
                       </Select>
                     </div>
 
+                    {podeParcelar && (
+                      <div className="sm:col-span-2 space-y-4 rounded-lg border border-dashed p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-medium">Parcelar este pagamento?</p>
+                            <p className="text-xs text-muted-foreground">
+                              Cada parcela tem valor e vencimento definidos manualmente.
+                            </p>
+                          </div>
+                          <Select
+                            value={parcelarPag ? "sim" : "nao"}
+                            onValueChange={(v) => {
+                              const sim = v === "sim";
+                              setParcelarPag(sim);
+                              if (sim && parcelas.length === 0) gerarParcelas();
+                            }}
+                          >
+                            <SelectTrigger className="w-[110px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="nao">Não</SelectItem>
+                              <SelectItem value="sim">Sim</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {parcelarPag && (
+                          <div className="space-y-3">
+                            <div className="grid gap-3 sm:grid-cols-3">
+                              <div>
+                                <Label htmlFor="qtd-parcelas">Número de parcelas</Label>
+                                <Input
+                                  id="qtd-parcelas"
+                                  type="number"
+                                  min="2"
+                                  max="36"
+                                  value={qtdParcelas}
+                                  onChange={(e) => {
+                                    setQtdParcelas(e.target.value);
+                                    const n = Number(e.target.value);
+                                    if (n >= 2 && n <= 36) gerarParcelas(n);
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="total-esperado">
+                                  Valor total esperado{" "}
+                                  <span className="text-muted-foreground">(opcional)</span>
+                                </Label>
+                                <Input
+                                  id="total-esperado"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={totalEsperado}
+                                  onChange={(e) => setTotalEsperado(e.target.value)}
+                                />
+                              </div>
+                              <div className="flex items-end">
+                                <label className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-primary"
+                                    checked={categoriaPorParcela}
+                                    onChange={(e) => setCategoriaPorParcela(e.target.checked)}
+                                  />
+                                  Categoria individual por parcela
+                                </label>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              {parcelas.map((p, i) => (
+                                <div
+                                  key={i}
+                                  className={`grid items-center gap-2 ${
+                                    categoriaPorParcela
+                                      ? "grid-cols-[54px_1fr_1fr] sm:grid-cols-[54px_1fr_1fr_1.4fr]"
+                                      : "grid-cols-[54px_1fr_1fr]"
+                                  }`}
+                                >
+                                  <span className="text-xs text-muted-foreground">
+                                    {i + 1}/{parcelas.length}
+                                  </span>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="Valor"
+                                    value={p.valor}
+                                    onChange={(e) =>
+                                      setParcelas(
+                                        parcelas.map((x, j) =>
+                                          j === i ? { ...x, valor: e.target.value } : x,
+                                        ),
+                                      )
+                                    }
+                                  />
+                                  <Input
+                                    type="date"
+                                    value={p.data}
+                                    onChange={(e) =>
+                                      setParcelas(
+                                        parcelas.map((x, j) =>
+                                          j === i ? { ...x, data: e.target.value } : x,
+                                        ),
+                                      )
+                                    }
+                                  />
+                                  {categoriaPorParcela && (
+                                    <SeletorCategoria
+                                      categorias={categorias}
+                                      value={p.categoria_id || form.categoria_id}
+                                      onChange={(v: string) =>
+                                        setParcelas(
+                                          parcelas.map((x, j) =>
+                                            j === i ? { ...x, categoria_id: v } : x,
+                                          ),
+                                        )
+                                      }
+                                      tipo={config.tipoCategoria}
+                                      empresaId={empresa?.id}
+                                    />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+
+                            <p className="text-sm">
+                              Soma das parcelas:{" "}
+                              <span className="font-semibold tabular-nums">{brl(somaParcelas)}</span>
+                              {esperado > 0 && (
+                                <span className="text-muted-foreground">
+                                  {" "}
+                                  · esperado {brl(esperado)}
+                                </span>
+                              )}
+                            </p>
+                            {divergeTotal && (
+                              <p className="text-xs text-warning-foreground">
+                                A soma das parcelas difere do valor total esperado em{" "}
+                                {brl(Math.abs(somaParcelas - esperado))}. Você ainda pode salvar.
+                              </p>
+                            )}
+                            {!parcelasValidas && (
+                              <p className="text-xs text-muted-foreground">
+                                Informe de 2 a 36 parcelas, todas com valor maior que zero e data de
+                                vencimento preenchida.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {ehCheque && (
                       <div className="sm:col-span-2 space-y-4 rounded-lg border border-dashed p-4">
                         <p className="text-sm font-medium">Dados do cheque</p>
