@@ -287,6 +287,34 @@ export function ContasView({
         return;
       }
 
+      // Parcelamento manual: valores e vencimentos definidos linha a linha.
+      if (podeParcelar && parcelarPag) {
+        if (!parcelasValidas) {
+          throw new Error(
+            "Cada parcela precisa de valor maior que zero e data de vencimento válida (2 a 36 parcelas).",
+          );
+        }
+        const grupo = crypto.randomUUID();
+        const total = parcelas.length;
+        for (let i = 0; i < total; i++) {
+          const p = parcelas[i]!;
+          const { error } = await tabela(config.tabelaNome).insert({
+            ...base,
+            categoria_id:
+              (categoriaPorParcela ? p.categoria_id : form.categoria_id) || form.categoria_id || null,
+            valor: Number(p.valor),
+            data_vencimento: p.data,
+            parcela: `${i + 1}/${total}`,
+            numero_parcela: i + 1,
+            total_parcelas: total,
+            grupo_parcelamento_id: grupo,
+            ...(ehCheque ? { numero_cheque: null } : {}),
+          });
+          if (error) throw new Error(error.message);
+        }
+        return;
+      }
+
       // Parcelamento manual em cheques: um título por cheque, mesmo grupo.
       if (ehCheque && parcelarCheque && cheques.length > 0) {
         const grupo = crypto.randomUUID();
