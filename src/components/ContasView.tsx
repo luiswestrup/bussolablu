@@ -1044,7 +1044,8 @@ export function ContasView({
                 </TableHeader>
                 <TableBody>
                   {lista.map((c) => (
-                    <TableRow key={c.id}>
+                    <Fragment key={c.id}>
+                    <TableRow>
                       {consolidado && (
                         <TableCell className="whitespace-nowrap text-muted-foreground">
                           {nomeEmpresa(c.empresa_id)}
