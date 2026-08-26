@@ -136,7 +136,35 @@ export function ContasView({
   const [intervalo, setIntervalo] = useState<"mensal" | "quinzenal" | "semanal">("mensal");
   const [cheques, setCheques] = useState<ChequeLinha[]>([]);
 
+  // Parcelamento manual (Contas a pagar): valor e vencimento livres por parcela.
+  const [parcelarPag, setParcelarPag] = useState(false);
+  const [qtdParcelas, setQtdParcelas] = useState("2");
+  const [totalEsperado, setTotalEsperado] = useState("");
+  const [categoriaPorParcela, setCategoriaPorParcela] = useState(false);
+  const [parcelas, setParcelas] = useState<ParcelaLinha[]>([]);
+  const [grupoAberto, setGrupoAberto] = useState<string | null>(null);
+
   const ehCheque = form.forma === "Cheque";
+  const podeParcelar = config.tipo === "pagar" && !editandoId;
+
+  const gerarParcelas = (quantidade?: number) => {
+    const qtd = Math.max(2, Math.min(36, Number(quantidade ?? qtdParcelas) || 2));
+    setParcelas((atual) =>
+      Array.from({ length: qtd }, (_, i) => ({
+        valor: atual[i]?.valor ?? "",
+        data: atual[i]?.data ?? form.data_vencimento,
+        categoria_id: atual[i]?.categoria_id ?? "",
+      })),
+    );
+  };
+
+  const somaParcelas = parcelas.reduce((s, p) => s + (Number(p.valor) || 0), 0);
+  const esperado = Number(totalEsperado) || 0;
+  const divergeTotal = esperado > 0 && Math.abs(somaParcelas - esperado) >= 0.01;
+  const parcelasValidas =
+    parcelas.length >= 2 &&
+    parcelas.length <= 36 &&
+    parcelas.every((p) => Number(p.valor) > 0 && !!p.data);
 
   const gerarDatas = () => {
     const qtd = Math.max(1, Math.min(48, Number(qtdCheques) || 1));
