@@ -194,6 +194,11 @@ export function ContasView({
     setQtdCheques("2");
     setIntervalo("mensal");
     setCheques([]);
+    setParcelarPag(false);
+    setQtdParcelas("2");
+    setTotalEsperado("");
+    setCategoriaPorParcela(false);
+    setParcelas([]);
   };
 
   const abrirEdicao = (c: Record<string, unknown>) => {
