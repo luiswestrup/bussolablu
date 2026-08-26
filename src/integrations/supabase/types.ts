@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -571,6 +571,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fornecedor_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      historico_edicoes: {
+        Row: {
+          campo_alterado: string
+          editado_em: string
+          empresa_id: string
+          id: string
+          registro_id: string
+          tabela_origem: string
+          usuario_id: string | null
+          valor_anterior: string | null
+          valor_novo: string | null
+        }
+        Insert: {
+          campo_alterado: string
+          editado_em?: string
+          empresa_id: string
+          id?: string
+          registro_id: string
+          tabela_origem: string
+          usuario_id?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Update: {
+          campo_alterado?: string
+          editado_em?: string
+          empresa_id?: string
+          id?: string
+          registro_id?: string
+          tabela_origem?: string
+          usuario_id?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_edicoes_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresa"

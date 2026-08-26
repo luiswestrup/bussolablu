@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { ChequeBadge, Kpi, SecaoVazia, StatusBadge } from "@/components/ui-kit";
 import { SeletorCategoria } from "@/components/SeletorCategoria";
+import { EditarTituloBaixado } from "@/components/EditarTituloBaixado";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -126,6 +127,7 @@ export function ContasView({
     banco_emissor: "",
     numero_cheque: "",
   });
+  const [editandoBaixado, setEditandoBaixado] = useState<Record<string, unknown> | null>(null);
   const [parcelarCheque, setParcelarCheque] = useState(false);
   const [qtdCheques, setQtdCheques] = useState("2");
   const [intervalo, setIntervalo] = useState<"mensal" | "quinzenal" | "semanal">("mensal");
@@ -962,9 +964,17 @@ export function ContasView({
                           <Button
                             size="icon"
                             variant="ghost"
-                            title="Editar lançamento"
+                            title={
+                              c.situacao === config.statusFinal
+                                ? "Editar título baixado"
+                                : "Editar lançamento"
+                            }
                             disabled={consolidado}
-                            onClick={() => abrirEdicao(c as unknown as Record<string, unknown>)}
+                            onClick={() =>
+                              c.situacao === config.statusFinal
+                                ? setEditandoBaixado(c as unknown as Record<string, unknown>)
+                                : abrirEdicao(c as unknown as Record<string, unknown>)
+                            }
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -986,6 +996,20 @@ export function ContasView({
           </div>
         </CardContent>
       </Card>
+
+      <EditarTituloBaixado
+        config={{
+          tipo: config.tipo,
+          tabelaNome: config.tabelaNome as "conta_pagar" | "conta_receber",
+          campoData: config.campoData,
+          campoForma: config.campoForma,
+          campoValor: config.tipo === "pagar" ? "valor_pago" : "valor_recebido",
+          tipoCategoria: config.tipoCategoria,
+        }}
+        conta={editandoBaixado}
+        formas={FORMAS}
+        onClose={() => setEditandoBaixado(null)}
+      />
 
       <Dialog open={!!baixa} onOpenChange={(o) => !o && setBaixa(null)}>
         <DialogContent>
