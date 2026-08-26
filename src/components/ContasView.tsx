@@ -996,6 +996,20 @@ export function ContasView({
         </CardContent>
       </Card>
 
+      <EditarTituloBaixado
+        config={{
+          tipo: config.tipo,
+          tabelaNome: config.tabelaNome as "conta_pagar" | "conta_receber",
+          campoData: config.campoData,
+          campoForma: config.campoForma,
+          campoValor: config.tipo === "pagar" ? "valor_pago" : "valor_recebido",
+          tipoCategoria: config.tipoCategoria,
+        }}
+        conta={editandoBaixado}
+        formas={FORMAS}
+        onClose={() => setEditandoBaixado(null)}
+      />
+
       <Dialog open={!!baixa} onOpenChange={(o) => !o && setBaixa(null)}>
         <DialogContent>
           <DialogHeader>
