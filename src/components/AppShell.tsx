@@ -9,6 +9,7 @@ import {
   Building2,
   LogOut,
   Menu,
+  FileText,
   FileUp,
   CalendarDays,
   ListChecks,
