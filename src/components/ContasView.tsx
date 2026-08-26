@@ -1233,6 +1233,56 @@ export function ContasView({
                         </div>
                       </TableCell>
                     </TableRow>
+                    {grupoAberto &&
+                      grupoAberto === (c as Record<string, unknown>)["grupo_parcelamento_id"] && (
+                        <TableRow className="bg-muted/40">
+                          <TableCell colSpan={consolidado ? 11 : 10}>
+                            <p className="mb-2 text-xs font-medium text-muted-foreground">
+                              Parcelas deste parcelamento
+                            </p>
+                            <div className="space-y-1">
+                              {contas
+                                .filter(
+                                  (o) =>
+                                    (o as Record<string, unknown>)["grupo_parcelamento_id"] ===
+                                    grupoAberto,
+                                )
+                                .sort((a, b) =>
+                                  a.data_vencimento < b.data_vencimento
+                                    ? -1
+                                    : a.data_vencimento > b.data_vencimento
+                                      ? 1
+                                      : 0,
+                                )
+                                .map((o) => (
+                                  <div
+                                    key={o.id}
+                                    className={`flex flex-wrap items-center gap-3 text-sm ${
+                                      o.id === c.id ? "font-semibold" : "text-muted-foreground"
+                                    }`}
+                                  >
+                                    <span className="w-14">
+                                      {((o as Record<string, unknown>)["parcela"] as string) ?? "—"}
+                                    </span>
+                                    <span className="w-24">{dataBR(o.data_vencimento)}</span>
+                                    <span className="w-28 tabular-nums">{brl(Number(o.valor))}</span>
+                                    <StatusBadge
+                                      status={situacao(
+                                        o.status,
+                                        o.data_vencimento,
+                                        hj,
+                                        (o as Record<string, unknown>)[
+                                          "status_cheque"
+                                        ] as StatusCheque | null,
+                                      )}
+                                    />
+                                  </div>
+                                ))}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </Fragment>
                   ))}
                 </TableBody>
               </Table>
