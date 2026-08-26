@@ -578,6 +578,50 @@ export type Database = {
           },
         ]
       }
+      historico_edicoes: {
+        Row: {
+          campo_alterado: string
+          editado_em: string
+          empresa_id: string
+          id: string
+          registro_id: string
+          tabela_origem: string
+          usuario_id: string | null
+          valor_anterior: string | null
+          valor_novo: string | null
+        }
+        Insert: {
+          campo_alterado: string
+          editado_em?: string
+          empresa_id: string
+          id?: string
+          registro_id: string
+          tabela_origem: string
+          usuario_id?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Update: {
+          campo_alterado?: string
+          editado_em?: string
+          empresa_id?: string
+          id?: string
+          registro_id?: string
+          tabela_origem?: string
+          usuario_id?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_edicoes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       movimento_estoque: {
         Row: {
           criado_em: string
