@@ -1005,7 +1005,9 @@ export function ContasView({
                       onClick={() => criar.mutate()}
                       disabled={
                         !form.descricao.trim() ||
-                        Number(form.valor) <= 0 ||
+                        (podeParcelar && parcelarPag
+                          ? !parcelasValidas
+                          : Number(form.valor) <= 0) ||
                         !form.categoria_id ||
                         criar.isPending
                       }
