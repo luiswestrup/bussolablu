@@ -199,9 +199,11 @@ export type Database = {
           id: string
           numero_cheque: string | null
           numero_documento: string | null
+          numero_nfse: string | null
           numero_parcela: number | null
           observacao: string | null
           parcela: string | null
+          prestador_cnpj: string | null
           status: Database["public"]["Enums"]["status_pagar"]
           status_cheque: Database["public"]["Enums"]["status_cheque"] | null
           total_parcelas: number | null
@@ -211,6 +213,7 @@ export type Database = {
           valor_multa_juros: number
           valor_pago: number | null
           vencimento_estimado: boolean
+          xml_hash: string | null
         }
         Insert: {
           banco_emissor?: string | null
@@ -231,9 +234,11 @@ export type Database = {
           id?: string
           numero_cheque?: string | null
           numero_documento?: string | null
+          numero_nfse?: string | null
           numero_parcela?: number | null
           observacao?: string | null
           parcela?: string | null
+          prestador_cnpj?: string | null
           status?: Database["public"]["Enums"]["status_pagar"]
           status_cheque?: Database["public"]["Enums"]["status_cheque"] | null
           total_parcelas?: number | null
@@ -243,6 +248,7 @@ export type Database = {
           valor_multa_juros?: number
           valor_pago?: number | null
           vencimento_estimado?: boolean
+          xml_hash?: string | null
         }
         Update: {
           banco_emissor?: string | null
@@ -263,9 +269,11 @@ export type Database = {
           id?: string
           numero_cheque?: string | null
           numero_documento?: string | null
+          numero_nfse?: string | null
           numero_parcela?: number | null
           observacao?: string | null
           parcela?: string | null
+          prestador_cnpj?: string | null
           status?: Database["public"]["Enums"]["status_pagar"]
           status_cheque?: Database["public"]["Enums"]["status_cheque"] | null
           total_parcelas?: number | null
@@ -275,6 +283,7 @@ export type Database = {
           valor_multa_juros?: number
           valor_pago?: number | null
           vencimento_estimado?: boolean
+          xml_hash?: string | null
         }
         Relationships: [
           {
@@ -332,9 +341,11 @@ export type Database = {
           id: string
           numero_cheque: string | null
           numero_documento: string | null
+          numero_nfse: string | null
           observacao: string | null
           parcela: string | null
           percentual_taxa_maquininha: number | null
+          prestador_cnpj: string | null
           status: Database["public"]["Enums"]["status_receber"]
           status_cheque: Database["public"]["Enums"]["status_cheque"] | null
           updated_at: string
@@ -343,6 +354,7 @@ export type Database = {
           valor_multa_juros: number
           valor_recebido: number | null
           valor_taxa_maquininha: number | null
+          xml_hash: string | null
         }
         Insert: {
           banco_emissor?: string | null
@@ -361,9 +373,11 @@ export type Database = {
           id?: string
           numero_cheque?: string | null
           numero_documento?: string | null
+          numero_nfse?: string | null
           observacao?: string | null
           parcela?: string | null
           percentual_taxa_maquininha?: number | null
+          prestador_cnpj?: string | null
           status?: Database["public"]["Enums"]["status_receber"]
           status_cheque?: Database["public"]["Enums"]["status_cheque"] | null
           updated_at?: string
@@ -372,6 +386,7 @@ export type Database = {
           valor_multa_juros?: number
           valor_recebido?: number | null
           valor_taxa_maquininha?: number | null
+          xml_hash?: string | null
         }
         Update: {
           banco_emissor?: string | null
@@ -390,9 +405,11 @@ export type Database = {
           id?: string
           numero_cheque?: string | null
           numero_documento?: string | null
+          numero_nfse?: string | null
           observacao?: string | null
           parcela?: string | null
           percentual_taxa_maquininha?: number | null
+          prestador_cnpj?: string | null
           status?: Database["public"]["Enums"]["status_receber"]
           status_cheque?: Database["public"]["Enums"]["status_cheque"] | null
           updated_at?: string
@@ -401,6 +418,7 @@ export type Database = {
           valor_multa_juros?: number
           valor_recebido?: number | null
           valor_taxa_maquininha?: number | null
+          xml_hash?: string | null
         }
         Relationships: [
           {
