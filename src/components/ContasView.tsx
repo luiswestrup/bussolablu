@@ -1056,7 +1056,26 @@ export function ContasView({
                         {(c as Record<string, unknown>)["numero_documento"] as string ?? "—"}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-muted-foreground">
-                        {(c as Record<string, unknown>)["parcela"] as string ?? "—"}
+                        {(() => {
+                          const reg = c as Record<string, unknown>;
+                          const grupo = reg["grupo_parcelamento_id"] as string | null;
+                          const rotulo =
+                            (reg["parcela"] as string) ||
+                            (reg["numero_parcela"] && reg["total_parcelas"]
+                              ? `${reg["numero_parcela"]}/${reg["total_parcelas"]}`
+                              : "");
+                          if (!grupo) return rotulo || "—";
+                          return (
+                            <button
+                              type="button"
+                              className="inline-flex items-center rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+                              title="Ver parcelas do mesmo parcelamento"
+                              onClick={() => setGrupoAberto(grupoAberto === grupo ? null : grupo)}
+                            >
+                              Parcela {rotulo || "—"}
+                            </button>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>
                         {c.categoria_id ? (
