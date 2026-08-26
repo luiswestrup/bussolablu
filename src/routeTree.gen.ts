@@ -17,6 +17,7 @@ import { Route as AuthenticatedConciliacaoRouteImport } from './routes/_authenti
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedEstoqueRouteImport } from './routes/_authenticated/estoque'
+import { Route as AuthenticatedImportarNfseRouteImport } from './routes/_authenticated/importar-nfse'
 import { Route as AuthenticatedImportarNotasRouteImport } from './routes/_authenticated/importar-notas'
 import { Route as AuthenticatedPagamentosRouteImport } from './routes/_authenticated/pagamentos'
 import { Route as AuthenticatedRecebimentosRouteImport } from './routes/_authenticated/recebimentos'
@@ -63,6 +64,12 @@ const AuthenticatedEstoqueRoute = AuthenticatedEstoqueRouteImport.update({
   path: '/estoque',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedImportarNfseRoute =
+  AuthenticatedImportarNfseRouteImport.update({
+    id: '/importar-nfse',
+    path: '/importar-nfse',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedImportarNotasRoute =
   AuthenticatedImportarNotasRouteImport.update({
     id: '/importar-notas',
@@ -94,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/estoque': typeof AuthenticatedEstoqueRoute
+  '/importar-nfse': typeof AuthenticatedImportarNfseRoute
   '/importar-notas': typeof AuthenticatedImportarNotasRoute
   '/pagamentos': typeof AuthenticatedPagamentosRoute
   '/recebimentos': typeof AuthenticatedRecebimentosRoute
@@ -107,6 +115,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/estoque': typeof AuthenticatedEstoqueRoute
+  '/importar-nfse': typeof AuthenticatedImportarNfseRoute
   '/importar-notas': typeof AuthenticatedImportarNotasRoute
   '/pagamentos': typeof AuthenticatedPagamentosRoute
   '/recebimentos': typeof AuthenticatedRecebimentosRoute
@@ -122,6 +131,7 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/estoque': typeof AuthenticatedEstoqueRoute
+  '/_authenticated/importar-nfse': typeof AuthenticatedImportarNfseRoute
   '/_authenticated/importar-notas': typeof AuthenticatedImportarNotasRoute
   '/_authenticated/pagamentos': typeof AuthenticatedPagamentosRoute
   '/_authenticated/recebimentos': typeof AuthenticatedRecebimentosRoute
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/dashboard'
     | '/estoque'
+    | '/importar-nfse'
     | '/importar-notas'
     | '/pagamentos'
     | '/recebimentos'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/dashboard'
     | '/estoque'
+    | '/importar-nfse'
     | '/importar-notas'
     | '/pagamentos'
     | '/recebimentos'
@@ -164,6 +176,7 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracoes'
     | '/_authenticated/dashboard'
     | '/_authenticated/estoque'
+    | '/_authenticated/importar-nfse'
     | '/_authenticated/importar-notas'
     | '/_authenticated/pagamentos'
     | '/_authenticated/recebimentos'
@@ -234,6 +247,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEstoqueRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/importar-nfse': {
+      id: '/_authenticated/importar-nfse'
+      path: '/importar-nfse'
+      fullPath: '/importar-nfse'
+      preLoaderRoute: typeof AuthenticatedImportarNfseRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/importar-notas': {
       id: '/_authenticated/importar-notas'
       path: '/importar-notas'
@@ -271,6 +291,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEstoqueRoute: typeof AuthenticatedEstoqueRoute
+  AuthenticatedImportarNfseRoute: typeof AuthenticatedImportarNfseRoute
   AuthenticatedImportarNotasRoute: typeof AuthenticatedImportarNotasRoute
   AuthenticatedPagamentosRoute: typeof AuthenticatedPagamentosRoute
   AuthenticatedRecebimentosRoute: typeof AuthenticatedRecebimentosRoute
@@ -283,6 +304,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEstoqueRoute: AuthenticatedEstoqueRoute,
+  AuthenticatedImportarNfseRoute: AuthenticatedImportarNfseRoute,
   AuthenticatedImportarNotasRoute: AuthenticatedImportarNotasRoute,
   AuthenticatedPagamentosRoute: AuthenticatedPagamentosRoute,
   AuthenticatedRecebimentosRoute: AuthenticatedRecebimentosRoute,
