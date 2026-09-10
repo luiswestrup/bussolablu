@@ -46,6 +46,7 @@ const itens = [
   { to: "/estoque", label: "Estoque", icon: Boxes },
   { to: "/calendario", label: "Calendário", icon: CalendarDays },
   { to: "/conciliacao", label: "Conciliação", icon: ListChecks },
+  { to: "/razao-bancario", label: "Razão bancário", icon: BookOpen },
   { to: "/importar-notas", label: "Importar NF-e", icon: FileUp },
   { to: "/importar-nfse", label: "Importar NFS-e", icon: FileText },
   { to: "/relatorios", label: "Relatórios", icon: FileBarChart },
