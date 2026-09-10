@@ -1,11 +1,12 @@
 import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Download, Pencil, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Download, Pencil, Plus, Split, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { ChequeBadge, Kpi, SecaoVazia, StatusBadge } from "@/components/ui-kit";
 import { SeletorCategoria } from "@/components/SeletorCategoria";
 import { EditarTituloBaixado } from "@/components/EditarTituloBaixado";
+import { ParcelarTitulo } from "@/components/ParcelarTitulo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -131,6 +132,7 @@ export function ContasView({
     numero_cheque: "",
   });
   const [editandoBaixado, setEditandoBaixado] = useState<Record<string, unknown> | null>(null);
+  const [parcelando, setParcelando] = useState<Record<string, unknown> | null>(null);
   const [parcelarCheque, setParcelarCheque] = useState(false);
   const [qtdCheques, setQtdCheques] = useState("2");
   const [intervalo, setIntervalo] = useState<"mensal" | "quinzenal" | "semanal">("mensal");
@@ -1205,6 +1207,37 @@ export function ContasView({
                               <CheckCircle2 className="h-4 w-4 text-success" />
                             </Button>
                           )}
+                          {config.tipo === "pagar" && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              title={
+                                c.situacao === config.statusFinal
+                                  ? "Título já baixado: use estorno ou edição"
+                                  : (c as Record<string, unknown>)["grupo_parcelamento_id"]
+                                    ? "Título já pertence a um parcelamento"
+                                    : "Parcelar este pagamento"
+                              }
+                              disabled={consolidado}
+                              onClick={() => {
+                                if (c.situacao === config.statusFinal) {
+                                  toast.error(
+                                    "Este título já foi baixado. Use estorno ou a edição do título baixado.",
+                                  );
+                                  return;
+                                }
+                                if ((c as Record<string, unknown>)["grupo_parcelamento_id"]) {
+                                  toast.error(
+                                    "Este título já faz parte de um parcelamento. Edite as parcelas existentes.",
+                                  );
+                                  return;
+                                }
+                                setParcelando(c as unknown as Record<string, unknown>);
+                              }}
+                            >
+                              <Split className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             size="icon"
                             variant="ghost"
@@ -1290,6 +1323,8 @@ export function ContasView({
           </div>
         </CardContent>
       </Card>
+
+      <ParcelarTitulo conta={parcelando} onClose={() => setParcelando(null)} />
 
       <EditarTituloBaixado
         config={{
