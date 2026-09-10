@@ -131,6 +131,7 @@ export function ContasView({
     numero_cheque: "",
   });
   const [editandoBaixado, setEditandoBaixado] = useState<Record<string, unknown> | null>(null);
+  const [parcelando, setParcelando] = useState<Record<string, unknown> | null>(null);
   const [parcelarCheque, setParcelarCheque] = useState(false);
   const [qtdCheques, setQtdCheques] = useState("2");
   const [intervalo, setIntervalo] = useState<"mensal" | "quinzenal" | "semanal">("mensal");
