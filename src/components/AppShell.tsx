@@ -12,6 +12,7 @@ import {
   FileText,
   FileUp,
   CalendarDays,
+  BookOpen,
   ListChecks,
   ChevronsLeft,
   ChevronsRight,
