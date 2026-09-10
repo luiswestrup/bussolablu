@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.aplicar_convite_existente() FROM PUBLIC, anon, authenticated;
