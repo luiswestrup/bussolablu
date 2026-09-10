@@ -1206,6 +1206,37 @@ export function ContasView({
                               <CheckCircle2 className="h-4 w-4 text-success" />
                             </Button>
                           )}
+                          {config.tipo === "pagar" && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              title={
+                                c.situacao === config.statusFinal
+                                  ? "Título já baixado: use estorno ou edição"
+                                  : (c as Record<string, unknown>)["grupo_parcelamento_id"]
+                                    ? "Título já pertence a um parcelamento"
+                                    : "Parcelar este pagamento"
+                              }
+                              disabled={consolidado}
+                              onClick={() => {
+                                if (c.situacao === config.statusFinal) {
+                                  toast.error(
+                                    "Este título já foi baixado. Use estorno ou a edição do título baixado.",
+                                  );
+                                  return;
+                                }
+                                if ((c as Record<string, unknown>)["grupo_parcelamento_id"]) {
+                                  toast.error(
+                                    "Este título já faz parte de um parcelamento. Edite as parcelas existentes.",
+                                  );
+                                  return;
+                                }
+                                setParcelando(c as unknown as Record<string, unknown>);
+                              }}
+                            >
+                              <Split className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             size="icon"
                             variant="ghost"
