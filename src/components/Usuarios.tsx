@@ -112,7 +112,7 @@ export function Usuarios() {
     onSuccess: () => {
       setForm({ ...form, email: "", consolidado: false });
       queryClient.invalidateQueries({ queryKey: ["convite"] });
-      toast.success("Convite registrado. O acesso é liberado quando a pessoa criar a conta com esse e-mail.");
+      toast.success("Convite registrado. Avise a pessoa: o acesso vale para quem entrar com esse e-mail.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -159,6 +159,10 @@ export function Usuarios() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Convidar usuário</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            O convite não envia e-mail automático. Avise a pessoa para entrar no sistema com esse
+            e-mail — o acesso é liberado na hora, mesmo se ela já tiver conta criada.
+          </p>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-center gap-2">
