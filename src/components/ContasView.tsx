@@ -1,11 +1,12 @@
 import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Download, Pencil, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Download, Pencil, Plus, Split, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { ChequeBadge, Kpi, SecaoVazia, StatusBadge } from "@/components/ui-kit";
 import { SeletorCategoria } from "@/components/SeletorCategoria";
 import { EditarTituloBaixado } from "@/components/EditarTituloBaixado";
+import { ParcelarTitulo } from "@/components/ParcelarTitulo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
