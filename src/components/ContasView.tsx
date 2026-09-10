@@ -1324,6 +1324,8 @@ export function ContasView({
         </CardContent>
       </Card>
 
+      <ParcelarTitulo conta={parcelando} onClose={() => setParcelando(null)} />
+
       <EditarTituloBaixado
         config={{
           tipo: config.tipo,
