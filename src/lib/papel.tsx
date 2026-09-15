@@ -61,6 +61,7 @@ export const ACESSO: Record<string, Papel[]> = {
   "/recebimentos": ["admin", "financeiro"],
   "/calendario": ["admin", "financeiro"],
   "/conciliacao": ["admin", "financeiro"],
+  "/fluxo-caixa": ["admin", "financeiro"],
   "/razao-bancario": ["admin", "financeiro"],
   "/importar-notas": ["admin", "financeiro"],
   "/importar-nfse": ["admin", "financeiro"],

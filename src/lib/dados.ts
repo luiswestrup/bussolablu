@@ -243,6 +243,43 @@ export const useExtratosSaldo = (escopo?: Escopo) =>
     "data",
   );
 
+export type ExtratoLinha = {
+  id: string;
+  empresa_id: string;
+  conta_bancaria_id: string;
+  data: string;
+  valor: number;
+  descricao: string | null;
+  fitid: string | null;
+  hash: string;
+  status: "pendente" | "conciliado" | "ignorado";
+  conta_pagar_id: string | null;
+  conta_receber_id: string | null;
+};
+
+export const useExtratoLinhas = (escopo?: Escopo) =>
+  useTabela<ExtratoLinha>(
+    "extrato_bancario_linha",
+    escopo,
+    "id, conta_bancaria_id, data, valor, descricao, fitid, hash, status, conta_pagar_id, conta_receber_id",
+    "data",
+  );
+
+/** INSERT de vários registros de uma vez. */
+export async function inserirVarios(
+  nome: string,
+  valores: Record<string, unknown>[],
+): Promise<void> {
+  if (!valores.length) return;
+  const alvo = supabase.from(nome as never) as unknown as {
+    insert: (v: Record<string, unknown>[]) => PromiseLike<{ error: { message: string } | null }>;
+  };
+  const { error } = await alvo.insert(valores);
+  if (error) throw new Error(error.message);
+}
+
+
+
 /** Cheque só afeta o caixa quando compensado; cancelado nunca entra. */
 const chequeEmCaixa = (c: { status_cheque?: string | null }) =>
   !c.status_cheque || c.status_cheque === "compensado";
