@@ -1,6 +1,16 @@
 import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Download, Pencil, Plus, Split, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  CheckCircle2,
+  Download,
+  Pencil,
+  Plus,
+  Split,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { ChequeBadge, Kpi, SecaoVazia, StatusBadge } from "@/components/ui-kit";
