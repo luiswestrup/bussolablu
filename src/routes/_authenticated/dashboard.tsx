@@ -7,9 +7,8 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
   Legend,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -38,6 +37,47 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 const CORES = ["#2f4f86", "#2fa4a4", "#3f9a68", "#d69a34", "#c1523f", "#7a5ea8"];
+
+type ItemDespesa = { nome: string; valor: number };
+type LinhaDespesa = ItemDespesa & { itens: ItemDespesa[] };
+
+function TooltipDespesa({
+  active,
+  payload,
+  total,
+}: {
+  active?: boolean;
+  payload?: { payload: LinhaDespesa }[];
+  total: number;
+}) {
+  const linha = active ? payload?.[0]?.payload : undefined;
+  if (!linha) return null;
+  const pct = total > 0 ? (linha.valor / total) * 100 : 0;
+  const detalhe = linha.itens.slice(0, 12);
+  return (
+    <div className="rounded-md border bg-popover px-3 py-2 text-xs shadow-md">
+      <p className="font-medium text-foreground">{linha.nome}</p>
+      <p className="text-muted-foreground">
+        {brl(linha.valor)} · {pct.toFixed(1)}%
+      </p>
+      {detalhe.length > 0 && (
+        <ul className="mt-2 space-y-0.5 border-t pt-2">
+          {detalhe.map((i) => (
+            <li key={i.nome} className="flex justify-between gap-4 text-muted-foreground">
+              <span className="truncate max-w-45">{i.nome}</span>
+              <span className="tabular-nums">{brl(i.valor)}</span>
+            </li>
+          ))}
+          {linha.itens.length > detalhe.length && (
+            <li className="text-muted-foreground">
+              + {linha.itens.length - detalhe.length} outras categorias
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 function ultimosMeses(qtd: number) {
   const base = new Date();
@@ -151,6 +191,25 @@ function DashboardPage() {
   }, [pagar, categorias, naturezas]);
 
   const despesasGrafico = agrupamento === "categoria" ? despesasPorCategoria : despesasPorNatureza;
+
+  const totalDespesas = useMemo(
+    () => despesasGrafico.reduce((s, d) => s + d.valor, 0),
+    [despesasGrafico],
+  );
+
+  /** 7 maiores + linha "Outras" agregando o restante (detalhe no tooltip). */
+  const despesasBarras = useMemo<LinhaDespesa[]>(() => {
+    const topo = despesasGrafico.slice(0, 7).map((d) => ({ ...d, itens: [] as ItemDespesa[] }));
+    const resto = despesasGrafico.slice(7);
+    if (resto.length) {
+      topo.push({
+        nome: `Outras (${resto.length})`,
+        valor: resto.reduce((s, d) => s + d.valor, 0),
+        itens: resto,
+      });
+    }
+    return topo;
+  }, [despesasGrafico]);
 
   const estoquePorCategoria = useMemo(() => {
     const mapa = new Map<string, number>();
@@ -326,22 +385,39 @@ function DashboardPage() {
               <p className="text-sm text-muted-foreground">Nenhuma despesa lançada ainda.</p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={despesasGrafico}
-                    dataKey="valor"
-                    nameKey="nome"
-                    innerRadius={50}
-                    outerRadius={90}
-                    paddingAngle={2}
-                  >
-                    {despesasGrafico.map((_, i) => (
-                      <Cell key={i} fill={CORES[i % CORES.length]} />
+                <BarChart data={despesasBarras} layout="vertical" margin={{ left: 8, right: 44, top: 4, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
+                  <XAxis type="number" fontSize={12} tickLine={false} axisLine={false} hide />
+                  <YAxis
+                    type="category"
+                    dataKey="nome"
+                    fontSize={12}
+                    width={150}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v: string) => (v.length > 22 ? `${v.slice(0, 21)}…` : v)}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "rgba(0,0,0,0.04)" }}
+                    content={<TooltipDespesa total={totalDespesas} />}
+                  />
+                  <Bar dataKey="valor" radius={[0, 4, 4, 0]} barSize={18}>
+                    {despesasBarras.map((d, i) => (
+                      <Cell
+                        key={d.nome}
+                        fill={d.itens.length ? "#94a3b8" : CORES[i % CORES.length]}
+                      />
                     ))}
-                  </Pie>
-                  <Tooltip formatter={tooltipMoeda} />
-                  <Legend />
-                </PieChart>
+                    <LabelList
+                      dataKey="valor"
+                      position="right"
+                      fontSize={11}
+                      formatter={(v: number) =>
+                        `${totalDespesas > 0 ? ((v / totalDespesas) * 100).toFixed(1) : "0.0"}%`
+                      }
+                    />
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             )}
           </CardContent>
