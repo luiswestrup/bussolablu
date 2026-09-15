@@ -396,4 +396,3 @@ function Resumo({
   );
 }
 
-export type { ContaPagar, ContaReceber };
