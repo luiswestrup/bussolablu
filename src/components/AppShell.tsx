@@ -21,6 +21,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresa } from "@/lib/empresa";
 import { TODAS } from "@/lib/empresa";
+import { Waves } from "lucide-react";
 import { Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
