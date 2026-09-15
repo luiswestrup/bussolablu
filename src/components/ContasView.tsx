@@ -1134,16 +1134,18 @@ export function ContasView({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {consolidado && <TableHead>Empresa</TableHead>}
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Documento</TableHead>
-                    <TableHead>Parcela</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead>{config.rotuloParceiro}</TableHead>
-                    <TableHead>Vencimento</TableHead>
-                    <TableHead className="text-right">Valor</TableHead>
-                    <TableHead>Situação</TableHead>
-                    <TableHead>Cheque</TableHead>
+                    {consolidado && <ColunaOrdenavel coluna="empresa">Empresa</ColunaOrdenavel>}
+                    <ColunaOrdenavel coluna="descricao">Descrição</ColunaOrdenavel>
+                    <ColunaOrdenavel coluna="documento">Documento</ColunaOrdenavel>
+                    <ColunaOrdenavel coluna="parcela">Parcela</ColunaOrdenavel>
+                    <ColunaOrdenavel coluna="categoria">Categoria</ColunaOrdenavel>
+                    <ColunaOrdenavel coluna="parceiro">{config.rotuloParceiro}</ColunaOrdenavel>
+                    <ColunaOrdenavel coluna="vencimento">Vencimento</ColunaOrdenavel>
+                    <ColunaOrdenavel coluna="valor" alinhaDireita>
+                      Valor
+                    </ColunaOrdenavel>
+                    <ColunaOrdenavel coluna="situacao">Situação</ColunaOrdenavel>
+                    <ColunaOrdenavel coluna="cheque">Cheque</ColunaOrdenavel>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
