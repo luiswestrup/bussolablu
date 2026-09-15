@@ -386,22 +386,39 @@ function DashboardPage() {
               <p className="text-sm text-muted-foreground">Nenhuma despesa lançada ainda.</p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={despesasGrafico}
-                    dataKey="valor"
-                    nameKey="nome"
-                    innerRadius={50}
-                    outerRadius={90}
-                    paddingAngle={2}
-                  >
-                    {despesasGrafico.map((_, i) => (
-                      <Cell key={i} fill={CORES[i % CORES.length]} />
+                <BarChart data={despesasBarras} layout="vertical" margin={{ left: 8, right: 56 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
+                  <XAxis type="number" fontSize={12} tickLine={false} axisLine={false} hide />
+                  <YAxis
+                    type="category"
+                    dataKey="nome"
+                    fontSize={12}
+                    width={150}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v: string) => (v.length > 22 ? `${v.slice(0, 21)}…` : v)}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "rgba(0,0,0,0.04)" }}
+                    content={<TooltipDespesa total={totalDespesas} />}
+                  />
+                  <Bar dataKey="valor" radius={[0, 4, 4, 0]} barSize={18}>
+                    {despesasBarras.map((d, i) => (
+                      <Cell
+                        key={d.nome}
+                        fill={d.itens.length ? "#94a3b8" : CORES[i % CORES.length]}
+                      />
                     ))}
-                  </Pie>
-                  <Tooltip formatter={tooltipMoeda} />
-                  <Legend />
-                </PieChart>
+                    <LabelList
+                      dataKey="valor"
+                      position="right"
+                      fontSize={11}
+                      formatter={(v: number) =>
+                        `${brl(v)} · ${totalDespesas > 0 ? ((v / totalDespesas) * 100).toFixed(1) : "0.0"}%`
+                      }
+                    />
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             )}
           </CardContent>
