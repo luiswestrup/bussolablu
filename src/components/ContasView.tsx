@@ -433,6 +433,11 @@ export function ContasView({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const [ordenacao, setOrdenacao] = useState<{
+    coluna: string;
+    direcao: "asc" | "desc";
+  } | null>(null);
+
   const nomeCategoria = (id: string | null) => categorias.find((c) => c.id === id)?.nome ?? "—";
   const nomeParceiro = (id: unknown) => parceiros.find((p) => p.id === id)?.nome ?? "—";
 
