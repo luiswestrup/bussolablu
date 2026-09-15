@@ -152,6 +152,25 @@ function DashboardPage() {
 
   const despesasGrafico = agrupamento === "categoria" ? despesasPorCategoria : despesasPorNatureza;
 
+  const totalDespesas = useMemo(
+    () => despesasGrafico.reduce((s, d) => s + d.valor, 0),
+    [despesasGrafico],
+  );
+
+  /** 7 maiores + linha "Outras" agregando o restante (detalhe no tooltip). */
+  const despesasBarras = useMemo<LinhaDespesa[]>(() => {
+    const topo = despesasGrafico.slice(0, 7).map((d) => ({ ...d, itens: [] as ItemDespesa[] }));
+    const resto = despesasGrafico.slice(7);
+    if (resto.length) {
+      topo.push({
+        nome: `Outras (${resto.length})`,
+        valor: resto.reduce((s, d) => s + d.valor, 0),
+        itens: resto,
+      });
+    }
+    return topo;
+  }, [despesasGrafico]);
+
   const estoquePorCategoria = useMemo(() => {
     const mapa = new Map<string, number>();
     produtos.forEach((p) => {
