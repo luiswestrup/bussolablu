@@ -465,6 +465,94 @@ export function ContasView({
     [contas, filtroStatus, filtroCheque, busca, hj, dataDe, dataAte],
   );
 
+  type Registro = (typeof listaFiltrada)[number];
+
+  const valorOrdenacao = (c: Registro, coluna: string): string | number => {
+    const reg = c as unknown as Record<string, unknown>;
+    switch (coluna) {
+      case "empresa":
+        return nomeEmpresa(c.empresa_id) ?? "";
+      case "descricao":
+        return c.descricao ?? "";
+      case "documento":
+        return (reg["numero_documento"] as string) ?? "";
+      case "parcela":
+        return (
+          (reg["parcela"] as string) ||
+          (reg["numero_parcela"] && reg["total_parcelas"]
+            ? `${reg["numero_parcela"]}/${reg["total_parcelas"]}`
+            : "")
+        );
+      case "categoria":
+        return categorias.find((x) => x.id === c.categoria_id)?.nome ?? "";
+      case "parceiro":
+        return parceiros.find((p) => p.id === reg[config.campoParceiro])?.nome ?? "";
+      case "vencimento":
+        return c.data_vencimento ?? "";
+      case "valor":
+        return Number(c.valor ?? 0);
+      case "situacao":
+        return c.situacao ?? "";
+      case "cheque":
+        return c.statusCheque ?? "";
+      default:
+        return "";
+    }
+  };
+
+  const lista = useMemo(() => {
+    if (!ordenacao) return listaFiltrada;
+    const { coluna, direcao } = ordenacao;
+    const sinal = direcao === "asc" ? 1 : -1;
+    return [...listaFiltrada].sort((a, b) => {
+      const va = valorOrdenacao(a, coluna);
+      const vb = valorOrdenacao(b, coluna);
+      const vazioA = va === "" || va === null || va === undefined;
+      const vazioB = vb === "" || vb === null || vb === undefined;
+      if (vazioA && vazioB) return 0;
+      if (vazioA) return 1;
+      if (vazioB) return -1;
+      if (typeof va === "number" && typeof vb === "number") return (va - vb) * sinal;
+      return String(va).localeCompare(String(vb), "pt-BR", { sensitivity: "base" }) * sinal;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listaFiltrada, ordenacao, categorias, parceiros]);
+
+  const alternarOrdenacao = (coluna: string) =>
+    setOrdenacao((atual) => {
+      if (!atual || atual.coluna !== coluna) return { coluna, direcao: "asc" };
+      if (atual.direcao === "asc") return { coluna, direcao: "desc" };
+      return null;
+    });
+
+  const ColunaOrdenavel = ({
+    coluna,
+    children,
+    alinhaDireita,
+  }: {
+    coluna: string;
+    children: ReactNode;
+    alinhaDireita?: boolean;
+  }) => {
+    const ativa = ordenacao?.coluna === coluna;
+    const Icone = !ativa ? ArrowUpDown : ordenacao?.direcao === "asc" ? ArrowUp : ArrowDown;
+    return (
+      <TableHead className={alinhaDireita ? "text-right" : undefined}>
+        <button
+          type="button"
+          onClick={() => alternarOrdenacao(coluna)}
+          className={`inline-flex items-center gap-1 select-none hover:text-foreground ${
+            ativa ? "text-foreground font-semibold" : ""
+          } ${alinhaDireita ? "justify-end w-full" : ""}`}
+        >
+          {children}
+          <Icone className={`h-3.5 w-3.5 ${ativa ? "opacity-100" : "opacity-40"}`} />
+        </button>
+      </TableHead>
+    );
+  };
+
+
   const totais = useMemo(() => {
     const soma = (f: (c: (typeof lista)[number]) => boolean) =>
       lista
