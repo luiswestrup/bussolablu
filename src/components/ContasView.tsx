@@ -436,7 +436,7 @@ export function ContasView({
   const nomeCategoria = (id: string | null) => categorias.find((c) => c.id === id)?.nome ?? "—";
   const nomeParceiro = (id: unknown) => parceiros.find((p) => p.id === id)?.nome ?? "—";
 
-  const lista = useMemo(
+  const listaFiltrada = useMemo(
     () =>
       contas
         .map((c) => ({
