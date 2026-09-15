@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
 import {
   Bar,
   CartesianGrid,
@@ -86,9 +86,7 @@ type Dia = {
 };
 
 function FluxoCaixaPage() {
-  const { escopo, empresaNome } = useEmpresa() as ReturnType<typeof useEmpresa> & {
-    empresaNome?: string;
-  };
+  const { escopo, empresa, consolidado } = useEmpresa();
   const { data: pagar = [] } = usePagar(escopo);
   const { data: receber = [] } = useReceber(escopo);
   const { data: contas = [] } = useContasBancarias(escopo);
@@ -219,7 +217,7 @@ function FluxoCaixaPage() {
             <Input id="fim" type="date" value={fim} onChange={(e) => setFim(e.target.value)} />
           </div>
           <p className="text-sm text-muted-foreground">
-            Empresa: {empresaNome ?? "conforme seletor no topo"} · Saldo em {dataBR(diaAnterior)}:{" "}
+            Empresa: {consolidado ? "Todas" : (empresa?.nome ?? "—")} · Saldo em {dataBR(diaAnterior)}:{" "}
             <span className="tabular-nums font-medium">{brl(saldoInicial)}</span>
           </p>
           <div className="ml-auto flex gap-2">
@@ -241,13 +239,13 @@ function FluxoCaixaPage() {
       </Card>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-4">
-        <Kpi titulo="Entradas no período" valor={brl(totais.entradas)} tom="positivo" icone={TrendingUp} />
-        <Kpi titulo="Saídas no período" valor={brl(totais.saidas)} tom="negativo" icone={TrendingDown} />
+        <Kpi titulo="Entradas no período" valor={brl(totais.entradas)} tom="positivo" icone={<TrendingUp className="h-4 w-4" />} />
+        <Kpi titulo="Saídas no período" valor={brl(totais.saidas)} tom="negativo" icone={<TrendingDown className="h-4 w-4" />} />
         <Kpi
           titulo="Saldo final projetado"
           valor={brl(totais.final)}
           tom={totais.final < 0 ? "negativo" : "positivo"}
-          icone={Wallet}
+          icone={<Wallet className="h-4 w-4" />}
         />
         <Kpi
           titulo="Menor saldo do período"
@@ -297,7 +295,7 @@ function FluxoCaixaPage() {
                 </TableHeader>
                 <TableBody>
                   {dias.map((d) => (
-                    <>
+                    <FragmentoDia key={d.data}>
                       <TableRow
                         key={d.data}
                         className="cursor-pointer"
@@ -350,7 +348,7 @@ function FluxoCaixaPage() {
                             </TableCell>
                           </TableRow>
                         ))}
-                    </>
+                    </FragmentoDia>
                   ))}
                   <TableRow className="font-semibold">
                     <TableCell colSpan={2}>Total do período</TableCell>
@@ -373,4 +371,8 @@ function FluxoCaixaPage() {
       )}
     </AppShell>
   );
+}
+
+function FragmentoDia({ children }: { children: ReactNode }) {
+  return <>{children}</>;
 }
