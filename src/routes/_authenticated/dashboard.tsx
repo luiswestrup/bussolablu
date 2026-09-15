@@ -39,6 +39,47 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 const CORES = ["#2f4f86", "#2fa4a4", "#3f9a68", "#d69a34", "#c1523f", "#7a5ea8"];
 
+type ItemDespesa = { nome: string; valor: number };
+type LinhaDespesa = ItemDespesa & { itens: ItemDespesa[] };
+
+function TooltipDespesa({
+  active,
+  payload,
+  total,
+}: {
+  active?: boolean;
+  payload?: { payload: LinhaDespesa }[];
+  total: number;
+}) {
+  const linha = active ? payload?.[0]?.payload : undefined;
+  if (!linha) return null;
+  const pct = total > 0 ? (linha.valor / total) * 100 : 0;
+  const detalhe = linha.itens.slice(0, 12);
+  return (
+    <div className="rounded-md border bg-popover px-3 py-2 text-xs shadow-md">
+      <p className="font-medium text-foreground">{linha.nome}</p>
+      <p className="text-muted-foreground">
+        {brl(linha.valor)} · {pct.toFixed(1)}%
+      </p>
+      {detalhe.length > 0 && (
+        <ul className="mt-2 space-y-0.5 border-t pt-2">
+          {detalhe.map((i) => (
+            <li key={i.nome} className="flex justify-between gap-4 text-muted-foreground">
+              <span className="truncate max-w-45">{i.nome}</span>
+              <span className="tabular-nums">{brl(i.valor)}</span>
+            </li>
+          ))}
+          {linha.itens.length > detalhe.length && (
+            <li className="text-muted-foreground">
+              + {linha.itens.length - detalhe.length} outras categorias
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function ultimosMeses(qtd: number) {
   const base = new Date();
   return Array.from({ length: qtd }, (_, i) => {
