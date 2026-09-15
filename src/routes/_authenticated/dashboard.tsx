@@ -385,7 +385,7 @@ function DashboardPage() {
               <p className="text-sm text-muted-foreground">Nenhuma despesa lançada ainda.</p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={despesasBarras} layout="vertical" margin={{ left: 8, right: 56 }}>
+                <BarChart data={despesasBarras} layout="vertical" margin={{ left: 8, right: 44, top: 4, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
                   <XAxis type="number" fontSize={12} tickLine={false} axisLine={false} hide />
                   <YAxis
@@ -413,7 +413,7 @@ function DashboardPage() {
                       position="right"
                       fontSize={11}
                       formatter={(v: number) =>
-                        `${brl(v)} · ${totalDespesas > 0 ? ((v / totalDespesas) * 100).toFixed(1) : "0.0"}%`
+                        `${totalDespesas > 0 ? ((v / totalDespesas) * 100).toFixed(1) : "0.0"}%`
                       }
                     />
                   </Bar>
