@@ -272,9 +272,9 @@ function FluxoCaixaPage() {
                   <YAxis fontSize={12} tickFormatter={(v: number) => brl(v).replace("R$", "")} />
                   <Tooltip formatter={(v: number) => brl(v)} />
                   <Legend />
-                  <Bar dataKey="Entradas" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Saídas" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
-                  <Line type="monotone" dataKey="Saldo" stroke="hsl(var(--primary))" dot={false} />
+                  <Bar dataKey="Entradas" fill="#3f9a68" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Saídas" fill="#c1523f" radius={[4, 4, 0, 0]} />
+                  <Line type="monotone" dataKey="Saldo" strokeWidth={2} stroke="#2f4f86" dot={false} />
                 </ComposedChart>
               </ResponsiveContainer>
             </CardContent>
