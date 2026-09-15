@@ -295,7 +295,7 @@ function FluxoCaixaPage() {
                 </TableHeader>
                 <TableBody>
                   {dias.map((d) => (
-                    <FragmentoDia key={d.data}>
+                    <Fragment key={d.data}>
                       <TableRow
                         key={d.data}
                         className="cursor-pointer"
@@ -348,7 +348,7 @@ function FluxoCaixaPage() {
                             </TableCell>
                           </TableRow>
                         ))}
-                    </FragmentoDia>
+                    </Fragment>
                   ))}
                   <TableRow className="font-semibold">
                     <TableCell colSpan={2}>Total do período</TableCell>
@@ -371,8 +371,4 @@ function FluxoCaixaPage() {
       )}
     </AppShell>
   );
-}
-
-function FragmentoDia({ children }: { children: ReactNode }) {
-  return <>{children}</>;
 }

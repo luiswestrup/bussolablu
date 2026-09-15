@@ -32,6 +32,7 @@ import {
   useTransferencias,
 } from "@/lib/dados";
 import { FormularioExtrato, HistoricoExtrato } from "@/components/VerificacaoExtrato";
+import { ImportarExtrato } from "@/components/ImportarExtrato";
 import {
   Select,
   SelectContent,
@@ -231,6 +232,10 @@ function ConciliacaoPage() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="mt-4">
+        <ImportarExtrato contaId={contaSel} onContaId={setContaSel} />
+      </div>
 
       {contaSel && (
         <div className="mt-4 grid gap-4 sm:grid-cols-4">
