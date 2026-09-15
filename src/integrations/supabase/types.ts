@@ -516,6 +516,83 @@ export type Database = {
         }
         Relationships: []
       }
+      extrato_bancario_linha: {
+        Row: {
+          conta_bancaria_id: string
+          conta_pagar_id: string | null
+          conta_receber_id: string | null
+          criado_em: string
+          data: string
+          descricao: string | null
+          empresa_id: string
+          fitid: string | null
+          hash: string
+          id: string
+          status: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          conta_bancaria_id: string
+          conta_pagar_id?: string | null
+          conta_receber_id?: string | null
+          criado_em?: string
+          data: string
+          descricao?: string | null
+          empresa_id: string
+          fitid?: string | null
+          hash: string
+          id?: string
+          status?: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          conta_bancaria_id?: string
+          conta_pagar_id?: string | null
+          conta_receber_id?: string | null
+          criado_em?: string
+          data?: string
+          descricao?: string | null
+          empresa_id?: string
+          fitid?: string | null
+          hash?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extrato_bancario_linha_conta_bancaria_id_fkey"
+            columns: ["conta_bancaria_id"]
+            isOneToOne: false
+            referencedRelation: "conta_bancaria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extrato_bancario_linha_conta_pagar_id_fkey"
+            columns: ["conta_pagar_id"]
+            isOneToOne: false
+            referencedRelation: "conta_pagar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extrato_bancario_linha_conta_receber_id_fkey"
+            columns: ["conta_receber_id"]
+            isOneToOne: false
+            referencedRelation: "conta_receber"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extrato_bancario_linha_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       extrato_saldo_diario: {
         Row: {
           conta_bancaria_id: string
