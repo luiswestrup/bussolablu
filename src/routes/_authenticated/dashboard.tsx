@@ -9,8 +9,6 @@ import {
   Cell,
   LabelList,
   Legend,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
