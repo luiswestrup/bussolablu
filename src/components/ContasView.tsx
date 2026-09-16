@@ -54,6 +54,7 @@ import {
   liquidoRecebimento,
   percentualTaxaPadrao,
   useCategorias,
+  useNaturezas,
   useContasBancarias,
   useTaxasRecebimento,
   type Categoria,

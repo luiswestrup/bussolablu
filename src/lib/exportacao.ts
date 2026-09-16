@@ -36,6 +36,8 @@ export const linhasPagamentosCSV = (
       Observação: txt(c["descricao"]),
       "Valor de desconto": num(c["valor_desconto"] ?? 0),
       "Valor de multa e juros pagos": num(c["valor_multa_juros"] ?? 0),
+      Categoria: cat?.nome ?? "",
+      Natureza: cat?.natureza_id ? nomeNatureza(naturezas, cat.natureza_id) : "",
     };
   });
 
