@@ -1,5 +1,5 @@
 import { dataBR } from "@/lib/format";
-import type { ContaBancaria, Parceiro } from "@/lib/dados";
+import { nomeNatureza, type Categoria, type ContaBancaria, type Natureza, type Parceiro } from "@/lib/dados";
 
 type Linha = Record<string, unknown>;
 
@@ -18,9 +18,12 @@ export const linhasPagamentosCSV = (
   contas: Linha[],
   fornecedores: Parceiro[],
   bancos: ContaBancaria[],
+  categorias: Categoria[] = [],
+  naturezas: Natureza[] = [],
 ) =>
   contas.map((c) => {
     const f = buscarParceiro(fornecedores, c["fornecedor_id"]);
+    const cat = categorias.find((k) => k.id === c["categoria_id"]);
     return {
       "Data de pagamento": dia(c["data_pagamento"]),
       "Número do documento": txt(c["numero_documento"]),
@@ -33,6 +36,8 @@ export const linhasPagamentosCSV = (
       Observação: txt(c["descricao"]),
       "Valor de desconto": num(c["valor_desconto"] ?? 0),
       "Valor de multa e juros pagos": num(c["valor_multa_juros"] ?? 0),
+      Categoria: cat?.nome ?? "",
+      Natureza: cat?.natureza_id ? nomeNatureza(naturezas, cat.natureza_id) : "",
     };
   });
 

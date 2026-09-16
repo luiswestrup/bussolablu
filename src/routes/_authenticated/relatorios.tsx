@@ -216,7 +216,10 @@ function RelatoriosPage() {
             <Button
               variant="outline"
               onClick={() =>
-                exportarCSV("pagamentos", linhasPagamentosCSV(saidas, fornecedores, contasBancarias))
+                exportarCSV(
+                  "pagamentos",
+                  linhasPagamentosCSV(saidas, fornecedores, contasBancarias, categorias, naturezas),
+                )
               }
             >
               <Download className="mr-2 h-4 w-4" /> CSV pagamentos

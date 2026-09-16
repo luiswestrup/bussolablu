@@ -54,6 +54,7 @@ import {
   liquidoRecebimento,
   percentualTaxaPadrao,
   useCategorias,
+  useNaturezas,
   useContasBancarias,
   useTaxasRecebimento,
   type Categoria,
@@ -116,6 +117,7 @@ export function ContasView({
 }) {
   const { empresa, escopo, consolidado, nomeEmpresa } = useEmpresa();
   const { data: categorias = [] } = useCategorias(escopo);
+  const { data: naturezas = [] } = useNaturezas(escopo);
   const { data: contasBancarias = [] } = useContasBancarias(escopo);
   const { data: taxas = [] } = useTaxasRecebimento(escopo);
   const queryClient = useQueryClient();
@@ -696,7 +698,7 @@ export function ContasView({
                   exportarCSV(
                     config.tabelaNome,
                     config.tipo === "pagar"
-                      ? linhasPagamentosCSV(lista, parceiros, contasBancarias)
+                      ? linhasPagamentosCSV(lista, parceiros, contasBancarias, categorias, naturezas)
                       : linhasRecebimentosCSV(lista, parceiros, contasBancarias),
                   )
                 }
