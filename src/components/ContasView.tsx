@@ -117,6 +117,7 @@ export function ContasView({
 }) {
   const { empresa, escopo, consolidado, nomeEmpresa } = useEmpresa();
   const { data: categorias = [] } = useCategorias(escopo);
+  const { data: naturezas = [] } = useNaturezas(escopo);
   const { data: contasBancarias = [] } = useContasBancarias(escopo);
   const { data: taxas = [] } = useTaxasRecebimento(escopo);
   const queryClient = useQueryClient();
