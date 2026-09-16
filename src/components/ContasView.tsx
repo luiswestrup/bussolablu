@@ -469,9 +469,17 @@ export function ContasView({
         .filter((c) => c.descricao.toLowerCase().includes(busca.trim().toLowerCase()))
         .filter((c) => (dataDe ? c.data_vencimento >= dataDe : true))
         .filter((c) => (dataAte ? c.data_vencimento <= dataAte : true))
-        .filter((c) => (pagamentoDe ? (c[config.campoData] as string | null) >= pagamentoDe : true))
         .filter((c) =>
-          pagamentoAte ? (c[config.campoData] as string | null) <= pagamentoAte : true,
+          pagamentoDe
+            ? ((c as unknown as Record<string, unknown>)[config.campoData] as string | null)! >=
+              pagamentoDe
+            : true,
+        )
+        .filter((c) =>
+          pagamentoAte
+            ? ((c as unknown as Record<string, unknown>)[config.campoData] as string | null)! <=
+              pagamentoAte
+            : true,
         ),
     [contas, filtroStatus, filtroCheque, busca, hj, dataDe, dataAte, pagamentoDe, pagamentoAte, config.campoData],
   );
