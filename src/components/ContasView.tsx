@@ -645,13 +645,34 @@ export function ContasView({
                 onChange={(e) => setDataAte(e.target.value)}
                 className="w-[150px]"
               />
-              {(dataDe || dataAte) && (
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-muted-foreground">
+                {config.tipo === "pagar" ? "Pagto. de" : "Receb. de"}
+              </label>
+              <Input
+                type="date"
+                value={pagamentoDe}
+                onChange={(e) => setPagamentoDe(e.target.value)}
+                className="w-[150px]"
+              />
+              <label className="text-xs text-muted-foreground">até</label>
+              <Input
+                type="date"
+                value={pagamentoAte}
+                onChange={(e) => setPagamentoAte(e.target.value)}
+                className="w-[150px]"
+              />
+              {(dataDe || dataAte || pagamentoDe || pagamentoAte) && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
                     setDataDe("");
                     setDataAte("");
+                    setPagamentoDe("");
+                    setPagamentoAte("");
                   }}
                 >
                   Limpar
