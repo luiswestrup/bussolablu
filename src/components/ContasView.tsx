@@ -698,7 +698,7 @@ export function ContasView({
                   exportarCSV(
                     config.tabelaNome,
                     config.tipo === "pagar"
-                      ? linhasPagamentosCSV(lista, parceiros, contasBancarias)
+                      ? linhasPagamentosCSV(lista, parceiros, contasBancarias, categorias, naturezas)
                       : linhasRecebimentosCSV(lista, parceiros, contasBancarias),
                   )
                 }
