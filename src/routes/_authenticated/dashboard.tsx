@@ -22,7 +22,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEmpresa } from "@/lib/empresa";
 import { brl, hoje, num, rotuloMes } from "@/lib/format";
-import { divergenciasExtrato, liquidoRecebimento, nomeNatureza, useCategorias, useContasBancarias, useExtratosSaldo, useNaturezas, usePagar, useProdutos, useReceber, useTransferencias } from "@/lib/dados";
+import { divergenciasExtrato, liquidoRecebimento, nomeNatureza, useCategorias, useContasBancarias, useExtratosSaldo, useMovimentos, useNaturezas, usePagar, useProdutos, useReceber, useTransferencias } from "@/lib/dados";
+import { distribuirDespesa, mapaRateioNotas } from "@/lib/rateio";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -38,8 +39,9 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 const CORES = ["#2f4f86", "#2fa4a4", "#3f9a68", "#d69a34", "#c1523f", "#7a5ea8"];
 
-type ItemDespesa = { nome: string; valor: number };
+type ItemDespesa = { nome: string; valor: number; rateado: number };
 type LinhaDespesa = ItemDespesa & { itens: ItemDespesa[] };
+
 
 function TooltipDespesa({
   active,
@@ -60,6 +62,12 @@ function TooltipDespesa({
       <p className="text-muted-foreground">
         {brl(linha.valor)} · {pct.toFixed(1)}%
       </p>
+      {linha.rateado > 0 && (
+        <p className="text-muted-foreground">
+          Inclui {brl(linha.rateado)} rateados de notas com produtos variados
+        </p>
+      )}
+
       {detalhe.length > 0 && (
         <ul className="mt-2 space-y-0.5 border-t pt-2">
           {detalhe.map((i) => (
@@ -99,6 +107,7 @@ function DashboardPage() {
   const { data: contasBancarias = [] } = useContasBancarias(escopo);
   const { data: transferencias = [] } = useTransferencias(escopo);
   const { data: extratos = [] } = useExtratosSaldo(escopo);
+  const { data: movimentos = [] } = useMovimentos(escopo);
   const hj = hoje();
 
   // Filtro rápido da visão consolidada: "todas" soma os totais, sem misturar registros.
@@ -169,26 +178,37 @@ function DashboardPage() {
     });
   }, [pagar, receber]);
 
-  const despesasPorCategoria = useMemo(() => {
-    const mapa = new Map<string, number>();
+  const rateio = useMemo(() => mapaRateioNotas(movimentos, produtosTodos), [movimentos, produtosTodos]);
+
+  /** Soma despesas por rótulo, rateando notas com produtos de categorias diferentes. */
+  const agregarDespesas = (rotulo: (categoriaId: string | null) => string): ItemDespesa[] => {
+    const mapa = new Map<string, ItemDespesa>();
     pagar.forEach((c) => {
-      const nome = categorias.find((k) => k.id === c.categoria_id)?.nome ?? "Sem categoria";
-      mapa.set(nome, (mapa.get(nome) ?? 0) + Number(c.valor));
+      distribuirDespesa(c, Number(c.valor), rateio).forEach((f) => {
+        const nome = rotulo(f.categoriaId);
+        const atual = mapa.get(nome) ?? { nome, valor: 0, rateado: 0 };
+        atual.valor += f.valor;
+        if (f.rateado) atual.rateado += f.valor;
+        mapa.set(nome, atual);
+      });
     });
-    return [...mapa.entries()].map(([nome, valor]) => ({ nome, valor })).sort((a, b) => b.valor - a.valor);
-  }, [pagar, categorias]);
+    return [...mapa.values()].sort((a, b) => b.valor - a.valor);
+  };
+
+  const despesasPorCategoria = useMemo(
+    () => agregarDespesas((id) => categorias.find((k) => k.id === id)?.nome ?? "Sem categoria"),
+    [pagar, categorias, rateio],
+  );
 
   const [agrupamento, setAgrupamento] = useState<"categoria" | "natureza">("categoria");
 
-  const despesasPorNatureza = useMemo(() => {
-    const mapa = new Map<string, number>();
-    pagar.forEach((c) => {
-      const cat = categorias.find((k) => k.id === c.categoria_id);
-      const nome = nomeNatureza(naturezas, cat?.natureza_id ?? null);
-      mapa.set(nome, (mapa.get(nome) ?? 0) + Number(c.valor));
-    });
-    return [...mapa.entries()].map(([nome, valor]) => ({ nome, valor })).sort((a, b) => b.valor - a.valor);
-  }, [pagar, categorias, naturezas]);
+  const despesasPorNatureza = useMemo(
+    () =>
+      agregarDespesas((id) =>
+        nomeNatureza(naturezas, categorias.find((k) => k.id === id)?.natureza_id ?? null),
+      ),
+    [pagar, categorias, naturezas, rateio],
+  );
 
   const despesasGrafico = agrupamento === "categoria" ? despesasPorCategoria : despesasPorNatureza;
 
@@ -205,6 +225,7 @@ function DashboardPage() {
       topo.push({
         nome: `Outras (${resto.length})`,
         valor: resto.reduce((s, d) => s + d.valor, 0),
+        rateado: resto.reduce((s, d) => s + d.rateado, 0),
         itens: resto,
       });
     }

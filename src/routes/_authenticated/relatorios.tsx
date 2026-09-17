@@ -36,6 +36,7 @@ import {
   nomeNatureza,
   useCategorias,
   liquidoRecebimento,
+  useMovimentos,
   useNaturezas,
   useClientes,
   useContasBancarias,
@@ -44,6 +45,7 @@ import {
   useProdutos,
   useReceber,
 } from "@/lib/dados";
+import { distribuirDespesa, mapaRateioNotas } from "@/lib/rateio";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
   head: () => ({
@@ -67,6 +69,7 @@ function RelatoriosPage() {
   const { data: contasBancarias = [] } = useContasBancarias(escopo);
   const { data: fornecedores = [] } = useFornecedores(escopo);
   const { data: clientes = [] } = useClientes(escopo);
+  const { data: movimentos = [] } = useMovimentos(escopo);
 
   const [inicio, setInicio] = useState(mesesAtras(5));
   const [fim, setFim] = useState(fimDoMes());
@@ -99,19 +102,32 @@ function RelatoriosPage() {
       .map((m) => ({ ...m, rotulo: rotuloMes(`${m.mes}-01`), resultado: m.entradas - m.saidas }));
   }, [entradas, saidas]);
 
+  const rateio = useMemo(() => mapaRateioNotas(movimentos, produtos), [movimentos, produtos]);
+
   const porCategoria = useMemo(() => {
-    const mapa = new Map<string, { nome: string; despesa: number; receita: number }>();
+    const mapa = new Map<string, { nome: string; despesa: number; receita: number; rateado: number }>();
     const nome = (id: string | null) => categorias.find((c) => c.id === id)?.nome ?? "Sem categoria";
-    const add = (id: string | null, campo: "despesa" | "receita", valor: number) => {
+    const add = (
+      id: string | null,
+      campo: "despesa" | "receita",
+      valor: number,
+      rateado = false,
+    ) => {
       const chave = nome(id);
-      const atual = mapa.get(chave) ?? { nome: chave, despesa: 0, receita: 0 };
+      const atual = mapa.get(chave) ?? { nome: chave, despesa: 0, receita: 0, rateado: 0 };
       atual[campo] += valor;
+      if (rateado) atual.rateado += valor;
       mapa.set(chave, atual);
     };
-    saidas.forEach((c) => add(c.categoria_id, "despesa", Number(c.valor_pago ?? c.valor)));
+    saidas.forEach((c) =>
+      distribuirDespesa(c, Number(c.valor_pago ?? c.valor), rateio).forEach((f) =>
+        add(f.categoriaId, "despesa", f.valor, f.rateado),
+      ),
+    );
     entradas.forEach((c) => add(c.categoria_id, "receita", liquidoRecebimento(c)));
     return [...mapa.values()].sort((a, b) => b.despesa + b.receita - (a.despesa + a.receita));
-  }, [entradas, saidas, categorias]);
+  }, [entradas, saidas, categorias, rateio]);
+
 
   const margemEstoque = useMemo(
     () =>
@@ -131,12 +147,14 @@ function RelatoriosPage() {
   const porNatureza = useMemo(() => {
     const mapa = new Map<string, number>();
     saidas.forEach((c) => {
-      const cat = categorias.find((k) => k.id === c.categoria_id);
-      const nome = nomeNatureza(naturezas, cat?.natureza_id ?? null);
-      mapa.set(nome, (mapa.get(nome) ?? 0) + Number(c.valor_pago ?? c.valor));
+      distribuirDespesa(c, Number(c.valor_pago ?? c.valor), rateio).forEach((f) => {
+        const cat = categorias.find((k) => k.id === f.categoriaId);
+        const nome = nomeNatureza(naturezas, cat?.natureza_id ?? null);
+        mapa.set(nome, (mapa.get(nome) ?? 0) + f.valor);
+      });
     });
     return [...mapa.entries()].map(([nome, despesa]) => ({ nome, despesa })).sort((a, b) => b.despesa - a.despesa);
-  }, [saidas, categorias, naturezas]);
+  }, [saidas, categorias, naturezas, rateio]);
 
   const saldoAtual = useMemo(() => {
     const inicial = contasBancarias.reduce((s, c) => s + Number(c.saldo_inicial), 0);
@@ -162,6 +180,7 @@ function RelatoriosPage() {
     Categoria: c.nome,
     Receita: Number(c.receita.toFixed(2)),
     Despesa: Number(c.despesa.toFixed(2)),
+    "Despesa rateada de notas": Number(c.rateado.toFixed(2)),
   }));
   const linhasNatureza = porNatureza.map((n) => ({
     Natureza: n.nome,
