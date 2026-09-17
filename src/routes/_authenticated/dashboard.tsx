@@ -62,6 +62,12 @@ function TooltipDespesa({
       <p className="text-muted-foreground">
         {brl(linha.valor)} · {pct.toFixed(1)}%
       </p>
+      {linha.rateado > 0 && (
+        <p className="text-muted-foreground">
+          Inclui {brl(linha.rateado)} rateados de notas com produtos variados
+        </p>
+      )}
+
       {detalhe.length > 0 && (
         <ul className="mt-2 space-y-0.5 border-t pt-2">
           {detalhe.map((i) => (
