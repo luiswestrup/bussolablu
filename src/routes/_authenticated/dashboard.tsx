@@ -107,6 +107,7 @@ function DashboardPage() {
   const { data: contasBancarias = [] } = useContasBancarias(escopo);
   const { data: transferencias = [] } = useTransferencias(escopo);
   const { data: extratos = [] } = useExtratosSaldo(escopo);
+  const { data: movimentos = [] } = useMovimentos(escopo);
   const hj = hoje();
 
   // Filtro rápido da visão consolidada: "todas" soma os totais, sem misturar registros.
