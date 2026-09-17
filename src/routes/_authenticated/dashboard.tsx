@@ -39,8 +39,9 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 const CORES = ["#2f4f86", "#2fa4a4", "#3f9a68", "#d69a34", "#c1523f", "#7a5ea8"];
 
-type ItemDespesa = { nome: string; valor: number };
+type ItemDespesa = { nome: string; valor: number; rateado: number };
 type LinhaDespesa = ItemDespesa & { itens: ItemDespesa[] };
+
 
 function TooltipDespesa({
   active,
