@@ -36,6 +36,7 @@ import {
   nomeNatureza,
   useCategorias,
   liquidoRecebimento,
+  useMovimentos,
   useNaturezas,
   useClientes,
   useContasBancarias,
@@ -44,6 +45,7 @@ import {
   useProdutos,
   useReceber,
 } from "@/lib/dados";
+import { distribuirDespesa, mapaRateioNotas } from "@/lib/rateio";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
   head: () => ({
