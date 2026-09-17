@@ -99,19 +99,32 @@ function RelatoriosPage() {
       .map((m) => ({ ...m, rotulo: rotuloMes(`${m.mes}-01`), resultado: m.entradas - m.saidas }));
   }, [entradas, saidas]);
 
+  const rateio = useMemo(() => mapaRateioNotas(movimentos, produtos), [movimentos, produtos]);
+
   const porCategoria = useMemo(() => {
-    const mapa = new Map<string, { nome: string; despesa: number; receita: number }>();
+    const mapa = new Map<string, { nome: string; despesa: number; receita: number; rateado: number }>();
     const nome = (id: string | null) => categorias.find((c) => c.id === id)?.nome ?? "Sem categoria";
-    const add = (id: string | null, campo: "despesa" | "receita", valor: number) => {
+    const add = (
+      id: string | null,
+      campo: "despesa" | "receita",
+      valor: number,
+      rateado = false,
+    ) => {
       const chave = nome(id);
-      const atual = mapa.get(chave) ?? { nome: chave, despesa: 0, receita: 0 };
+      const atual = mapa.get(chave) ?? { nome: chave, despesa: 0, receita: 0, rateado: 0 };
       atual[campo] += valor;
+      if (rateado) atual.rateado += valor;
       mapa.set(chave, atual);
     };
-    saidas.forEach((c) => add(c.categoria_id, "despesa", Number(c.valor_pago ?? c.valor)));
+    saidas.forEach((c) =>
+      distribuirDespesa(c, Number(c.valor_pago ?? c.valor), rateio).forEach((f) =>
+        add(f.categoriaId, "despesa", f.valor, f.rateado),
+      ),
+    );
     entradas.forEach((c) => add(c.categoria_id, "receita", liquidoRecebimento(c)));
     return [...mapa.values()].sort((a, b) => b.despesa + b.receita - (a.despesa + a.receita));
-  }, [entradas, saidas, categorias]);
+  }, [entradas, saidas, categorias, rateio]);
+
 
   const margemEstoque = useMemo(
     () =>
