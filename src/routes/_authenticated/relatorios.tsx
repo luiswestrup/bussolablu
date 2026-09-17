@@ -144,12 +144,14 @@ function RelatoriosPage() {
   const porNatureza = useMemo(() => {
     const mapa = new Map<string, number>();
     saidas.forEach((c) => {
-      const cat = categorias.find((k) => k.id === c.categoria_id);
-      const nome = nomeNatureza(naturezas, cat?.natureza_id ?? null);
-      mapa.set(nome, (mapa.get(nome) ?? 0) + Number(c.valor_pago ?? c.valor));
+      distribuirDespesa(c, Number(c.valor_pago ?? c.valor), rateio).forEach((f) => {
+        const cat = categorias.find((k) => k.id === f.categoriaId);
+        const nome = nomeNatureza(naturezas, cat?.natureza_id ?? null);
+        mapa.set(nome, (mapa.get(nome) ?? 0) + f.valor);
+      });
     });
     return [...mapa.entries()].map(([nome, despesa]) => ({ nome, despesa })).sort((a, b) => b.despesa - a.despesa);
-  }, [saidas, categorias, naturezas]);
+  }, [saidas, categorias, naturezas, rateio]);
 
   const saldoAtual = useMemo(() => {
     const inicial = contasBancarias.reduce((s, c) => s + Number(c.saldo_inicial), 0);
