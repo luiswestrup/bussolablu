@@ -69,6 +69,7 @@ function RelatoriosPage() {
   const { data: contasBancarias = [] } = useContasBancarias(escopo);
   const { data: fornecedores = [] } = useFornecedores(escopo);
   const { data: clientes = [] } = useClientes(escopo);
+  const { data: movimentos = [] } = useMovimentos(escopo);
 
   const [inicio, setInicio] = useState(mesesAtras(5));
   const [fim, setFim] = useState(fimDoMes());
