@@ -177,6 +177,7 @@ function RelatoriosPage() {
     Categoria: c.nome,
     Receita: Number(c.receita.toFixed(2)),
     Despesa: Number(c.despesa.toFixed(2)),
+    "Despesa rateada de notas": Number(c.rateado.toFixed(2)),
   }));
   const linhasNatureza = porNatureza.map((n) => ({
     Natureza: n.nome,
