@@ -22,7 +22,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEmpresa } from "@/lib/empresa";
 import { brl, hoje, num, rotuloMes } from "@/lib/format";
-import { divergenciasExtrato, liquidoRecebimento, nomeNatureza, useCategorias, useContasBancarias, useExtratosSaldo, useNaturezas, usePagar, useProdutos, useReceber, useTransferencias } from "@/lib/dados";
+import { divergenciasExtrato, liquidoRecebimento, nomeNatureza, useCategorias, useContasBancarias, useExtratosSaldo, useMovimentos, useNaturezas, usePagar, useProdutos, useReceber, useTransferencias } from "@/lib/dados";
+import { distribuirDespesa, mapaRateioNotas } from "@/lib/rateio";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
