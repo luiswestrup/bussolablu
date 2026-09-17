@@ -15,7 +15,7 @@ const chaveNota = (empresaId: string, numero: string) => `${empresaId}|${numero.
 /** Número da nota gravado na observação da entrada de estoque ("NF-e 1001"). */
 const numeroDaObservacao = (obs: string | null): string | null => {
   const m = /^NF-e\s+(.+)$/i.exec((obs ?? "").trim());
-  return m ? m[1].trim() : null;
+  return m?.[1] ? m[1].trim() : null;
 };
 
 /**
@@ -81,7 +81,7 @@ export function distribuirDespesa(
     return [{ categoriaId: null, valor, rateado: false }];
   }
   if (pesos.length === 1) {
-    return [{ categoriaId: pesos[0].categoriaId, valor, rateado: true }];
+    return [{ categoriaId: pesos[0]!.categoriaId, valor, rateado: true }];
   }
   // Ajusta a última fatia para a soma bater exatamente com o valor do título.
   const fatias = pesos.map((p) => ({
@@ -90,6 +90,6 @@ export function distribuirDespesa(
     rateado: true,
   }));
   const diferenca = valor - fatias.reduce((s, f) => s + f.valor, 0);
-  fatias[fatias.length - 1].valor += diferenca;
+  fatias[fatias.length - 1]!.valor += diferenca;
   return fatias;
 }
