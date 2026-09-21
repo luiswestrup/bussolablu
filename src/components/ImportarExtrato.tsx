@@ -122,7 +122,14 @@ export function ImportarExtrato({
     setSalvando(true);
     try {
       const registros = resultados.map((r) => {
-        const unico = r.candidatos.length === 1 ? r.candidatos[0]! : null;
+        const manual = manuais[r.linha.hash];
+        const unico = manual
+          ? manual.tabela === "transferencia"
+            ? null
+            : { tabela: manual.tabela, id: manual.id }
+          : r.candidatos.length === 1
+            ? { tabela: r.candidatos[0]!.tabela, id: r.candidatos[0]!.id }
+            : null;
         return {
           empresa_id: conta.empresa_id,
           conta_bancaria_id: contaId,
@@ -131,7 +138,7 @@ export function ImportarExtrato({
           descricao: r.linha.descricao,
           fitid: r.linha.fitid,
           hash: r.linha.hash,
-          status: unico ? "conciliado" : "pendente",
+          status: unico || manual ? "conciliado" : "pendente",
           conta_pagar_id: unico?.tabela === "conta_pagar" ? unico.id : null,
           conta_receber_id: unico?.tabela === "conta_receber" ? unico.id : null,
         };
