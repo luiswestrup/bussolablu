@@ -266,8 +266,9 @@ export function ImportarExtrato({
               {brl(lidas.reduce((s, l) => s + l.valor, 0))} ·{" "}
               {lidas.length - novas.length} já importada(s) antes.
             </p>
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid gap-2 sm:grid-cols-4">
               <Resumo titulo="Conciliam automaticamente" valor={automaticos.length} tom="ok" />
+              <Resumo titulo="Lançados por você" valor={lancados.length} tom="ok" />
               <Resumo titulo="Divergências a revisar" valor={divergentes.length} tom="alerta" />
               <Resumo titulo="No sistema, fora do extrato" valor={semExtrato.length} tom="alerta" />
             </div>
@@ -278,10 +279,13 @@ export function ImportarExtrato({
                   <TableHead>Histórico do banco</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead>Situação</TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {resultados.map((r: Resultado) => (
+                {resultados.map((r: Resultado) => {
+                  const manual = manuais[r.linha.hash];
+                  return (
                   <TableRow key={r.linha.hash}>
                     <TableCell className="whitespace-nowrap">{dataBR(r.linha.data)}</TableCell>
                     <TableCell>{r.linha.descricao}</TableCell>
@@ -294,7 +298,12 @@ export function ImportarExtrato({
                       {brl(r.linha.valor)}
                     </TableCell>
                     <TableCell className="text-xs">
-                      {r.candidatos.length === 1 ? (
+                      {manual ? (
+                        <span className="inline-flex items-center gap-1 text-success">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Lançado no sistema
+                        </span>
+                      ) : r.candidatos.length === 1 ? (
                         <span className="inline-flex items-center gap-1 text-success">
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           {rotuloCandidato(r.candidatos[0]!)}
@@ -308,8 +317,21 @@ export function ImportarExtrato({
                         </span>
                       )}
                     </TableCell>
+                    <TableCell className="text-right">
+                      {!manual && r.candidatos.length !== 1 && !!empresaDaConta && (
+                        <LancarDoExtrato
+                          linha={r.linha}
+                          contaBancariaId={contaId}
+                          empresaId={empresaDaConta}
+                          onCriado={(v) =>
+                            setManuais((m) => ({ ...m, [r.linha.hash]: v }))
+                          }
+                        />
+                      )}
+                    </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
 
