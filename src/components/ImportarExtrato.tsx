@@ -75,7 +75,10 @@ export function ImportarExtrato({
   const novas = useMemo(() => lidas.filter((l) => !hashesExistentes.has(l.hash)), [lidas, hashesExistentes]);
   const resultados = useMemo(() => casarLinhas(novas, candidatos), [novas, candidatos]);
   const automaticos = resultados.filter((r) => r.candidatos.length === 1);
-  const divergentes = resultados.filter((r) => r.candidatos.length !== 1);
+  const lancados = resultados.filter((r) => r.candidatos.length !== 1 && manuais[r.linha.hash]);
+  const divergentes = resultados.filter(
+    (r) => r.candidatos.length !== 1 && !manuais[r.linha.hash],
+  );
 
   const periodo = useMemo(() => {
     if (!lidas.length) return null;
