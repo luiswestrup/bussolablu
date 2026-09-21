@@ -57,6 +57,10 @@ export function ImportarExtrato({
   const [lidas, setLidas] = useState<LancamentoOFX[]>([]);
   const [nomeArquivo, setNomeArquivo] = useState("");
   const [salvando, setSalvando] = useState(false);
+  // Linhas da prévia que o usuário lançou manualmente no sistema (chave = hash).
+  const [manuais, setManuais] = useState<Record<string, VinculoCriado>>({});
+
+  const empresaDaConta = contas.find((c) => c.id === contaId)?.empresa_id ?? "";
 
   const candidatos = useMemo(
     () => (contaId ? candidatosDaConta(contaId, pagar, receber) : []),
