@@ -37,6 +37,7 @@ import {
 } from "@/lib/dados";
 import { lerOFX, type LancamentoOFX } from "@/lib/ofx";
 import { candidatosDaConta, casarLinhas, type Candidato, type Resultado } from "@/lib/conciliacao";
+import { LancarDoExtrato, type VinculoCriado } from "@/components/LancarDoExtrato";
 
 export function ImportarExtrato({
   contaId,
@@ -56,6 +57,10 @@ export function ImportarExtrato({
   const [lidas, setLidas] = useState<LancamentoOFX[]>([]);
   const [nomeArquivo, setNomeArquivo] = useState("");
   const [salvando, setSalvando] = useState(false);
+  // Linhas da prévia que o usuário lançou manualmente no sistema (chave = hash).
+  const [manuais, setManuais] = useState<Record<string, VinculoCriado>>({});
+
+  const empresaDaConta = contas.find((c) => c.id === contaId)?.empresa_id ?? "";
 
   const candidatos = useMemo(
     () => (contaId ? candidatosDaConta(contaId, pagar, receber) : []),
@@ -70,7 +75,10 @@ export function ImportarExtrato({
   const novas = useMemo(() => lidas.filter((l) => !hashesExistentes.has(l.hash)), [lidas, hashesExistentes]);
   const resultados = useMemo(() => casarLinhas(novas, candidatos), [novas, candidatos]);
   const automaticos = resultados.filter((r) => r.candidatos.length === 1);
-  const divergentes = resultados.filter((r) => r.candidatos.length !== 1);
+  const lancados = resultados.filter((r) => r.candidatos.length !== 1 && manuais[r.linha.hash]);
+  const divergentes = resultados.filter(
+    (r) => r.candidatos.length !== 1 && !manuais[r.linha.hash],
+  );
 
   const periodo = useMemo(() => {
     if (!lidas.length) return null;
@@ -114,7 +122,14 @@ export function ImportarExtrato({
     setSalvando(true);
     try {
       const registros = resultados.map((r) => {
-        const unico = r.candidatos.length === 1 ? r.candidatos[0]! : null;
+        const manual = manuais[r.linha.hash];
+        const unico = manual
+          ? manual.tabela === "transferencia"
+            ? null
+            : { tabela: manual.tabela, id: manual.id }
+          : r.candidatos.length === 1
+            ? { tabela: r.candidatos[0]!.tabela, id: r.candidatos[0]!.id }
+            : null;
         return {
           empresa_id: conta.empresa_id,
           conta_bancaria_id: contaId,
@@ -123,7 +138,7 @@ export function ImportarExtrato({
           descricao: r.linha.descricao,
           fitid: r.linha.fitid,
           hash: r.linha.hash,
-          status: unico ? "conciliado" : "pendente",
+          status: unico || manual ? "conciliado" : "pendente",
           conta_pagar_id: unico?.tabela === "conta_pagar" ? unico.id : null,
           conta_receber_id: unico?.tabela === "conta_receber" ? unico.id : null,
         };
@@ -141,9 +156,10 @@ export function ImportarExtrato({
       await invalidar();
       setLidas([]);
       setNomeArquivo("");
+      setManuais({});
       if (arquivoRef.current) arquivoRef.current.value = "";
       toast.success(
-        `${automaticos.length} lançamento(s) conciliados automaticamente. ${divergentes.length} divergência(s) para revisar.`,
+        `${automaticos.length} conciliados automaticamente, ${lancados.length} lançados por você, ${divergentes.length} divergência(s) para revisar.`,
       );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao importar o extrato.");
@@ -155,6 +171,7 @@ export function ImportarExtrato({
   async function invalidar() {
     await queryClient.invalidateQueries({ queryKey: ["conta_pagar"] });
     await queryClient.invalidateQueries({ queryKey: ["conta_receber"] });
+    await queryClient.invalidateQueries({ queryKey: ["transferencia_bancaria"] });
     await queryClient.invalidateQueries({ queryKey: ["extrato_bancario_linha"] });
   }
 
@@ -182,6 +199,22 @@ export function ImportarExtrato({
       toast.success("Linha do extrato atualizada.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao atualizar a linha.");
+    }
+  }
+
+  /** Marca a linha já importada como conciliada com o lançamento recém-criado. */
+  async function vincularLinhaSalva(linha: ExtratoLinha, v: VinculoCriado) {
+    try {
+      await tabela("extrato_bancario_linha")
+        .update({
+          status: "conciliado",
+          conta_pagar_id: v.tabela === "conta_pagar" ? v.id : null,
+          conta_receber_id: v.tabela === "conta_receber" ? v.id : null,
+        })
+        .eq("id", linha.id);
+      await invalidar();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao vincular a linha do extrato.");
     }
   }
 
@@ -250,8 +283,9 @@ export function ImportarExtrato({
               {brl(lidas.reduce((s, l) => s + l.valor, 0))} ·{" "}
               {lidas.length - novas.length} já importada(s) antes.
             </p>
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid gap-2 sm:grid-cols-4">
               <Resumo titulo="Conciliam automaticamente" valor={automaticos.length} tom="ok" />
+              <Resumo titulo="Lançados por você" valor={lancados.length} tom="ok" />
               <Resumo titulo="Divergências a revisar" valor={divergentes.length} tom="alerta" />
               <Resumo titulo="No sistema, fora do extrato" valor={semExtrato.length} tom="alerta" />
             </div>
@@ -262,10 +296,13 @@ export function ImportarExtrato({
                   <TableHead>Histórico do banco</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead>Situação</TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {resultados.map((r: Resultado) => (
+                {resultados.map((r: Resultado) => {
+                  const manual = manuais[r.linha.hash];
+                  return (
                   <TableRow key={r.linha.hash}>
                     <TableCell className="whitespace-nowrap">{dataBR(r.linha.data)}</TableCell>
                     <TableCell>{r.linha.descricao}</TableCell>
@@ -278,7 +315,12 @@ export function ImportarExtrato({
                       {brl(r.linha.valor)}
                     </TableCell>
                     <TableCell className="text-xs">
-                      {r.candidatos.length === 1 ? (
+                      {manual ? (
+                        <span className="inline-flex items-center gap-1 text-success">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Lançado no sistema
+                        </span>
+                      ) : r.candidatos.length === 1 ? (
                         <span className="inline-flex items-center gap-1 text-success">
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           {rotuloCandidato(r.candidatos[0]!)}
@@ -292,8 +334,21 @@ export function ImportarExtrato({
                         </span>
                       )}
                     </TableCell>
+                    <TableCell className="text-right">
+                      {!manual && r.candidatos.length !== 1 && !!empresaDaConta && (
+                        <LancarDoExtrato
+                          linha={r.linha}
+                          contaBancariaId={contaId}
+                          empresaId={empresaDaConta}
+                          onCriado={(v) =>
+                            setManuais((m) => ({ ...m, [r.linha.hash]: v }))
+                          }
+                        />
+                      )}
+                    </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
 
@@ -346,19 +401,32 @@ export function ImportarExtrato({
                         {brl(Number(l.valor))}
                       </TableCell>
                       <TableCell>
-                        <Select onValueChange={(v) => void resolverPendente(l, v)}>
-                          <SelectTrigger className="w-[320px]">
-                            <SelectValue placeholder="Escolher lançamento ou ignorar" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {opcoes.map((c) => (
-                              <SelectItem key={`${c.tabela}-${c.id}`} value={`${c.tabela}:${c.id}`}>
-                                {rotuloCandidato(c)}
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="ignorar">Ignorar esta linha</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Select onValueChange={(v) => void resolverPendente(l, v)}>
+                            <SelectTrigger className="w-[280px]">
+                              <SelectValue placeholder="Escolher lançamento ou ignorar" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {opcoes.map((c) => (
+                                <SelectItem
+                                  key={`${c.tabela}-${c.id}`}
+                                  value={`${c.tabela}:${c.id}`}
+                                >
+                                  {rotuloCandidato(c)}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="ignorar">Ignorar esta linha</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {!!empresaDaConta && (
+                            <LancarDoExtrato
+                              linha={l}
+                              contaBancariaId={contaId}
+                              empresaId={empresaDaConta}
+                              onCriado={(v) => vincularLinhaSalva(l, v)}
+                            />
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
