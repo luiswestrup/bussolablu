@@ -384,19 +384,32 @@ export function ImportarExtrato({
                         {brl(Number(l.valor))}
                       </TableCell>
                       <TableCell>
-                        <Select onValueChange={(v) => void resolverPendente(l, v)}>
-                          <SelectTrigger className="w-[320px]">
-                            <SelectValue placeholder="Escolher lançamento ou ignorar" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {opcoes.map((c) => (
-                              <SelectItem key={`${c.tabela}-${c.id}`} value={`${c.tabela}:${c.id}`}>
-                                {rotuloCandidato(c)}
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="ignorar">Ignorar esta linha</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Select onValueChange={(v) => void resolverPendente(l, v)}>
+                            <SelectTrigger className="w-[280px]">
+                              <SelectValue placeholder="Escolher lançamento ou ignorar" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {opcoes.map((c) => (
+                                <SelectItem
+                                  key={`${c.tabela}-${c.id}`}
+                                  value={`${c.tabela}:${c.id}`}
+                                >
+                                  {rotuloCandidato(c)}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="ignorar">Ignorar esta linha</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {!!empresaDaConta && (
+                            <LancarDoExtrato
+                              linha={l}
+                              contaBancariaId={contaId}
+                              empresaId={empresaDaConta}
+                              onCriado={(v) => vincularLinhaSalva(l, v)}
+                            />
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
