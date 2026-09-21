@@ -171,6 +171,7 @@ export function ImportarExtrato({
   async function invalidar() {
     await queryClient.invalidateQueries({ queryKey: ["conta_pagar"] });
     await queryClient.invalidateQueries({ queryKey: ["conta_receber"] });
+    await queryClient.invalidateQueries({ queryKey: ["transferencia_bancaria"] });
     await queryClient.invalidateQueries({ queryKey: ["extrato_bancario_linha"] });
   }
 
