@@ -37,6 +37,7 @@ import {
 } from "@/lib/dados";
 import { lerOFX, type LancamentoOFX } from "@/lib/ofx";
 import { candidatosDaConta, casarLinhas, type Candidato, type Resultado } from "@/lib/conciliacao";
+import { LancarDoExtrato, type VinculoCriado } from "@/components/LancarDoExtrato";
 
 export function ImportarExtrato({
   contaId,
