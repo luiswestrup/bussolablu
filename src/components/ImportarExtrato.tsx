@@ -201,6 +201,22 @@ export function ImportarExtrato({
     }
   }
 
+  /** Marca a linha já importada como conciliada com o lançamento recém-criado. */
+  async function vincularLinhaSalva(linha: ExtratoLinha, v: VinculoCriado) {
+    try {
+      await tabela("extrato_bancario_linha")
+        .update({
+          status: "conciliado",
+          conta_pagar_id: v.tabela === "conta_pagar" ? v.id : null,
+          conta_receber_id: v.tabela === "conta_receber" ? v.id : null,
+        })
+        .eq("id", linha.id);
+      await invalidar();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao vincular a linha do extrato.");
+    }
+  }
+
   const pendentesSalvas = linhasSalvas.filter(
     (l) => l.conta_bancaria_id === contaId && l.status === "pendente",
   );
