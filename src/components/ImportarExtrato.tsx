@@ -156,9 +156,10 @@ export function ImportarExtrato({
       await invalidar();
       setLidas([]);
       setNomeArquivo("");
+      setManuais({});
       if (arquivoRef.current) arquivoRef.current.value = "";
       toast.success(
-        `${automaticos.length} lançamento(s) conciliados automaticamente. ${divergentes.length} divergência(s) para revisar.`,
+        `${automaticos.length} conciliados automaticamente, ${lancados.length} lançados por você, ${divergentes.length} divergência(s) para revisar.`,
       );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao importar o extrato.");
