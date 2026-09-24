@@ -574,6 +574,18 @@ export function ContasView({
       return null;
     });
 
+  const idsVisiveis = lista.map((c) => c.id);
+  const selecionadosVisiveis = selecionados.filter((id) => idsVisiveis.includes(id));
+  const todosMarcados = idsVisiveis.length > 0 && selecionadosVisiveis.length === idsVisiveis.length;
+
+  const alternarLinha = (id: string) =>
+    setSelecionados((atual) =>
+      atual.includes(id) ? atual.filter((x) => x !== id) : [...atual, id],
+    );
+
+  const alternarTodos = () => setSelecionados(todosMarcados ? [] : idsVisiveis);
+
+
   const ColunaOrdenavel = ({
     coluna,
     children,
