@@ -50,6 +50,7 @@ import { linhasPagamentosCSV, linhasRecebimentosCSV } from "@/lib/exportacao";
 import {
   situacao,
   tabela,
+  atualizarEmLote,
   datasParcelas,
   liquidoRecebimento,
   percentualTaxaPadrao,
@@ -160,6 +161,11 @@ export function ContasView({
   const [parcelas, setParcelas] = useState<ParcelaLinha[]>([]);
   const [grupoAberto, setGrupoAberto] = useState<string | null>(null);
 
+  // Edição de categoria em lote
+  const [selecionados, setSelecionados] = useState<string[]>([]);
+  const [loteAberto, setLoteAberto] = useState(false);
+  const [loteCategoria, setLoteCategoria] = useState("");
+
   const ehCheque = form.forma === "Cheque";
   const podeParcelar = config.tipo === "pagar" && !editandoId;
 
@@ -261,6 +267,26 @@ export function ContasView({
   } | null>(null);
 
   const invalidar = () => queryClient.invalidateQueries({ queryKey: [config.tabelaNome] });
+
+  const categoriaEmLote = useMutation({
+    mutationFn: async () => {
+      await atualizarEmLote(config.tabelaNome, selecionadosVisiveis, {
+        categoria_id: loteCategoria,
+        ...(config.tipo === "pagar" ? { categoria_sugerida: true } : {}),
+      });
+    },
+    onSuccess: () => {
+      toast.success(
+        `Categoria alterada em ${selecionados.length} lançamento${selecionados.length > 1 ? "s" : ""}.`,
+      );
+      setLoteAberto(false);
+      setLoteCategoria("");
+      setSelecionados([]);
+      invalidar();
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Não foi possível alterar a categoria."),
+  });
 
   const criar = useMutation({
     mutationFn: async () => {
@@ -545,6 +571,18 @@ export function ContasView({
       if (atual.direcao === "asc") return { coluna, direcao: "desc" };
       return null;
     });
+
+  const idsVisiveis = lista.map((c) => c.id);
+  const selecionadosVisiveis = selecionados.filter((id) => idsVisiveis.includes(id));
+  const todosMarcados = idsVisiveis.length > 0 && selecionadosVisiveis.length === idsVisiveis.length;
+
+  const alternarLinha = (id: string) =>
+    setSelecionados((atual) =>
+      atual.includes(id) ? atual.filter((x) => x !== id) : [...atual, id],
+    );
+
+  const alternarTodos = () => setSelecionados(todosMarcados ? [] : idsVisiveis);
+
 
   const ColunaOrdenavel = ({
     coluna,
@@ -1162,6 +1200,34 @@ export function ContasView({
             </div>
           </div>
 
+          {selecionadosVisiveis.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-primary/40 bg-primary/5 px-3 py-2">
+              <span className="text-sm font-medium">
+                {selecionadosVisiveis.length} lançamento
+                {selecionadosVisiveis.length > 1 ? "s" : ""} selecionado
+                {selecionadosVisiveis.length > 1 ? "s" : ""}
+              </span>
+              <Button
+                size="sm"
+                disabled={consolidado}
+                title={
+                  consolidado
+                    ? "Selecione uma empresa específica para editar em lote"
+                    : "Alterar categoria dos selecionados"
+                }
+                onClick={() => {
+                  setLoteCategoria("");
+                  setLoteAberto(true);
+                }}
+              >
+                Alterar categoria
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelecionados([])}>
+                Desmarcar todos
+              </Button>
+            </div>
+          )}
+
           <div className="mt-4 overflow-x-auto">
             {carregando ? (
               <SecaoVazia texto="Carregando lançamentos…" />
@@ -1171,6 +1237,15 @@ export function ContasView({
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-primary"
+                        checked={todosMarcados}
+                        onChange={alternarTodos}
+                        title="Selecionar todos os lançamentos filtrados"
+                      />
+                    </TableHead>
                     {consolidado && <ColunaOrdenavel coluna="empresa">Empresa</ColunaOrdenavel>}
                     <ColunaOrdenavel coluna="descricao">Descrição</ColunaOrdenavel>
                     <ColunaOrdenavel coluna="documento">Documento</ColunaOrdenavel>
@@ -1190,11 +1265,20 @@ export function ContasView({
                   {lista.map((c) => (
                     <Fragment key={c.id}>
                     <TableRow>
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 accent-primary"
+                          checked={selecionados.includes(c.id)}
+                          onChange={() => alternarLinha(c.id)}
+                        />
+                      </TableCell>
                       {consolidado && (
                         <TableCell className="whitespace-nowrap text-muted-foreground">
                           {nomeEmpresa(c.empresa_id)}
                         </TableCell>
                       )}
+
                       <TableCell className="font-medium">{c.descricao}</TableCell>
                       <TableCell className="whitespace-nowrap text-muted-foreground">
                         {(c as Record<string, unknown>)["numero_documento"] as string ?? "—"}
@@ -1411,7 +1495,7 @@ export function ContasView({
                     {grupoAberto &&
                       grupoAberto === (c as Record<string, unknown>)["grupo_parcelamento_id"] && (
                         <TableRow className="bg-muted/40">
-                          <TableCell colSpan={consolidado ? 11 : 10}>
+                          <TableCell colSpan={consolidado ? 12 : 11}>
                             <p className="mb-2 text-xs font-medium text-muted-foreground">
                               Parcelas deste parcelamento
                             </p>
@@ -1467,6 +1551,42 @@ export function ContasView({
       </Card>
 
       <ParcelarTitulo conta={parcelando} onClose={() => setParcelando(null)} />
+
+      <Dialog open={loteAberto} onOpenChange={setLoteAberto}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alterar categoria em lote</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              A categoria será aplicada a {selecionadosVisiveis.length} lançamento
+              {selecionadosVisiveis.length > 1 ? "s" : ""} selecionado
+              {selecionadosVisiveis.length > 1 ? "s" : ""}.
+            </p>
+            <div>
+              <Label>Nova categoria</Label>
+              <SeletorCategoria
+                categorias={categorias}
+                value={loteCategoria}
+                onChange={setLoteCategoria}
+                tipo={config.tipoCategoria}
+                empresaId={empresa?.id ?? undefined}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLoteAberto(false)}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={!loteCategoria || categoriaEmLote.isPending}
+              onClick={() => categoriaEmLote.mutate()}
+            >
+              Aplicar a {selecionadosVisiveis.length}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <EditarTituloBaixado
         config={{
