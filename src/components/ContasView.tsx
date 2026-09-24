@@ -1497,7 +1497,7 @@ export function ContasView({
                     {grupoAberto &&
                       grupoAberto === (c as Record<string, unknown>)["grupo_parcelamento_id"] && (
                         <TableRow className="bg-muted/40">
-                          <TableCell colSpan={consolidado ? 11 : 10}>
+                          <TableCell colSpan={consolidado ? 12 : 11}>
                             <p className="mb-2 text-xs font-medium text-muted-foreground">
                               Parcelas deste parcelamento
                             </p>
