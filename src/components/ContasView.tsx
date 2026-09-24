@@ -50,6 +50,7 @@ import { linhasPagamentosCSV, linhasRecebimentosCSV } from "@/lib/exportacao";
 import {
   situacao,
   tabela,
+  atualizarEmLote,
   datasParcelas,
   liquidoRecebimento,
   percentualTaxaPadrao,
@@ -1569,7 +1570,7 @@ export function ContasView({
                 value={loteCategoria}
                 onChange={setLoteCategoria}
                 tipo={config.tipoCategoria}
-                empresaId={empresa?.id ?? null}
+                empresaId={empresa?.id ?? undefined}
               />
             </div>
           </div>
