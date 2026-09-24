@@ -269,13 +269,10 @@ export function ContasView({
 
   const categoriaEmLote = useMutation({
     mutationFn: async () => {
-      const { error } = await tabela(config.tabelaNome)
-        .update({
-          categoria_id: loteCategoria,
-          ...(config.tipo === "pagar" ? { categoria_sugerida: true } : {}),
-        })
-        .in("id", selecionadosVisiveis);
-      if (error) throw error;
+      await atualizarEmLote(config.tabelaNome, selecionadosVisiveis, {
+        categoria_id: loteCategoria,
+        ...(config.tipo === "pagar" ? { categoria_sugerida: true } : {}),
+      });
     },
     onSuccess: () => {
       toast.success(
