@@ -1554,6 +1554,42 @@ export function ContasView({
 
       <ParcelarTitulo conta={parcelando} onClose={() => setParcelando(null)} />
 
+      <Dialog open={loteAberto} onOpenChange={setLoteAberto}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alterar categoria em lote</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              A categoria será aplicada a {selecionadosVisiveis.length} lançamento
+              {selecionadosVisiveis.length > 1 ? "s" : ""} selecionado
+              {selecionadosVisiveis.length > 1 ? "s" : ""}.
+            </p>
+            <div>
+              <Label>Nova categoria</Label>
+              <SeletorCategoria
+                categorias={categorias}
+                value={loteCategoria}
+                onChange={setLoteCategoria}
+                tipo={config.tipoCategoria}
+                empresaId={empresa?.id ?? null}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLoteAberto(false)}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={!loteCategoria || categoriaEmLote.isPending}
+              onClick={() => categoriaEmLote.mutate()}
+            >
+              Aplicar a {selecionadosVisiveis.length}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <EditarTituloBaixado
         config={{
           tipo: config.tipo,
