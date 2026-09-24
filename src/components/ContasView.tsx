@@ -267,6 +267,29 @@ export function ContasView({
 
   const invalidar = () => queryClient.invalidateQueries({ queryKey: [config.tabelaNome] });
 
+  const categoriaEmLote = useMutation({
+    mutationFn: async () => {
+      const { error } = await tabela(config.tabelaNome)
+        .update({
+          categoria_id: loteCategoria,
+          ...(config.tipo === "pagar" ? { categoria_sugerida: true } : {}),
+        })
+        .in("id", selecionados);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(
+        `Categoria alterada em ${selecionados.length} lançamento${selecionados.length > 1 ? "s" : ""}.`,
+      );
+      setLoteAberto(false);
+      setLoteCategoria("");
+      setSelecionados([]);
+      invalidar();
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Não foi possível alterar a categoria."),
+  });
+
   const criar = useMutation({
     mutationFn: async () => {
       const base = {
