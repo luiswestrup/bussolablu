@@ -29,6 +29,19 @@ export type ContaPagar = {
   cheque_conta_bancaria_id: string | null;
   status_cheque: StatusCheque | null;
   grupo_parcelamento_id: string | null;
+  criado_em?: string | null;
+};
+
+export type NotaFiscalImportada = {
+  id: string;
+  empresa_id: string;
+  chave_acesso: string;
+  fornecedor_id: string | null;
+  numero_nota: string | null;
+  data_emissao: string | null;
+  valor_total: number;
+  status: string;
+  criado_em: string;
 };
 
 export type ContaReceber = {
@@ -179,8 +192,16 @@ export const usePagar = (escopo?: Escopo) =>
   useTabela<ContaPagar>(
     "conta_pagar",
     escopo,
-    "id, descricao, valor, categoria_id, categoria_sugerida, fornecedor_id, forma_pagamento, data_vencimento, data_pagamento, status, conta_bancaria_id, conciliado, conciliado_em, numero_documento, parcela, valor_pago, valor_desconto, valor_multa_juros, numero_cheque, banco_emissor, cheque_conta_bancaria_id, status_cheque, grupo_parcelamento_id",
+    "id, descricao, valor, categoria_id, categoria_sugerida, fornecedor_id, forma_pagamento, data_vencimento, data_pagamento, status, conta_bancaria_id, conciliado, conciliado_em, numero_documento, parcela, valor_pago, valor_desconto, valor_multa_juros, numero_cheque, banco_emissor, cheque_conta_bancaria_id, status_cheque, grupo_parcelamento_id, criado_em",
     "data_vencimento",
+  );
+
+export const useNotasImportadas = (escopo?: Escopo) =>
+  useTabela<NotaFiscalImportada>(
+    "nota_fiscal_importada",
+    escopo,
+    "id, chave_acesso, fornecedor_id, numero_nota, data_emissao, valor_total, status, criado_em",
+    "data_emissao",
   );
 
 export const useReceber = (escopo?: Escopo) =>
