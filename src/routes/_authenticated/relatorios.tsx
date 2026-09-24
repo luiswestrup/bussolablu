@@ -46,6 +46,7 @@ import {
   useReceber,
 } from "@/lib/dados";
 import { distribuirDespesa, mapaRateioNotas } from "@/lib/rateio";
+import { CicloFornecedores } from "@/components/CicloFornecedores";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
   head: () => ({
