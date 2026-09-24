@@ -29,6 +29,19 @@ export type ContaPagar = {
   cheque_conta_bancaria_id: string | null;
   status_cheque: StatusCheque | null;
   grupo_parcelamento_id: string | null;
+  criado_em?: string | null;
+};
+
+export type NotaFiscalImportada = {
+  id: string;
+  empresa_id: string;
+  chave_acesso: string;
+  fornecedor_id: string | null;
+  numero_nota: string | null;
+  data_emissao: string | null;
+  valor_total: number;
+  status: string;
+  criado_em: string;
 };
 
 export type ContaReceber = {
