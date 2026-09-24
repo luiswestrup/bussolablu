@@ -1202,6 +1202,34 @@ export function ContasView({
             </div>
           </div>
 
+          {selecionadosVisiveis.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-primary/40 bg-primary/5 px-3 py-2">
+              <span className="text-sm font-medium">
+                {selecionadosVisiveis.length} lançamento
+                {selecionadosVisiveis.length > 1 ? "s" : ""} selecionado
+                {selecionadosVisiveis.length > 1 ? "s" : ""}
+              </span>
+              <Button
+                size="sm"
+                disabled={consolidado}
+                title={
+                  consolidado
+                    ? "Selecione uma empresa específica para editar em lote"
+                    : "Alterar categoria dos selecionados"
+                }
+                onClick={() => {
+                  setLoteCategoria("");
+                  setLoteAberto(true);
+                }}
+              >
+                Alterar categoria
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelecionados([])}>
+                Desmarcar todos
+              </Button>
+            </div>
+          )}
+
           <div className="mt-4 overflow-x-auto">
             {carregando ? (
               <SecaoVazia texto="Carregando lançamentos…" />
@@ -1211,6 +1239,15 @@ export function ContasView({
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-primary"
+                        checked={todosMarcados}
+                        onChange={alternarTodos}
+                        title="Selecionar todos os lançamentos filtrados"
+                      />
+                    </TableHead>
                     {consolidado && <ColunaOrdenavel coluna="empresa">Empresa</ColunaOrdenavel>}
                     <ColunaOrdenavel coluna="descricao">Descrição</ColunaOrdenavel>
                     <ColunaOrdenavel coluna="documento">Documento</ColunaOrdenavel>
@@ -1230,11 +1267,20 @@ export function ContasView({
                   {lista.map((c) => (
                     <Fragment key={c.id}>
                     <TableRow>
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 accent-primary"
+                          checked={selecionados.includes(c.id)}
+                          onChange={() => alternarLinha(c.id)}
+                        />
+                      </TableCell>
                       {consolidado && (
                         <TableCell className="whitespace-nowrap text-muted-foreground">
                           {nomeEmpresa(c.empresa_id)}
                         </TableCell>
                       )}
+
                       <TableCell className="font-medium">{c.descricao}</TableCell>
                       <TableCell className="whitespace-nowrap text-muted-foreground">
                         {(c as Record<string, unknown>)["numero_documento"] as string ?? "—"}
