@@ -160,6 +160,11 @@ export function ContasView({
   const [parcelas, setParcelas] = useState<ParcelaLinha[]>([]);
   const [grupoAberto, setGrupoAberto] = useState<string | null>(null);
 
+  // Edição de categoria em lote
+  const [selecionados, setSelecionados] = useState<string[]>([]);
+  const [loteAberto, setLoteAberto] = useState(false);
+  const [loteCategoria, setLoteCategoria] = useState("");
+
   const ehCheque = form.forma === "Cheque";
   const podeParcelar = config.tipo === "pagar" && !editandoId;
 
