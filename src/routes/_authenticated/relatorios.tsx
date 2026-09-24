@@ -44,6 +44,7 @@ import {
   usePagar,
   useProdutos,
   useReceber,
+  useNotasImportadas,
 } from "@/lib/dados";
 import { distribuirDespesa, mapaRateioNotas } from "@/lib/rateio";
 import { CicloFornecedores } from "@/components/CicloFornecedores";
@@ -71,6 +72,7 @@ function RelatoriosPage() {
   const { data: fornecedores = [] } = useFornecedores(escopo);
   const { data: clientes = [] } = useClientes(escopo);
   const { data: movimentos = [] } = useMovimentos(escopo);
+  const { data: notasImportadas = [] } = useNotasImportadas(escopo);
 
   const [inicio, setInicio] = useState(mesesAtras(5));
   const [fim, setFim] = useState(fimDoMes());
@@ -199,7 +201,32 @@ function RelatoriosPage() {
         <TabsList className="mb-4">
           <TabsTrigger value="analises">Análises</TabsTrigger>
           <TabsTrigger value="indicadores">Indicadores</TabsTrigger>
+          <TabsTrigger value="ciclo">Ciclo Fornecedores</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="ciclo">
+          <Card>
+            <CardContent className="flex flex-wrap items-end gap-4 p-4">
+              <div>
+                <Label htmlFor="ciclo-ini">Início</Label>
+                <Input id="ciclo-ini" type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="ciclo-fim">Fim</Label>
+                <Input id="ciclo-fim" type="date" value={fim} onChange={(e) => setFim(e.target.value)} />
+              </div>
+            </CardContent>
+          </Card>
+          <div className="mt-4">
+            <CicloFornecedores
+              pagar={pagar}
+              notas={notasImportadas}
+              fornecedores={fornecedores}
+              inicio={inicio}
+              fim={fim}
+            />
+          </div>
+        </TabsContent>
 
         <TabsContent value="indicadores">
           <Indicadores pagar={pagar} receber={receber} saldoAtual={saldoAtual} hojeISO={hoje()} />
