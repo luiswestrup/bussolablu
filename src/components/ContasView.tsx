@@ -274,7 +274,7 @@ export function ContasView({
           categoria_id: loteCategoria,
           ...(config.tipo === "pagar" ? { categoria_sugerida: true } : {}),
         })
-        .in("id", selecionados);
+        .in("id", selecionadosVisiveis);
       if (error) throw error;
     },
     onSuccess: () => {
