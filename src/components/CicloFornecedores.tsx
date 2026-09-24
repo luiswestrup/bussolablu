@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Download, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -200,9 +200,8 @@ export function CicloFornecedores({
                 const chave = l.fornecedorId ?? "sem";
                 const expandido = aberto === chave;
                 return (
-                  <>
+                  <Fragment key={chave}>
                     <TableRow
-                      key={chave}
                       className="cursor-pointer"
                       onClick={() => setAberto(expandido ? null : chave)}
                     >
@@ -224,7 +223,7 @@ export function CicloFornecedores({
                       </TableCell>
                     </TableRow>
                     {expandido && (
-                      <TableRow key={`${chave}-det`}>
+                      <TableRow>
                         <TableCell colSpan={8} className="bg-muted/40">
                           <Table>
                             <TableHeader>
@@ -266,7 +265,7 @@ export function CicloFornecedores({
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </TableBody>
