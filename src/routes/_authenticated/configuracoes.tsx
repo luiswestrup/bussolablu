@@ -1321,13 +1321,33 @@ function ContasBancarias() {
                           {c.banco} {c.conta ? `· ${c.conta}` : ""}
                         </SelectItem>
                       ))}
+                    {contasOutras.length > 0 && (
+                      <>
+                        <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                          Outras empresas (repasse via conta empréstimo)
+                        </div>
+                        {contasOutras.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {nomeEmpresa(c.empresa_id)} · {c.banco}
+                            {c.conta ? ` · ${c.conta}` : ""}
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
+                {destinoEhOutraEmpresa && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Repasse entre empresas: o sistema registra a saída aqui pela conta empréstimo e
+                    a entrada na outra empresa pela conta espelho.
+                  </p>
+                )}
                 {!!tr.conta_destino_id && tr.conta_destino_id === tr.conta_origem_id && (
                   <p className="mt-1 text-xs text-destructive">
                     A conta de destino deve ser diferente da conta de origem.
                   </p>
                 )}
+
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
