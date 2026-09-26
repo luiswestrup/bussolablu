@@ -77,7 +77,33 @@ function ListaParceiros({
   const { empresa } = useEmpresa();
   const queryClient = useQueryClient();
   const [form, setForm] = useState({ nome: "", contato: "", documento: "" });
+  const [editando, setEditando] = useState<{
+    id: string;
+    nome: string;
+    contato: string;
+    documento: string;
+  } | null>(null);
   const invalidar = () => queryClient.invalidateQueries({ queryKey: [chave] });
+
+  const salvarEdicao = useMutation({
+    mutationFn: async () => {
+      if (!editando) return;
+      const { error } = await tabela(chave)
+        .update({
+          nome: editando.nome.trim(),
+          contato: editando.contato.trim() || null,
+          documento: editando.documento.trim() || null,
+        })
+        .eq("id", editando.id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      setEditando(null);
+      invalidar();
+      toast.success(`${titulo} atualizado.`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const criar = useMutation({
     mutationFn: async () => {
@@ -162,6 +188,21 @@ function ListaParceiros({
                     <TableCell>{i.contato ?? "—"}</TableCell>
                     <TableCell>{i.documento ?? "—"}</TableCell>
                     <TableCell className="text-right">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Editar"
+                        onClick={() =>
+                          setEditando({
+                            id: i.id,
+                            nome: i.nome,
+                            contato: i.contato ?? "",
+                            documento: i.documento ?? "",
+                          })
+                        }
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                       <Button size="icon" variant="ghost" onClick={() => excluir.mutate(i.id)} title="Excluir">
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -172,6 +213,53 @@ function ListaParceiros({
             </Table>
           )}
         </div>
+
+        <Dialog open={!!editando} onOpenChange={(o) => !o && setEditando(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Editar {titulo.toLowerCase()}</DialogTitle>
+            </DialogHeader>
+            {editando && (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Nome</label>
+                  <Input
+                    maxLength={120}
+                    value={editando.nome}
+                    onChange={(e) => setEditando({ ...editando, nome: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Contato</label>
+                  <Input
+                    maxLength={120}
+                    value={editando.contato}
+                    onChange={(e) => setEditando({ ...editando, contato: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">CNPJ/CPF</label>
+                  <Input
+                    maxLength={20}
+                    value={editando.documento}
+                    onChange={(e) => setEditando({ ...editando, documento: e.target.value })}
+                  />
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditando(null)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => salvarEdicao.mutate()}
+                disabled={!editando?.nome.trim() || salvarEdicao.isPending}
+              >
+                Salvar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
@@ -688,6 +776,14 @@ function ContasBancarias() {
     saldo_inicial: "",
   });
   const [aberto, setAberto] = useState(false);
+  const [editandoConta, setEditandoConta] = useState<{
+    id: string;
+    banco: string;
+    agencia: string;
+    conta: string;
+    tipo: string;
+    saldo_inicial: string;
+  } | null>(null);
   const [tr, setTr] = useState({
     conta_origem_id: "",
     conta_destino_id: "",
@@ -790,6 +886,28 @@ function ContasBancarias() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const salvarEdicaoConta = useMutation({
+    mutationFn: async () => {
+      if (!editandoConta) return;
+      const { error } = await tabela("conta_bancaria")
+        .update({
+          banco: editandoConta.banco.trim(),
+          agencia: editandoConta.agencia.trim() || null,
+          conta: editandoConta.conta.trim() || null,
+          tipo: editandoConta.tipo,
+          saldo_inicial: Number(editandoConta.saldo_inicial) || 0,
+        })
+        .eq("id", editandoConta.id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      setEditandoConta(null);
+      invalidar();
+      toast.success("Conta bancária atualizada.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const excluir = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await tabela("conta_bancaria").delete().eq("id", id);
@@ -888,6 +1006,23 @@ function ContasBancarias() {
                       {brl(saldoDaConta(c.id))}
                     </TableCell>
                     <TableCell className="text-right">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Editar"
+                        onClick={() =>
+                          setEditandoConta({
+                            id: c.id,
+                            banco: c.banco,
+                            agencia: c.agencia ?? "",
+                            conta: c.conta ?? "",
+                            tipo: c.tipo,
+                            saldo_inicial: String(c.saldo_inicial),
+                          })
+                        }
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                       <Button size="icon" variant="ghost" title="Excluir" onClick={() => excluir.mutate(c.id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -944,6 +1079,86 @@ function ContasBancarias() {
             )}
           </div>
         </div>
+
+        <Dialog open={!!editandoConta} onOpenChange={(o) => !o && setEditandoConta(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Editar conta bancária</DialogTitle>
+            </DialogHeader>
+            {editandoConta && (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Banco</label>
+                  <Input
+                    maxLength={80}
+                    value={editandoConta.banco}
+                    onChange={(e) => setEditandoConta({ ...editandoConta, banco: e.target.value })}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-sm text-muted-foreground">Agência</label>
+                    <Input
+                      maxLength={20}
+                      value={editandoConta.agencia}
+                      onChange={(e) => setEditandoConta({ ...editandoConta, agencia: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm text-muted-foreground">Conta</label>
+                    <Input
+                      maxLength={30}
+                      value={editandoConta.conta}
+                      onChange={(e) => setEditandoConta({ ...editandoConta, conta: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-sm text-muted-foreground">Tipo</label>
+                    <Select
+                      value={editandoConta.tipo}
+                      onValueChange={(v) => setEditandoConta({ ...editandoConta, tipo: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TIPOS_CONTA.map((t) => (
+                          <SelectItem key={t} value={t} className="capitalize">
+                            {t}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm text-muted-foreground">Saldo inicial</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editandoConta.saldo_inicial}
+                      onChange={(e) =>
+                        setEditandoConta({ ...editandoConta, saldo_inicial: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditandoConta(null)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => salvarEdicaoConta.mutate()}
+                disabled={!editandoConta?.banco.trim() || salvarEdicaoConta.isPending}
+              >
+                Salvar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={aberto} onOpenChange={setAberto}>
           <DialogContent>
