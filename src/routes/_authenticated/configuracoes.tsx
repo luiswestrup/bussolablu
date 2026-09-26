@@ -1050,7 +1050,9 @@ function ContasBancarias() {
                             conta: c.conta ?? "",
                             tipo: c.tipo,
                             saldo_inicial: String(c.saldo_inicial),
+                            conta_espelho_id: c.conta_espelho_id ?? "",
                           })
+
                         }
                       >
                         <Pencil className="h-4 w-4" />
