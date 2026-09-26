@@ -1,4 +1,4 @@
-import { tabela, type ContaBancaria } from "@/lib/dados";
+import { inserirVarios, tabela, type ContaBancaria } from "@/lib/dados";
 
 /**
  * Mútuo entre empresas ("conta empréstimo").
