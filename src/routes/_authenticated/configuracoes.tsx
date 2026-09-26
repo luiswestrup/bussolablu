@@ -1080,6 +1080,86 @@ function ContasBancarias() {
           </div>
         </div>
 
+        <Dialog open={!!editandoConta} onOpenChange={(o) => !o && setEditandoConta(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Editar conta bancária</DialogTitle>
+            </DialogHeader>
+            {editandoConta && (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Banco</label>
+                  <Input
+                    maxLength={80}
+                    value={editandoConta.banco}
+                    onChange={(e) => setEditandoConta({ ...editandoConta, banco: e.target.value })}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-sm text-muted-foreground">Agência</label>
+                    <Input
+                      maxLength={20}
+                      value={editandoConta.agencia}
+                      onChange={(e) => setEditandoConta({ ...editandoConta, agencia: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm text-muted-foreground">Conta</label>
+                    <Input
+                      maxLength={30}
+                      value={editandoConta.conta}
+                      onChange={(e) => setEditandoConta({ ...editandoConta, conta: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-sm text-muted-foreground">Tipo</label>
+                    <Select
+                      value={editandoConta.tipo}
+                      onValueChange={(v) => setEditandoConta({ ...editandoConta, tipo: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TIPOS_CONTA.map((t) => (
+                          <SelectItem key={t} value={t} className="capitalize">
+                            {t}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm text-muted-foreground">Saldo inicial</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editandoConta.saldo_inicial}
+                      onChange={(e) =>
+                        setEditandoConta({ ...editandoConta, saldo_inicial: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditandoConta(null)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => salvarEdicaoConta.mutate()}
+                disabled={!editandoConta?.banco.trim() || salvarEdicaoConta.isPending}
+              >
+                Salvar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <Dialog open={aberto} onOpenChange={setAberto}>
           <DialogContent>
             <DialogHeader>
