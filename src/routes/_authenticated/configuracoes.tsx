@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-// edição de fornecedores/clientes e contas bancárias
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeftRight, Pencil, Plus, Trash2 } from "lucide-react";
@@ -883,6 +882,28 @@ function ContasBancarias() {
       setForm({ banco: "", agencia: "", conta: "", tipo: "corrente", saldo_inicial: "" });
       invalidar();
       toast.success("Conta bancária cadastrada.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const salvarEdicaoConta = useMutation({
+    mutationFn: async () => {
+      if (!editandoConta) return;
+      const { error } = await tabela("conta_bancaria")
+        .update({
+          banco: editandoConta.banco.trim(),
+          agencia: editandoConta.agencia.trim() || null,
+          conta: editandoConta.conta.trim() || null,
+          tipo: editandoConta.tipo,
+          saldo_inicial: Number(editandoConta.saldo_inicial) || 0,
+        })
+        .eq("id", editandoConta.id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      setEditandoConta(null);
+      invalidar();
+      toast.success("Conta bancária atualizada.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
