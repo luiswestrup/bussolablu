@@ -1737,6 +1737,45 @@ export function ContasView({
                 )}
               </div>
 
+              {config.tipo === "pagar" &&
+                (() => {
+                  const esp = espelhoDe(contasTodas, baixa.conta_bancaria_id);
+                  if (!esp) return null;
+                  const opcoes = contasTodas.filter(
+                    (cb) => cb.empresa_id === esp.empresa_id && cb.id !== esp.id,
+                  );
+                  return (
+                    <div className="sm:col-span-2 rounded-lg border border-dashed p-4">
+                      <Label>
+                        Conta de {nomeEmpresa(esp.empresa_id)} que pagou{" "}
+                        <span className="text-destructive">*</span>
+                      </Label>
+                      <Select
+                        value={baixa.contaOrigemEspelho}
+                        onValueChange={(v) => setBaixa({ ...baixa, contaOrigemEspelho: v })}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="De onde o dinheiro saiu de verdade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {opcoes.map((cb) => (
+                            <SelectItem key={cb.id} value={cb.id}>
+                              {cb.banco}
+                              {cb.conta ? ` · ${cb.conta}` : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        O sistema lança automaticamente em {nomeEmpresa(esp.empresa_id)} a saída
+                        desta conta para a conta “{esp.banco}”, mantendo os dois saldos do
+                        empréstimo iguais.
+                      </p>
+                    </div>
+                  );
+                })()}
+
+
               {config.tipo === "receber" && (
                 <div className="sm:col-span-2">
                   <Label>Forma de recebimento</Label>
