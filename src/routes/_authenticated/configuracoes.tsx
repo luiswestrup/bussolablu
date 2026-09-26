@@ -776,6 +776,14 @@ function ContasBancarias() {
     saldo_inicial: "",
   });
   const [aberto, setAberto] = useState(false);
+  const [editandoConta, setEditandoConta] = useState<{
+    id: string;
+    banco: string;
+    agencia: string;
+    conta: string;
+    tipo: string;
+    saldo_inicial: string;
+  } | null>(null);
   const [tr, setTr] = useState({
     conta_origem_id: "",
     conta_destino_id: "",
