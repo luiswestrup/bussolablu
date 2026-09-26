@@ -32,6 +32,11 @@ import { AbasPlanilha } from "@/components/AbasPlanilha";
 import { TaxasRecebimento } from "@/components/TaxasRecebimento";
 import { brl, dataBR, hoje } from "@/lib/format";
 import {
+  registrarRepasseEntreEmpresas,
+  vincularContasEspelho,
+} from "@/lib/intercompany";
+
+import {
   tabela,
   useCategorias,
   useClientes,
@@ -762,12 +767,19 @@ function ConfiguracoesConteudo() {
 const TIPOS_CONTA = ["corrente", "poupanca", "caixa", "investimento"];
 
 function ContasBancarias() {
-  const { empresa } = useEmpresa();
+  const { empresa, empresas, nomeEmpresa } = useEmpresa();
   const queryClient = useQueryClient();
   const { data: contas = [] } = useContasBancarias(empresa?.id);
+  const { data: contasTodas = [] } = useContasBancarias(empresas.map((e) => e.id));
   const { data: pagar = [] } = usePagar(empresa?.id);
   const { data: receber = [] } = useReceber(empresa?.id);
   const { data: transferencias = [] } = useTransferencias(empresa?.id);
+  const idsEmpresas = empresas.map((e) => e.id);
+  const { data: pagarTodas = [] } = usePagar(idsEmpresas);
+  const { data: receberTodas = [] } = useReceber(idsEmpresas);
+  const { data: transferenciasTodas = [] } = useTransferencias(idsEmpresas);
+
+
   const [form, setForm] = useState({
     banco: "",
     agencia: "",
@@ -783,7 +795,9 @@ function ContasBancarias() {
     conta: string;
     tipo: string;
     saldo_inicial: string;
+    conta_espelho_id: string;
   } | null>(null);
+
   const [tr, setTr] = useState({
     conta_origem_id: "",
     conta_destino_id: "",
@@ -817,7 +831,48 @@ function ContasBancarias() {
     return Number(conta?.saldo_inicial ?? 0) + entradas - saidas + recebidasTr - enviadasTr;
   };
 
-  const nomeConta = (id: string) => contas.find((c) => c.id === id)?.banco ?? "—";
+  // Saldo considerando os dados de todas as empresas (usado na conferência do mútuo).
+  const saldoGlobal = (contaId: string) => {
+    const conta = contasTodas.find((c) => c.id === contaId);
+    const entradas = receberTodas
+      .filter((c) => c.conta_bancaria_id === contaId && c.status === "recebido" && emCaixa(c))
+      .reduce((s, c) => s + liquidoRecebimento(c), 0);
+    const saidas = pagarTodas
+      .filter((c) => c.conta_bancaria_id === contaId && c.status === "pago" && emCaixa(c))
+      .reduce((s, c) => s + Number(c.valor_pago ?? c.valor), 0);
+    const recebidasTr = transferenciasTodas
+      .filter((t) => t.conta_destino_id === contaId)
+      .reduce((s, t) => s + Number(t.valor), 0);
+    const enviadasTr = transferenciasTodas
+      .filter((t) => t.conta_origem_id === contaId)
+      .reduce((s, t) => s + Number(t.valor), 0);
+    return Number(conta?.saldo_inicial ?? 0) + entradas - saidas + recebidasTr - enviadasTr;
+  };
+
+  // Pares de contas empréstimo espelho que envolvem a empresa ativa.
+  const paresMutuo = contasTodas
+    .filter((c) => c.empresa_id === empresa?.id && c.conta_espelho_id)
+    .map((local) => {
+      const outra = contasTodas.find((c) => c.id === local.conta_espelho_id);
+      return outra
+        ? {
+            local,
+            outra,
+            saldoLocal: saldoGlobal(local.id),
+            saldoOutra: saldoGlobal(outra.id),
+          }
+        : null;
+    })
+    .filter((p): p is NonNullable<typeof p> => p !== null);
+
+
+
+  const nomeConta = (id: string) =>
+    contasTodas.find((c) => c.id === id)?.banco ?? contas.find((c) => c.id === id)?.banco ?? "—";
+
+  // Contas das outras empresas, para o repasse entre empresas.
+  const contasOutras = contasTodas.filter((c) => c.empresa_id !== empresa?.id);
+  const destinoEhOutraEmpresa = contasOutras.some((c) => c.id === tr.conta_destino_id);
 
   const criarTransferencia = useMutation({
     mutationFn: async () => {
@@ -827,6 +882,17 @@ function ContasBancarias() {
         throw new Error("A conta de destino deve ser diferente da conta de origem.");
       if (!(Number(tr.valor) > 0)) throw new Error("Informe um valor maior que zero.");
       if (!tr.data) throw new Error("Informe a data da transferência.");
+      if (destinoEhOutraEmpresa) {
+        await registrarRepasseEntreEmpresas({
+          contas: contasTodas,
+          contaOrigemId: tr.conta_origem_id,
+          contaDestinoId: tr.conta_destino_id,
+          valor: Number(tr.valor),
+          data: tr.data,
+          observacao: tr.observacao.trim() || null,
+        });
+        return;
+      }
       const { error } = await tabela("transferencia_bancaria").insert({
         empresa_id: empresa!.id,
         conta_origem_id: tr.conta_origem_id,
@@ -837,6 +903,7 @@ function ContasBancarias() {
       });
       if (error) throw new Error(error.message);
     },
+
     onSuccess: () => {
       setAberto(false);
       setTr({ conta_origem_id: "", conta_destino_id: "", valor: "", data: hoje(), observacao: "" });
@@ -899,7 +966,13 @@ function ContasBancarias() {
         })
         .eq("id", editandoConta.id);
       if (error) throw new Error(error.message);
+      await vincularContasEspelho(
+        editandoConta.id,
+        editandoConta.conta_espelho_id || null,
+        contasTodas,
+      );
     },
+
     onSuccess: () => {
       setEditandoConta(null);
       invalidar();
@@ -1018,7 +1091,9 @@ function ContasBancarias() {
                             conta: c.conta ?? "",
                             tipo: c.tipo,
                             saldo_inicial: String(c.saldo_inicial),
+                            conta_espelho_id: c.conta_espelho_id ?? "",
                           })
+
                         }
                       >
                         <Pencil className="h-4 w-4" />
@@ -1033,6 +1108,45 @@ function ContasBancarias() {
             </Table>
           )}
         </div>
+
+        {paresMutuo.length > 0 && (
+          <div className="mt-6 space-y-3">
+            <h3 className="text-sm font-semibold">Conferência do empréstimo entre empresas</h3>
+            {paresMutuo.map(({ local, outra, saldoLocal, saldoOutra }) => {
+              const alinhado = Math.abs(saldoLocal + saldoOutra) < 0.01;
+              return (
+                <div
+                  key={local.id}
+                  className={`rounded-lg border p-4 ${alinhado ? "border-success/40 bg-success/5" : "border-destructive/40 bg-destructive/5"}`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="text-sm">
+                      <p className="font-medium">
+                        {nomeEmpresa(local.empresa_id)} · {local.banco}
+                      </p>
+                      <p className="tabular-nums text-muted-foreground">{brl(saldoLocal)}</p>
+                    </div>
+                    <div className="text-sm">
+                      <p className="font-medium">
+                        {nomeEmpresa(outra.empresa_id)} · {outra.banco}
+                      </p>
+                      <p className="tabular-nums text-muted-foreground">{brl(saldoOutra)}</p>
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-medium ${alinhado ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}
+                    >
+                      {alinhado
+                        ? "Saldos alinhados"
+                        : `Divergência de ${brl(Math.abs(saldoLocal + saldoOutra))}`}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+
 
         <div className="mt-8">
           <h3 className="text-sm font-semibold">Transferências entre contas</h3>
@@ -1144,8 +1258,41 @@ function ContasBancarias() {
                     />
                   </div>
                 </div>
+                <div className="space-y-1 rounded-lg border border-dashed p-3">
+                  <label className="text-sm text-muted-foreground">
+                    Conta espelho de empréstimo em outra empresa
+                  </label>
+                  <Select
+                    value={editandoConta.conta_espelho_id || "nenhuma"}
+                    onValueChange={(v) =>
+                      setEditandoConta({
+                        ...editandoConta,
+                        conta_espelho_id: v === "nenhuma" ? "" : v,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Nenhuma" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="nenhuma">Nenhuma</SelectItem>
+                      {contasTodas
+                        .filter((c) => c.empresa_id !== empresa?.id)
+                        .map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {nomeEmpresa(c.empresa_id)} · {c.banco}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Ao ligar as duas contas, todo pagamento feito por uma empresa pela outra gera
+                    automaticamente o lançamento correspondente do outro lado.
+                  </p>
+                </div>
               </div>
             )}
+
             <DialogFooter>
               <Button variant="outline" onClick={() => setEditandoConta(null)}>
                 Cancelar
@@ -1207,13 +1354,33 @@ function ContasBancarias() {
                           {c.banco} {c.conta ? `· ${c.conta}` : ""}
                         </SelectItem>
                       ))}
+                    {contasOutras.length > 0 && (
+                      <>
+                        <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                          Outras empresas (repasse via conta empréstimo)
+                        </div>
+                        {contasOutras.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {nomeEmpresa(c.empresa_id)} · {c.banco}
+                            {c.conta ? ` · ${c.conta}` : ""}
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
+                {destinoEhOutraEmpresa && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Repasse entre empresas: o sistema registra a saída aqui pela conta empréstimo e
+                    a entrada na outra empresa pela conta espelho.
+                  </p>
+                )}
                 {!!tr.conta_destino_id && tr.conta_destino_id === tr.conta_origem_id && (
                   <p className="mt-1 text-xs text-destructive">
                     A conta de destino deve ser diferente da conta de origem.
                   </p>
                 )}
+
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

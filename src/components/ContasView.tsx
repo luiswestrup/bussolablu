@@ -45,6 +45,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useEmpresa } from "@/lib/empresa";
+import {
+  espelhoDe,
+  registrarEspelhoPagamento,
+  removerEspelhoPagamento,
+} from "@/lib/intercompany";
+
 import { brl, dataBR, exportarCSV, hoje } from "@/lib/format";
 import { linhasPagamentosCSV, linhasRecebimentosCSV } from "@/lib/exportacao";
 import {
@@ -116,12 +122,15 @@ export function ContasView({
   carregando: boolean;
   acoes?: ReactNode;
 }) {
-  const { empresa, escopo, consolidado, nomeEmpresa } = useEmpresa();
+  const { empresa, empresas, escopo, consolidado, nomeEmpresa } = useEmpresa();
   const { data: categorias = [] } = useCategorias(escopo);
   const { data: naturezas = [] } = useNaturezas(escopo);
   const { data: contasBancarias = [] } = useContasBancarias(escopo);
+  // Contas de todas as empresas: necessárias para o mútuo (conta empréstimo).
+  const { data: contasTodas = [] } = useContasBancarias(empresas.map((e) => e.id));
   const { data: taxas = [] } = useTaxasRecebimento(escopo);
   const queryClient = useQueryClient();
+
   const hj = hoje();
 
   const [filtroStatus, setFiltroStatus] = useState("todos");
@@ -264,7 +273,10 @@ export function ContasView({
     forma: string;
     percentualTaxa: string;
     valorTaxa: string;
+    /** Conta real da outra empresa quando a baixa usa a conta empréstimo. */
+    contaOrigemEspelho: string;
   } | null>(null);
+
 
   const invalidar = () => queryClient.invalidateQueries({ queryKey: [config.tabelaNome] });
 
@@ -406,6 +418,12 @@ export function ContasView({
       if (config.tipo === "pagar" && !baixa.conta_bancaria_id) {
         throw new Error("Informe a conta bancária de onde saiu o pagamento.");
       }
+      const espelho = config.tipo === "pagar" ? espelhoDe(contasTodas, baixa.conta_bancaria_id) : null;
+      if (espelho && !baixa.contaOrigemEspelho) {
+        throw new Error(
+          `Informe de qual conta de ${nomeEmpresa(espelho.empresa_id)} saiu o pagamento.`,
+        );
+      }
       const { error } = await tabela(config.tabelaNome)
         .update({
           status: config.statusFinal,
@@ -425,14 +443,33 @@ export function ContasView({
         })
         .eq("id", baixa.id);
       if (error) throw new Error(error.message);
+
+      // Mútuo entre empresas: registra a contrapartida na empresa que pagou.
+      if (config.tipo === "pagar") {
+        if (espelho) {
+          await registrarEspelhoPagamento({
+            contas: contasTodas,
+            contaMutuoId: baixa.conta_bancaria_id,
+            contaOrigemRealId: baixa.contaOrigemEspelho,
+            contaPagarId: baixa.id,
+            valor: baixa.pago === "" ? baixa.valor : Number(baixa.pago),
+            data: baixa.data,
+            descricao: baixa.descricao,
+          });
+        } else {
+          await removerEspelhoPagamento(baixa.id);
+        }
+      }
     },
     onSuccess: () => {
       setBaixa(null);
       invalidar();
+      queryClient.invalidateQueries({ queryKey: ["transferencia_bancaria"] });
       toast.success(config.tipo === "pagar" ? "Conta paga." : "Recebimento confirmado.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   // Regra de caixa do cheque: só compensado entra/sai do caixa, na data da compensação.
   const mudarCheque = useMutation({
@@ -1427,7 +1464,9 @@ export function ContasView({
                                         )) /
                                         100) || "",
                                   ),
+                                  contaOrigemEspelho: "",
                                 })
+
                               }
                             >
                               <CheckCircle2 className="h-4 w-4 text-success" />
@@ -1698,6 +1737,45 @@ export function ContasView({
                 )}
               </div>
 
+              {config.tipo === "pagar" &&
+                (() => {
+                  const esp = espelhoDe(contasTodas, baixa.conta_bancaria_id);
+                  if (!esp) return null;
+                  const opcoes = contasTodas.filter(
+                    (cb) => cb.empresa_id === esp.empresa_id && cb.id !== esp.id,
+                  );
+                  return (
+                    <div className="sm:col-span-2 rounded-lg border border-dashed p-4">
+                      <Label>
+                        Conta de {nomeEmpresa(esp.empresa_id)} que pagou{" "}
+                        <span className="text-destructive">*</span>
+                      </Label>
+                      <Select
+                        value={baixa.contaOrigemEspelho}
+                        onValueChange={(v) => setBaixa({ ...baixa, contaOrigemEspelho: v })}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="De onde o dinheiro saiu de verdade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {opcoes.map((cb) => (
+                            <SelectItem key={cb.id} value={cb.id}>
+                              {cb.banco}
+                              {cb.conta ? ` · ${cb.conta}` : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        O sistema lança automaticamente em {nomeEmpresa(esp.empresa_id)} a saída
+                        desta conta para a conta “{esp.banco}”, mantendo os dois saldos do
+                        empréstimo iguais.
+                      </p>
+                    </div>
+                  );
+                })()}
+
+
               {config.tipo === "receber" && (
                 <div className="sm:col-span-2">
                   <Label>Forma de recebimento</Label>
@@ -1789,8 +1867,13 @@ export function ContasView({
             <Button
               onClick={() => baixar.mutate()}
               disabled={
-                baixar.isPending || (config.tipo === "pagar" && !baixa?.conta_bancaria_id)
+                baixar.isPending ||
+                (config.tipo === "pagar" && !baixa?.conta_bancaria_id) ||
+                (config.tipo === "pagar" &&
+                  !!espelhoDe(contasTodas, baixa?.conta_bancaria_id) &&
+                  !baixa?.contaOrigemEspelho)
               }
+
             >
               Confirmar baixa
             </Button>

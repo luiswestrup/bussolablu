@@ -140,6 +140,7 @@ export type Database = {
           agencia: string | null
           banco: string
           conta: string | null
+          conta_espelho_id: string | null
           criado_em: string
           empresa_id: string
           id: string
@@ -151,6 +152,7 @@ export type Database = {
           agencia?: string | null
           banco: string
           conta?: string | null
+          conta_espelho_id?: string | null
           criado_em?: string
           empresa_id: string
           id?: string
@@ -162,6 +164,7 @@ export type Database = {
           agencia?: string | null
           banco?: string
           conta?: string | null
+          conta_espelho_id?: string | null
           criado_em?: string
           empresa_id?: string
           id?: string
@@ -170,6 +173,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "conta_bancaria_conta_espelho_id_fkey"
+            columns: ["conta_espelho_id"]
+            isOneToOne: false
+            referencedRelation: "conta_bancaria"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "conta_bancaria_empresa_id_fkey"
             columns: ["empresa_id"]
@@ -1094,9 +1104,11 @@ export type Database = {
         Row: {
           conta_destino_id: string
           conta_origem_id: string
+          conta_pagar_id: string | null
           criado_em: string
           data: string
           empresa_id: string
+          grupo_intercompany: string | null
           id: string
           observacao: string | null
           updated_at: string
@@ -1105,9 +1117,11 @@ export type Database = {
         Insert: {
           conta_destino_id: string
           conta_origem_id: string
+          conta_pagar_id?: string | null
           criado_em?: string
           data?: string
           empresa_id: string
+          grupo_intercompany?: string | null
           id?: string
           observacao?: string | null
           updated_at?: string
@@ -1116,9 +1130,11 @@ export type Database = {
         Update: {
           conta_destino_id?: string
           conta_origem_id?: string
+          conta_pagar_id?: string | null
           criado_em?: string
           data?: string
           empresa_id?: string
+          grupo_intercompany?: string | null
           id?: string
           observacao?: string | null
           updated_at?: string
@@ -1137,6 +1153,13 @@ export type Database = {
             columns: ["conta_origem_id"]
             isOneToOne: false
             referencedRelation: "conta_bancaria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transferencia_bancaria_conta_pagar_id_fkey"
+            columns: ["conta_pagar_id"]
+            isOneToOne: false
+            referencedRelation: "conta_pagar"
             referencedColumns: ["id"]
           },
           {
