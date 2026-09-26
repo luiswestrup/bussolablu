@@ -1867,8 +1867,13 @@ export function ContasView({
             <Button
               onClick={() => baixar.mutate()}
               disabled={
-                baixar.isPending || (config.tipo === "pagar" && !baixa?.conta_bancaria_id)
+                baixar.isPending ||
+                (config.tipo === "pagar" && !baixa?.conta_bancaria_id) ||
+                (config.tipo === "pagar" &&
+                  !!espelhoDe(contasTodas, baixa?.conta_bancaria_id) &&
+                  !baixa?.contaOrigemEspelho)
               }
+
             >
               Confirmar baixa
             </Button>
