@@ -1258,8 +1258,41 @@ function ContasBancarias() {
                     />
                   </div>
                 </div>
+                <div className="space-y-1 rounded-lg border border-dashed p-3">
+                  <label className="text-sm text-muted-foreground">
+                    Conta espelho de empréstimo em outra empresa
+                  </label>
+                  <Select
+                    value={editandoConta.conta_espelho_id || "nenhuma"}
+                    onValueChange={(v) =>
+                      setEditandoConta({
+                        ...editandoConta,
+                        conta_espelho_id: v === "nenhuma" ? "" : v,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Nenhuma" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="nenhuma">Nenhuma</SelectItem>
+                      {contasTodas
+                        .filter((c) => c.empresa_id !== empresa?.id)
+                        .map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {nomeEmpresa(c.empresa_id)} · {c.banco}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Ao ligar as duas contas, todo pagamento feito por uma empresa pela outra gera
+                    automaticamente o lançamento correspondente do outro lado.
+                  </p>
+                </div>
               </div>
             )}
+
             <DialogFooter>
               <Button variant="outline" onClick={() => setEditandoConta(null)}>
                 Cancelar
