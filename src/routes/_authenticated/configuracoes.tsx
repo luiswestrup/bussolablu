@@ -1006,6 +1006,23 @@ function ContasBancarias() {
                       {brl(saldoDaConta(c.id))}
                     </TableCell>
                     <TableCell className="text-right">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Editar"
+                        onClick={() =>
+                          setEditandoConta({
+                            id: c.id,
+                            banco: c.banco,
+                            agencia: c.agencia ?? "",
+                            conta: c.conta ?? "",
+                            tipo: c.tipo,
+                            saldo_inicial: String(c.saldo_inicial),
+                          })
+                        }
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                       <Button size="icon" variant="ghost" title="Excluir" onClick={() => excluir.mutate(c.id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
