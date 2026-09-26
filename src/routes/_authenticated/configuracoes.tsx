@@ -77,7 +77,33 @@ function ListaParceiros({
   const { empresa } = useEmpresa();
   const queryClient = useQueryClient();
   const [form, setForm] = useState({ nome: "", contato: "", documento: "" });
+  const [editando, setEditando] = useState<{
+    id: string;
+    nome: string;
+    contato: string;
+    documento: string;
+  } | null>(null);
   const invalidar = () => queryClient.invalidateQueries({ queryKey: [chave] });
+
+  const salvarEdicao = useMutation({
+    mutationFn: async () => {
+      if (!editando) return;
+      const { error } = await tabela(chave)
+        .update({
+          nome: editando.nome.trim(),
+          contato: editando.contato.trim() || null,
+          documento: editando.documento.trim() || null,
+        })
+        .eq("id", editando.id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      setEditando(null);
+      invalidar();
+      toast.success(`${titulo} atualizado.`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const criar = useMutation({
     mutationFn: async () => {
