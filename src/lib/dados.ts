@@ -106,6 +106,8 @@ export type ContaBancaria = {
   conta: string | null;
   tipo: string;
   saldo_inicial: number;
+  /** Conta empréstimo espelho na outra empresa (mútuo entre empresas). */
+  conta_espelho_id: string | null;
 };
 
 export type TransferenciaBancaria = {
@@ -116,7 +118,12 @@ export type TransferenciaBancaria = {
   valor: number;
   data: string;
   observacao: string | null;
+  /** Título da outra empresa que originou esta transferência espelho. */
+  conta_pagar_id: string | null;
+  /** Agrupa as duas pontas de um repasse entre empresas. */
+  grupo_intercompany: string | null;
 };
+
 
 /** Nome da natureza a partir da lista cadastrada. */
 export const nomeNatureza = (
