@@ -790,7 +790,9 @@ function ContasBancarias() {
     conta: string;
     tipo: string;
     saldo_inicial: string;
+    conta_espelho_id: string;
   } | null>(null);
+
   const [tr, setTr] = useState({
     conta_origem_id: "",
     conta_destino_id: "",
