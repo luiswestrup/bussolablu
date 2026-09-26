@@ -409,6 +409,12 @@ export function ContasView({
       if (config.tipo === "pagar" && !baixa.conta_bancaria_id) {
         throw new Error("Informe a conta bancária de onde saiu o pagamento.");
       }
+      const espelho = config.tipo === "pagar" ? espelhoDe(contasTodas, baixa.conta_bancaria_id) : null;
+      if (espelho && !baixa.contaOrigemEspelho) {
+        throw new Error(
+          `Informe de qual conta de ${nomeEmpresa(espelho.empresa_id)} saiu o pagamento.`,
+        );
+      }
       const { error } = await tabela(config.tabelaNome)
         .update({
           status: config.statusFinal,
@@ -428,14 +434,33 @@ export function ContasView({
         })
         .eq("id", baixa.id);
       if (error) throw new Error(error.message);
+
+      // Mútuo entre empresas: registra a contrapartida na empresa que pagou.
+      if (config.tipo === "pagar") {
+        if (espelho) {
+          await registrarEspelhoPagamento({
+            contas: contasTodas,
+            contaMutuoId: baixa.conta_bancaria_id,
+            contaOrigemRealId: baixa.contaOrigemEspelho,
+            contaPagarId: baixa.id,
+            valor: baixa.pago === "" ? baixa.valor : Number(baixa.pago),
+            data: baixa.data,
+            descricao: baixa.descricao,
+          });
+        } else {
+          await removerEspelhoPagamento(baixa.id);
+        }
+      }
     },
     onSuccess: () => {
       setBaixa(null);
       invalidar();
+      queryClient.invalidateQueries({ queryKey: ["transferencia_bancaria"] });
       toast.success(config.tipo === "pagar" ? "Conta paga." : "Recebimento confirmado.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   // Regra de caixa do cheque: só compensado entra/sai do caixa, na data da compensação.
   const mudarCheque = useMutation({
