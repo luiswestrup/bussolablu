@@ -188,6 +188,21 @@ function ListaParceiros({
                     <TableCell>{i.contato ?? "—"}</TableCell>
                     <TableCell>{i.documento ?? "—"}</TableCell>
                     <TableCell className="text-right">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Editar"
+                        onClick={() =>
+                          setEditando({
+                            id: i.id,
+                            nome: i.nome,
+                            contato: i.contato ?? "",
+                            documento: i.documento ?? "",
+                          })
+                        }
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                       <Button size="icon" variant="ghost" onClick={() => excluir.mutate(i.id)} title="Excluir">
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -198,6 +213,53 @@ function ListaParceiros({
             </Table>
           )}
         </div>
+
+        <Dialog open={!!editando} onOpenChange={(o) => !o && setEditando(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Editar {titulo.toLowerCase()}</DialogTitle>
+            </DialogHeader>
+            {editando && (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Nome</label>
+                  <Input
+                    maxLength={120}
+                    value={editando.nome}
+                    onChange={(e) => setEditando({ ...editando, nome: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Contato</label>
+                  <Input
+                    maxLength={120}
+                    value={editando.contato}
+                    onChange={(e) => setEditando({ ...editando, contato: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">CNPJ/CPF</label>
+                  <Input
+                    maxLength={20}
+                    value={editando.documento}
+                    onChange={(e) => setEditando({ ...editando, documento: e.target.value })}
+                  />
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditando(null)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => salvarEdicao.mutate()}
+                disabled={!editando?.nome.trim() || salvarEdicao.isPending}
+              >
+                Salvar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
