@@ -925,7 +925,13 @@ function ContasBancarias() {
         })
         .eq("id", editandoConta.id);
       if (error) throw new Error(error.message);
+      await vincularContasEspelho(
+        editandoConta.id,
+        editandoConta.conta_espelho_id || null,
+        contasTodas,
+      );
     },
+
     onSuccess: () => {
       setEditandoConta(null);
       invalidar();
