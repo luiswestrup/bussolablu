@@ -774,6 +774,11 @@ function ContasBancarias() {
   const { data: pagar = [] } = usePagar(empresa?.id);
   const { data: receber = [] } = useReceber(empresa?.id);
   const { data: transferencias = [] } = useTransferencias(empresa?.id);
+  const idsEmpresas = empresas.map((e) => e.id);
+  const { data: pagarTodas = [] } = usePagar(idsEmpresas);
+  const { data: receberTodas = [] } = useReceber(idsEmpresas);
+  const { data: transferenciasTodas = [] } = useTransferencias(idsEmpresas);
+
 
   const [form, setForm] = useState({
     banco: "",
