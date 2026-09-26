@@ -264,7 +264,10 @@ export function ContasView({
     forma: string;
     percentualTaxa: string;
     valorTaxa: string;
+    /** Conta real da outra empresa quando a baixa usa a conta empréstimo. */
+    contaOrigemEspelho: string;
   } | null>(null);
+
 
   const invalidar = () => queryClient.invalidateQueries({ queryKey: [config.tabelaNome] });
 
@@ -1427,7 +1430,9 @@ export function ContasView({
                                         )) /
                                         100) || "",
                                   ),
+                                  contaOrigemEspelho: "",
                                 })
+
                               }
                             >
                               <CheckCircle2 className="h-4 w-4 text-success" />
