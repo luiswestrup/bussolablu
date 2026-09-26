@@ -889,7 +889,7 @@ function ContasBancarias() {
           contaDestinoId: tr.conta_destino_id,
           valor: Number(tr.valor),
           data: tr.data,
-          observacao: tr.observacao.trim() || undefined,
+          observacao: tr.observacao.trim() || null,
         });
         return;
       }
