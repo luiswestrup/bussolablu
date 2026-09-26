@@ -484,15 +484,35 @@ export function ContasView({
 
   // Regra de caixa do cheque: só compensado entra/sai do caixa, na data da compensação.
   const mudarCheque = useMutation({
-    mutationFn: async ({ id, novo }: { id: string; novo: StatusCheque }) => {
+    mutationFn: async ({
+      id,
+      novo,
+      data,
+      contaId,
+    }: {
+      id: string;
+      novo: StatusCheque;
+      data?: string;
+      contaId?: string;
+    }) => {
+      if (novo === "compensado" && !contaId) {
+        throw new Error("Selecione a conta bancária da compensação.");
+      }
       const valores: Record<string, unknown> =
         novo === "compensado"
-          ? { status_cheque: novo, status: config.statusFinal, [config.campoData]: hj }
+          ? {
+              status_cheque: novo,
+              status: config.statusFinal,
+              [config.campoData]: data ?? hj,
+              conta_bancaria_id: contaId,
+              ...(config.tipo === "pagar" ? { cheque_conta_bancaria_id: contaId } : {}),
+            }
           : { status_cheque: novo, status: "pendente", [config.campoData]: null };
       const { error } = await tabela(config.tabelaNome).update(valores).eq("id", id);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
+      setCompensando(null);
       invalidar();
       toast.success("Situação do cheque atualizada.");
     },
