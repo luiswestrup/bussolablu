@@ -1127,6 +1127,41 @@ export function ContasView({
                       <div className="sm:col-span-2 space-y-4 rounded-lg border border-dashed p-4">
                         <p className="text-sm font-medium">Dados do cheque</p>
                         <div className="grid gap-4 sm:grid-cols-2">
+                          <div className="sm:col-span-2">
+                            <Label>
+                              Conta bancária do cheque{" "}
+                              <span className="text-destructive">*</span>
+                            </Label>
+                            <Select
+                              value={form.conta_bancaria_id}
+                              onValueChange={(v) => {
+                                const cb = contasBancarias.find((x) => x.id === v);
+                                setForm({
+                                  ...form,
+                                  conta_bancaria_id: v,
+                                  banco_emissor: cb?.banco ?? form.banco_emissor,
+                                });
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione a conta de onde sai o cheque" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {contasBancarias.map((cb) => (
+                                  <SelectItem key={cb.id} value={cb.id}>
+                                    {cb.banco}
+                                    {cb.agencia ? ` · Ag. ${cb.agencia}` : ""}
+                                    {cb.conta ? ` · C/C ${cb.conta}` : ""}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {!form.conta_bancaria_id && (
+                              <p className="mt-1 text-xs text-destructive">
+                                Obrigatória para o cheque entrar no saldo e no razão da conta.
+                              </p>
+                            )}
+                          </div>
                           <div>
                             <Label htmlFor="banco-emissor">Banco emissor</Label>
                             <Input
