@@ -1066,6 +1066,45 @@ function ContasBancarias() {
           )}
         </div>
 
+        {paresMutuo.length > 0 && (
+          <div className="mt-6 space-y-3">
+            <h3 className="text-sm font-semibold">Conferência do empréstimo entre empresas</h3>
+            {paresMutuo.map(({ local, outra, saldoLocal, saldoOutra }) => {
+              const alinhado = Math.abs(saldoLocal + saldoOutra) < 0.01;
+              return (
+                <div
+                  key={local.id}
+                  className={`rounded-lg border p-4 ${alinhado ? "border-success/40 bg-success/5" : "border-destructive/40 bg-destructive/5"}`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="text-sm">
+                      <p className="font-medium">
+                        {nomeEmpresa(local.empresa_id)} · {local.banco}
+                      </p>
+                      <p className="tabular-nums text-muted-foreground">{brl(saldoLocal)}</p>
+                    </div>
+                    <div className="text-sm">
+                      <p className="font-medium">
+                        {nomeEmpresa(outra.empresa_id)} · {outra.banco}
+                      </p>
+                      <p className="tabular-nums text-muted-foreground">{brl(saldoOutra)}</p>
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-medium ${alinhado ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}
+                    >
+                      {alinhado
+                        ? "Saldos alinhados"
+                        : `Divergência de ${brl(Math.abs(saldoLocal + saldoOutra))}`}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+
+
         <div className="mt-8">
           <h3 className="text-sm font-semibold">Transferências entre contas</h3>
           <p className="text-xs text-muted-foreground">
