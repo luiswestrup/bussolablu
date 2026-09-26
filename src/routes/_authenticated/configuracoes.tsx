@@ -767,12 +767,14 @@ function ConfiguracoesConteudo() {
 const TIPOS_CONTA = ["corrente", "poupanca", "caixa", "investimento"];
 
 function ContasBancarias() {
-  const { empresa } = useEmpresa();
+  const { empresa, empresas, nomeEmpresa } = useEmpresa();
   const queryClient = useQueryClient();
   const { data: contas = [] } = useContasBancarias(empresa?.id);
+  const { data: contasTodas = [] } = useContasBancarias(empresas.map((e) => e.id));
   const { data: pagar = [] } = usePagar(empresa?.id);
   const { data: receber = [] } = useReceber(empresa?.id);
   const { data: transferencias = [] } = useTransferencias(empresa?.id);
+
   const [form, setForm] = useState({
     banco: "",
     agencia: "",
