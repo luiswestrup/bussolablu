@@ -277,6 +277,14 @@ export function ContasView({
     contaOrigemEspelho: string;
   } | null>(null);
 
+  // Compensação de cheque: exige data efetiva e conta bancária.
+  const [compensando, setCompensando] = useState<{
+    id: string;
+    descricao: string;
+    data: string;
+    conta_bancaria_id: string;
+  } | null>(null);
+
 
   const invalidar = () => queryClient.invalidateQueries({ queryKey: [config.tabelaNome] });
 
@@ -302,6 +310,9 @@ export function ContasView({
 
   const criar = useMutation({
     mutationFn: async () => {
+      if (ehCheque && !form.conta_bancaria_id) {
+        throw new Error("Selecione a conta bancária do cheque.");
+      }
       const base = {
         empresa_id: empresa?.id as string,
         descricao: form.descricao.trim(),
@@ -473,15 +484,35 @@ export function ContasView({
 
   // Regra de caixa do cheque: só compensado entra/sai do caixa, na data da compensação.
   const mudarCheque = useMutation({
-    mutationFn: async ({ id, novo }: { id: string; novo: StatusCheque }) => {
+    mutationFn: async ({
+      id,
+      novo,
+      data,
+      contaId,
+    }: {
+      id: string;
+      novo: StatusCheque;
+      data?: string;
+      contaId?: string;
+    }) => {
+      if (novo === "compensado" && !contaId) {
+        throw new Error("Selecione a conta bancária da compensação.");
+      }
       const valores: Record<string, unknown> =
         novo === "compensado"
-          ? { status_cheque: novo, status: config.statusFinal, [config.campoData]: hj }
+          ? {
+              status_cheque: novo,
+              status: config.statusFinal,
+              [config.campoData]: data ?? hj,
+              conta_bancaria_id: contaId,
+              ...(config.tipo === "pagar" ? { cheque_conta_bancaria_id: contaId } : {}),
+            }
           : { status_cheque: novo, status: "pendente", [config.campoData]: null };
       const { error } = await tabela(config.tabelaNome).update(valores).eq("id", id);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
+      setCompensando(null);
       invalidar();
       toast.success("Situação do cheque atualizada.");
     },
@@ -1096,6 +1127,41 @@ export function ContasView({
                       <div className="sm:col-span-2 space-y-4 rounded-lg border border-dashed p-4">
                         <p className="text-sm font-medium">Dados do cheque</p>
                         <div className="grid gap-4 sm:grid-cols-2">
+                          <div className="sm:col-span-2">
+                            <Label>
+                              Conta bancária do cheque{" "}
+                              <span className="text-destructive">*</span>
+                            </Label>
+                            <Select
+                              value={form.conta_bancaria_id}
+                              onValueChange={(v) => {
+                                const cb = contasBancarias.find((x) => x.id === v);
+                                setForm({
+                                  ...form,
+                                  conta_bancaria_id: v,
+                                  banco_emissor: cb?.banco ?? form.banco_emissor,
+                                });
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione a conta de onde sai o cheque" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {contasBancarias.map((cb) => (
+                                  <SelectItem key={cb.id} value={cb.id}>
+                                    {cb.banco}
+                                    {cb.agencia ? ` · Ag. ${cb.agencia}` : ""}
+                                    {cb.conta ? ` · C/C ${cb.conta}` : ""}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {!form.conta_bancaria_id && (
+                              <p className="mt-1 text-xs text-destructive">
+                                Obrigatória para o cheque entrar no saldo e no razão da conta.
+                              </p>
+                            )}
+                          </div>
                           <div>
                             <Label htmlFor="banco-emissor">Banco emissor</Label>
                             <Input
@@ -1396,9 +1462,21 @@ export function ContasView({
                             <ChequeBadge status={c.statusCheque} />
                             <Select
                               value={c.statusCheque}
-                              onValueChange={(v) =>
-                                mudarCheque.mutate({ id: c.id, novo: v as StatusCheque })
-                              }
+                              onValueChange={(v) => {
+                                if (v === "compensado") {
+                                  setCompensando({
+                                    id: c.id,
+                                    descricao: c.descricao,
+                                    data: hj,
+                                    conta_bancaria_id:
+                                      ((c as Record<string, unknown>)[
+                                        "conta_bancaria_id"
+                                      ] as string) ?? "",
+                                  });
+                                  return;
+                                }
+                                mudarCheque.mutate({ id: c.id, novo: v as StatusCheque });
+                              }}
                             >
                               <SelectTrigger className="h-7 w-[130px] text-xs">
                                 <SelectValue />
@@ -1876,6 +1954,74 @@ export function ContasView({
 
             >
               Confirmar baixa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!compensando} onOpenChange={(o) => !o && setCompensando(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Compensar cheque</DialogTitle>
+          </DialogHeader>
+          {compensando && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">{compensando.descricao}</p>
+              <div>
+                <Label htmlFor="data-comp">Data da compensação</Label>
+                <Input
+                  id="data-comp"
+                  type="date"
+                  value={compensando.data}
+                  onChange={(e) => setCompensando({ ...compensando, data: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>
+                  Conta bancária <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={compensando.conta_bancaria_id}
+                  onValueChange={(v) =>
+                    setCompensando({ ...compensando, conta_bancaria_id: v })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a conta do cheque" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {contasBancarias.map((cb) => (
+                      <SelectItem key={cb.id} value={cb.id}>
+                        {cb.banco}
+                        {cb.conta ? ` · ${cb.conta}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Sem conta o cheque não abate o saldo nem aparece no razão bancário.
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              disabled={
+                mudarCheque.isPending ||
+                !compensando?.conta_bancaria_id ||
+                !compensando?.data
+              }
+              onClick={() =>
+                compensando &&
+                mudarCheque.mutate({
+                  id: compensando.id,
+                  novo: "compensado",
+                  data: compensando.data,
+                  contaId: compensando.conta_bancaria_id,
+                })
+              }
+            >
+              Confirmar compensação
             </Button>
           </DialogFooter>
         </DialogContent>
