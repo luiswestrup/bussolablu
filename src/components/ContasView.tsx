@@ -1462,9 +1462,21 @@ export function ContasView({
                             <ChequeBadge status={c.statusCheque} />
                             <Select
                               value={c.statusCheque}
-                              onValueChange={(v) =>
-                                mudarCheque.mutate({ id: c.id, novo: v as StatusCheque })
-                              }
+                              onValueChange={(v) => {
+                                if (v === "compensado") {
+                                  setCompensando({
+                                    id: c.id,
+                                    descricao: c.descricao,
+                                    data: hj,
+                                    conta_bancaria_id:
+                                      ((c as Record<string, unknown>)[
+                                        "conta_bancaria_id"
+                                      ] as string) ?? "",
+                                  });
+                                  return;
+                                }
+                                mudarCheque.mutate({ id: c.id, novo: v as StatusCheque });
+                              }}
                             >
                               <SelectTrigger className="h-7 w-[130px] text-xs">
                                 <SelectValue />
