@@ -277,6 +277,14 @@ export function ContasView({
     contaOrigemEspelho: string;
   } | null>(null);
 
+  // Compensação de cheque: exige data efetiva e conta bancária.
+  const [compensando, setCompensando] = useState<{
+    id: string;
+    descricao: string;
+    data: string;
+    conta_bancaria_id: string;
+  } | null>(null);
+
 
   const invalidar = () => queryClient.invalidateQueries({ queryKey: [config.tabelaNome] });
 
