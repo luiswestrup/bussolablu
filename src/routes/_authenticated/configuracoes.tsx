@@ -32,6 +32,11 @@ import { AbasPlanilha } from "@/components/AbasPlanilha";
 import { TaxasRecebimento } from "@/components/TaxasRecebimento";
 import { brl, dataBR, hoje } from "@/lib/format";
 import {
+  registrarRepasseEntreEmpresas,
+  vincularContasEspelho,
+} from "@/lib/intercompany";
+
+import {
   tabela,
   useCategorias,
   useClientes,
