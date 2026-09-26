@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+// edição de fornecedores/clientes e contas bancárias
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeftRight, Pencil, Plus, Trash2 } from "lucide-react";
