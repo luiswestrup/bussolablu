@@ -310,6 +310,9 @@ export function ContasView({
 
   const criar = useMutation({
     mutationFn: async () => {
+      if (ehCheque && !form.conta_bancaria_id) {
+        throw new Error("Selecione a conta bancária do cheque.");
+      }
       const base = {
         empresa_id: empresa?.id as string,
         descricao: form.descricao.trim(),
