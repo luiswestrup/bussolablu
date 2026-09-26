@@ -69,6 +69,39 @@ export async function removerEspelhoPagamento(contaPagarId: string): Promise<voi
 }
 
 /**
+ * Liga (ou desliga) duas contas empréstimo espelho, sempre nos dois sentidos.
+ */
+export async function vincularContasEspelho(
+  contaId: string,
+  espelhoId: string | null,
+  contas: ContaBancaria[],
+): Promise<void> {
+  const anterior = contas.find((c) => c.id === contaId)?.conta_espelho_id ?? null;
+  const limpar = async (id: string) => {
+    const { error } = await tabela("conta_bancaria")
+      .update({ conta_espelho_id: null })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+  };
+  if (anterior && anterior !== espelhoId) await limpar(anterior);
+  if (!espelhoId) {
+    await limpar(contaId);
+    return;
+  }
+  for (const [id, alvo] of [
+    [contaId, espelhoId],
+    [espelhoId, contaId],
+  ] as const) {
+    const { error } = await tabela("conta_bancaria")
+      .update({ conta_espelho_id: alvo })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+  }
+}
+
+
+
+/**
  * Repasse direto de caixa entre as empresas: duas transferências amarradas.
  * Empresa de origem: conta real → sua conta empréstimo.
  * Empresa de destino: sua conta empréstimo → conta real.
