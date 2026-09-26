@@ -826,7 +826,12 @@ function ContasBancarias() {
     return Number(conta?.saldo_inicial ?? 0) + entradas - saidas + recebidasTr - enviadasTr;
   };
 
-  const nomeConta = (id: string) => contas.find((c) => c.id === id)?.banco ?? "—";
+  const nomeConta = (id: string) =>
+    contasTodas.find((c) => c.id === id)?.banco ?? contas.find((c) => c.id === id)?.banco ?? "—";
+
+  // Contas das outras empresas, para o repasse entre empresas.
+  const contasOutras = contasTodas.filter((c) => c.empresa_id !== empresa?.id);
+  const destinoEhOutraEmpresa = contasOutras.some((c) => c.id === tr.conta_destino_id);
 
   const criarTransferencia = useMutation({
     mutationFn: async () => {
@@ -836,6 +841,17 @@ function ContasBancarias() {
         throw new Error("A conta de destino deve ser diferente da conta de origem.");
       if (!(Number(tr.valor) > 0)) throw new Error("Informe um valor maior que zero.");
       if (!tr.data) throw new Error("Informe a data da transferência.");
+      if (destinoEhOutraEmpresa) {
+        await registrarRepasseEntreEmpresas({
+          contas: contasTodas,
+          contaOrigemId: tr.conta_origem_id,
+          contaDestinoId: tr.conta_destino_id,
+          valor: Number(tr.valor),
+          data: tr.data,
+          observacao: tr.observacao.trim() || undefined,
+        });
+        return;
+      }
       const { error } = await tabela("transferencia_bancaria").insert({
         empresa_id: empresa!.id,
         conta_origem_id: tr.conta_origem_id,
@@ -846,6 +862,7 @@ function ContasBancarias() {
       });
       if (error) throw new Error(error.message);
     },
+
     onSuccess: () => {
       setAberto(false);
       setTr({ conta_origem_id: "", conta_destino_id: "", valor: "", data: hoje(), observacao: "" });
