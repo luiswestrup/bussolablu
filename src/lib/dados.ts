@@ -237,7 +237,7 @@ export const useContasBancarias = (escopo?: Escopo) =>
   useTabela<ContaBancaria>(
     "conta_bancaria",
     escopo,
-    "id, banco, agencia, conta, tipo, saldo_inicial",
+    "id, banco, agencia, conta, tipo, saldo_inicial, conta_espelho_id",
     "banco",
   );
 
@@ -248,7 +248,7 @@ export const useTransferencias = (escopo?: Escopo) =>
   useTabela<TransferenciaBancaria>(
     "transferencia_bancaria",
     escopo,
-    "id, conta_origem_id, conta_destino_id, valor, data, observacao",
+    "id, conta_origem_id, conta_destino_id, valor, data, observacao, conta_pagar_id, grupo_intercompany",
     "data",
   );
 
