@@ -1958,6 +1958,74 @@ export function ContasView({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!compensando} onOpenChange={(o) => !o && setCompensando(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Compensar cheque</DialogTitle>
+          </DialogHeader>
+          {compensando && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">{compensando.descricao}</p>
+              <div>
+                <Label htmlFor="data-comp">Data da compensação</Label>
+                <Input
+                  id="data-comp"
+                  type="date"
+                  value={compensando.data}
+                  onChange={(e) => setCompensando({ ...compensando, data: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>
+                  Conta bancária <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={compensando.conta_bancaria_id}
+                  onValueChange={(v) =>
+                    setCompensando({ ...compensando, conta_bancaria_id: v })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a conta do cheque" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {contasBancarias.map((cb) => (
+                      <SelectItem key={cb.id} value={cb.id}>
+                        {cb.banco}
+                        {cb.conta ? ` · ${cb.conta}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Sem conta o cheque não abate o saldo nem aparece no razão bancário.
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              disabled={
+                mudarCheque.isPending ||
+                !compensando?.conta_bancaria_id ||
+                !compensando?.data
+              }
+              onClick={() =>
+                compensando &&
+                mudarCheque.mutate({
+                  id: compensando.id,
+                  novo: "compensado",
+                  data: compensando.data,
+                  contaId: compensando.conta_bancaria_id,
+                })
+              }
+            >
+              Confirmar compensação
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
