@@ -826,6 +826,42 @@ function ContasBancarias() {
     return Number(conta?.saldo_inicial ?? 0) + entradas - saidas + recebidasTr - enviadasTr;
   };
 
+  // Saldo considerando os dados de todas as empresas (usado na conferência do mútuo).
+  const saldoGlobal = (contaId: string) => {
+    const conta = contasTodas.find((c) => c.id === contaId);
+    const entradas = receberTodas
+      .filter((c) => c.conta_bancaria_id === contaId && c.status === "recebido" && emCaixa(c))
+      .reduce((s, c) => s + liquidoRecebimento(c), 0);
+    const saidas = pagarTodas
+      .filter((c) => c.conta_bancaria_id === contaId && c.status === "pago" && emCaixa(c))
+      .reduce((s, c) => s + Number(c.valor_pago ?? c.valor), 0);
+    const recebidasTr = transferenciasTodas
+      .filter((t) => t.conta_destino_id === contaId)
+      .reduce((s, t) => s + Number(t.valor), 0);
+    const enviadasTr = transferenciasTodas
+      .filter((t) => t.conta_origem_id === contaId)
+      .reduce((s, t) => s + Number(t.valor), 0);
+    return Number(conta?.saldo_inicial ?? 0) + entradas - saidas + recebidasTr - enviadasTr;
+  };
+
+  // Pares de contas empréstimo espelho que envolvem a empresa ativa.
+  const paresMutuo = contasTodas
+    .filter((c) => c.empresa_id === empresa?.id && c.conta_espelho_id)
+    .map((local) => {
+      const outra = contasTodas.find((c) => c.id === local.conta_espelho_id);
+      return outra
+        ? {
+            local,
+            outra,
+            saldoLocal: saldoGlobal(local.id),
+            saldoOutra: saldoGlobal(outra.id),
+          }
+        : null;
+    })
+    .filter((p): p is NonNullable<typeof p> => p !== null);
+
+
+
   const nomeConta = (id: string) =>
     contasTodas.find((c) => c.id === id)?.banco ?? contas.find((c) => c.id === id)?.banco ?? "—";
 
