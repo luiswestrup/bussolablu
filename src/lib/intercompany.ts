@@ -100,7 +100,7 @@ export async function registrarRepasseEntreEmpresas(params: {
   const grupo = crypto.randomUUID();
   const obs = params.observacao?.trim() || "Repasse entre empresas";
 
-  const { error } = await tabela("transferencia_bancaria").insert([
+  await inserirVarios("transferencia_bancaria", [
     {
       empresa_id: origem.empresa_id,
       conta_origem_id: origem.id,
@@ -119,6 +119,6 @@ export async function registrarRepasseEntreEmpresas(params: {
       observacao: obs,
       grupo_intercompany: grupo,
     },
-  ] as never);
-  if (error) throw new Error(error.message);
+  ]);
 }
+
