@@ -45,6 +45,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useEmpresa } from "@/lib/empresa";
+import {
+  espelhoDe,
+  registrarEspelhoPagamento,
+  removerEspelhoPagamento,
+} from "@/lib/intercompany";
+
 import { brl, dataBR, exportarCSV, hoje } from "@/lib/format";
 import { linhasPagamentosCSV, linhasRecebimentosCSV } from "@/lib/exportacao";
 import {
@@ -116,12 +122,15 @@ export function ContasView({
   carregando: boolean;
   acoes?: ReactNode;
 }) {
-  const { empresa, escopo, consolidado, nomeEmpresa } = useEmpresa();
+  const { empresa, empresas, escopo, consolidado, nomeEmpresa } = useEmpresa();
   const { data: categorias = [] } = useCategorias(escopo);
   const { data: naturezas = [] } = useNaturezas(escopo);
   const { data: contasBancarias = [] } = useContasBancarias(escopo);
+  // Contas de todas as empresas: necessárias para o mútuo (conta empréstimo).
+  const { data: contasTodas = [] } = useContasBancarias(empresas.map((e) => e.id));
   const { data: taxas = [] } = useTaxasRecebimento(escopo);
   const queryClient = useQueryClient();
+
   const hj = hoje();
 
   const [filtroStatus, setFiltroStatus] = useState("todos");
