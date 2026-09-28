@@ -53,6 +53,7 @@ export function ImportarExtrato({
   const { data: pagar = [] } = usePagar(escopo);
   const { data: receber = [] } = useReceber(escopo);
   const { data: linhasSalvas = [] } = useExtratoLinhas(escopo);
+  const { data: transferencias = [] } = useTransferencias(escopo);
   const arquivoRef = useRef<HTMLInputElement>(null);
 
   const [lidas, setLidas] = useState<LancamentoOFX[]>([]);
