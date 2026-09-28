@@ -33,6 +33,9 @@ const limpar = (t: string) =>
 export function lerOFX(conteudo: string): LancamentoOFX[] {
   const blocos = conteudo.match(/<STMTTRN>[\s\S]*?<\/STMTTRN>/gi) ?? [];
   const saida: LancamentoOFX[] = [];
+  // Lançamentos legítimos e idênticos no mesmo dia (mesma data, valor e histórico,
+  // sem FITID próprio) recebem um sufixo de ordem para não colidirem entre si.
+  const ocorrencias = new Map<string, number>();
   for (const bloco of blocos) {
     const data = dataOFX(tag(bloco, "DTPOSTED") ?? tag(bloco, "DTUSER"));
     const bruto = (tag(bloco, "TRNAMT") ?? "").replace(/\s/g, "").replace(",", ".");
@@ -40,12 +43,15 @@ export function lerOFX(conteudo: string): LancamentoOFX[] {
     if (!data || !Number.isFinite(valor) || valor === 0) continue;
     const descricao = limpar(tag(bloco, "MEMO") ?? tag(bloco, "NAME") ?? "Lançamento do extrato");
     const fitid = tag(bloco, "FITID");
+    const base = `${data}|${valor.toFixed(2)}|${fitid || descricao}`;
+    const n = (ocorrencias.get(base) ?? 0) + 1;
+    ocorrencias.set(base, n);
     saida.push({
       data,
       valor,
       descricao,
       fitid: fitid || null,
-      hash: `${data}|${valor.toFixed(2)}|${fitid || descricao}`,
+      hash: n === 1 ? base : `${base}#${n}`,
     });
   }
   return saida.sort((a, b) => a.data.localeCompare(b.data));
