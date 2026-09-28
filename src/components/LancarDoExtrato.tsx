@@ -43,9 +43,10 @@ const FORMAS = [
 
 const NOVO = "__novo__";
 
-export type VinculoCriado =
-  | { tabela: "conta_pagar" | "conta_receber"; id: string }
-  | { tabela: "transferencia"; id: null };
+export type VinculoCriado = {
+  tabela: "conta_pagar" | "conta_receber" | "transferencia_bancaria";
+  id: string;
+};
 
 type Tipo = "pagar" | "receber" | "transferencia";
 
