@@ -142,9 +142,7 @@ export function ImportarExtrato({
         .map((r) => {
           const manual = manuais[r.linha.hash];
           const unico = manual
-            ? manual.tabela === "transferencia"
-              ? null
-              : { tabela: manual.tabela, id: manual.id }
+            ? { tabela: manual.tabela, id: manual.id }
             : r.candidatos.length === 1
               ? { tabela: r.candidatos[0]!.tabela, id: r.candidatos[0]!.id }
               : null;
@@ -159,6 +157,8 @@ export function ImportarExtrato({
             status: unico || manual ? "conciliado" : "pendente",
             conta_pagar_id: unico?.tabela === "conta_pagar" ? unico.id : null,
             conta_receber_id: unico?.tabela === "conta_receber" ? unico.id : null,
+            transferencia_bancaria_id:
+              unico?.tabela === "transferencia_bancaria" ? unico.id : null,
           };
         });
       await inserirIgnorandoDuplicados(
@@ -174,6 +174,20 @@ export function ImportarExtrato({
           .filter((c) => c.tabela === t)
           .map((c) => c.id);
         await atualizarEmLote(t, ids, marca);
+      }
+      // Transferências conciliadas automaticamente: marca a ponta correspondente.
+      for (const r of automaticos) {
+        const c = r.candidatos[0]!;
+        if (c.tabela === "transferencia_bancaria") {
+          await marcarTransferencia(c.id, r.linha.valor);
+        }
+      }
+      // Transferências criadas manualmente durante a prévia.
+      for (const r of lancados) {
+        const m = manuais[r.linha.hash];
+        if (m?.tabela === "transferencia_bancaria") {
+          await marcarTransferencia(m.id, r.linha.valor);
+        }
       }
       await invalidar();
       setLidas([]);
