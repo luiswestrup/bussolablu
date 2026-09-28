@@ -74,6 +74,8 @@ type LinhaRazao = {
   valor: number;
   conciliado: boolean;
   conciliavel: boolean;
+  /** Para transferências: qual ponta desta conta (saída ou entrada). */
+  ponta?: "origem" | "destino";
 };
 
 const diaAnterior = (iso: string) => {
@@ -163,8 +165,9 @@ function RazaoBancarioPage() {
             `Transferência ${entrada ? "recebida de" : "enviada para"} ${outra?.banco ?? "outra conta"}`,
           classificacao: "Transferência entre contas",
           valor: entrada ? Number(t.valor) : -Number(t.valor),
-          conciliado: false,
-          conciliavel: false,
+          conciliado: entrada ? !!t.conciliado_destino : !!t.conciliado_origem,
+          conciliavel: true,
+          ponta: (entrada ? "destino" : "origem") as "origem" | "destino",
         };
       });
     return [...saidas, ...entradas, ...transf].sort(
@@ -208,10 +211,19 @@ function RazaoBancarioPage() {
     if (!l.conciliavel) return;
     setSalvando(true);
     try {
-      await atualizarEmLote(l.origem, [l.id], {
-        conciliado: valor,
-        conciliado_em: valor ? new Date().toISOString() : null,
-      });
+      const quando = valor ? new Date().toISOString() : null;
+      if (l.origem === "transferencia_bancaria") {
+        const campo = l.ponta === "destino" ? "conciliado_destino" : "conciliado_origem";
+        await atualizarEmLote(l.origem, [l.id], {
+          [campo]: valor,
+          [`${campo}_em`]: quando,
+        });
+      } else {
+        await atualizarEmLote(l.origem, [l.id], {
+          conciliado: valor,
+          conciliado_em: quando,
+        });
+      }
       await queryClient.invalidateQueries({ queryKey: [l.origem] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível salvar a marcação.");

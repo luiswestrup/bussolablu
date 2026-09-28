@@ -31,6 +31,7 @@ import {
   useExtratoLinhas,
   usePagar,
   useReceber,
+  useTransferencias,
   type ContaPagar,
   type ContaReceber,
   type ExtratoLinha,
@@ -52,6 +53,7 @@ export function ImportarExtrato({
   const { data: pagar = [] } = usePagar(escopo);
   const { data: receber = [] } = useReceber(escopo);
   const { data: linhasSalvas = [] } = useExtratoLinhas(escopo);
+  const { data: transferencias = [] } = useTransferencias(escopo);
   const arquivoRef = useRef<HTMLInputElement>(null);
 
   const [lidas, setLidas] = useState<LancamentoOFX[]>([]);
@@ -63,9 +65,18 @@ export function ImportarExtrato({
   const empresaDaConta = contas.find((c) => c.id === contaId)?.empresa_id ?? "";
 
   const candidatos = useMemo(
-    () => (contaId ? candidatosDaConta(contaId, pagar, receber) : []),
-    [contaId, pagar, receber],
+    () => (contaId ? candidatosDaConta(contaId, pagar, receber, transferencias) : []),
+    [contaId, pagar, receber, transferencias],
   );
+
+  /** Marca a ponta certa da transferência como conciliada. */
+  async function marcarTransferencia(id: string, valorLinha: number) {
+    const campo = valorLinha < 0 ? "conciliado_origem" : "conciliado_destino";
+    const quando = valorLinha < 0 ? "conciliado_origem_em" : "conciliado_destino_em";
+    await tabela("transferencia_bancaria")
+      .update({ [campo]: true, [quando]: new Date().toISOString() })
+      .eq("id", id);
+  }
 
   const hashesExistentes = useMemo(
     () => new Set(linhasSalvas.filter((l) => l.conta_bancaria_id === contaId).map((l) => l.hash)),
@@ -131,9 +142,7 @@ export function ImportarExtrato({
         .map((r) => {
           const manual = manuais[r.linha.hash];
           const unico = manual
-            ? manual.tabela === "transferencia"
-              ? null
-              : { tabela: manual.tabela, id: manual.id }
+            ? { tabela: manual.tabela, id: manual.id }
             : r.candidatos.length === 1
               ? { tabela: r.candidatos[0]!.tabela, id: r.candidatos[0]!.id }
               : null;
@@ -148,6 +157,8 @@ export function ImportarExtrato({
             status: unico || manual ? "conciliado" : "pendente",
             conta_pagar_id: unico?.tabela === "conta_pagar" ? unico.id : null,
             conta_receber_id: unico?.tabela === "conta_receber" ? unico.id : null,
+            transferencia_bancaria_id:
+              unico?.tabela === "transferencia_bancaria" ? unico.id : null,
           };
         });
       await inserirIgnorandoDuplicados(
@@ -163,6 +174,20 @@ export function ImportarExtrato({
           .filter((c) => c.tabela === t)
           .map((c) => c.id);
         await atualizarEmLote(t, ids, marca);
+      }
+      // Transferências conciliadas automaticamente: marca a ponta correspondente.
+      for (const r of automaticos) {
+        const c = r.candidatos[0]!;
+        if (c.tabela === "transferencia_bancaria") {
+          await marcarTransferencia(c.id, r.linha.valor);
+        }
+      }
+      // Transferências criadas manualmente durante a prévia.
+      for (const r of lancados) {
+        const m = manuais[r.linha.hash];
+        if (m?.tabela === "transferencia_bancaria") {
+          await marcarTransferencia(m.id, r.linha.valor);
+        }
       }
       await invalidar();
       setLidas([]);
@@ -190,21 +215,34 @@ export function ImportarExtrato({
     try {
       if (escolha === "ignorar") {
         await tabela("extrato_bancario_linha")
-          .update({ status: "ignorado", conta_pagar_id: null, conta_receber_id: null })
+          .update({
+            status: "ignorado",
+            conta_pagar_id: null,
+            conta_receber_id: null,
+            transferencia_bancaria_id: null,
+          })
           .eq("id", linha.id);
       } else {
-        const [t, id] = escolha.split(":") as ["conta_pagar" | "conta_receber", string];
+        const [t, id] = escolha.split(":") as [
+          "conta_pagar" | "conta_receber" | "transferencia_bancaria",
+          string,
+        ];
         await tabela("extrato_bancario_linha")
           .update({
             status: "conciliado",
             conta_pagar_id: t === "conta_pagar" ? id : null,
             conta_receber_id: t === "conta_receber" ? id : null,
+            transferencia_bancaria_id: t === "transferencia_bancaria" ? id : null,
           })
           .eq("id", linha.id);
-        await atualizarEmLote(t, [id], {
-          conciliado: true,
-          conciliado_em: new Date().toISOString(),
-        });
+        if (t === "transferencia_bancaria") {
+          await marcarTransferencia(id, Number(linha.valor));
+        } else {
+          await atualizarEmLote(t, [id], {
+            conciliado: true,
+            conciliado_em: new Date().toISOString(),
+          });
+        }
       }
       await invalidar();
       toast.success("Linha do extrato atualizada.");
@@ -221,6 +259,7 @@ export function ImportarExtrato({
           status: "conciliado",
           conta_pagar_id: v.tabela === "conta_pagar" ? v.id : null,
           conta_receber_id: v.tabela === "conta_receber" ? v.id : null,
+          transferencia_bancaria_id: v.tabela === "transferencia_bancaria" ? v.id : null,
         })
         .eq("id", linha.id);
       await invalidar();
@@ -239,17 +278,25 @@ export function ImportarExtrato({
    * existente e as demais aparecem aqui para serem lançadas.
    */
   const ligacoesRepetidas = useMemo(() => {
+    const chaveDe = (l: ExtratoLinha) =>
+      l.conta_pagar_id
+        ? `p:${l.conta_pagar_id}`
+        : l.conta_receber_id
+          ? `r:${l.conta_receber_id}`
+          : l.transferencia_bancaria_id
+            ? `t:${l.transferencia_bancaria_id}:${Number(l.valor) < 0 ? "s" : "e"}`
+            : "";
     const daConta = linhasSalvas.filter(
-      (l) => l.conta_bancaria_id === contaId && (l.conta_pagar_id || l.conta_receber_id),
+      (l) => l.conta_bancaria_id === contaId && !!chaveDe(l),
     );
     const contagem = new Map<string, number>();
     for (const l of daConta) {
-      const chave = l.conta_pagar_id ? `p:${l.conta_pagar_id}` : `r:${l.conta_receber_id}`;
+      const chave = chaveDe(l);
       contagem.set(chave, (contagem.get(chave) ?? 0) + 1);
     }
     const vistos = new Set<string>();
     return daConta.filter((l) => {
-      const chave = l.conta_pagar_id ? `p:${l.conta_pagar_id}` : `r:${l.conta_receber_id}`;
+      const chave = chaveDe(l);
       if ((contagem.get(chave) ?? 0) < 2) return false;
       if (!vistos.has(chave)) {
         vistos.add(chave);

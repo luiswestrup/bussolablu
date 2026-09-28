@@ -1,14 +1,16 @@
-import type { ContaPagar, ContaReceber } from "@/lib/dados";
+import type { ContaPagar, ContaReceber, TransferenciaBancaria } from "@/lib/dados";
 import { liquidoRecebimento } from "@/lib/dados";
 import type { LancamentoOFX } from "@/lib/ofx";
 
 export type Candidato = {
   id: string;
-  tabela: "conta_pagar" | "conta_receber";
+  tabela: "conta_pagar" | "conta_receber" | "transferencia_bancaria";
   descricao: string;
   data: string;
   valor: number; // com sinal (saída negativa)
   conciliado: boolean;
+  /** Para transferências: qual ponta da transferência esta conta representa. */
+  ponta?: "origem" | "destino";
 };
 
 export type Resultado = {
@@ -24,6 +26,7 @@ export function candidatosDaConta(
   contaId: string,
   pagar: ContaPagar[],
   receber: ContaReceber[],
+  transferencias: TransferenciaBancaria[] = [],
 ): Candidato[] {
   const p: Candidato[] = pagar
     .filter((c) => c.conta_bancaria_id === contaId && c.status === "pago" && c.data_pagamento)
@@ -45,7 +48,33 @@ export function candidatosDaConta(
       valor: liquidoRecebimento(c),
       conciliado: !!c.conciliado,
     }));
-  return [...p, ...r];
+  // Transferências entre contas: saída na conta de origem, entrada na de destino.
+  const t: Candidato[] = [];
+  for (const tr of transferencias) {
+    if (tr.conta_origem_id === contaId) {
+      t.push({
+        id: tr.id,
+        tabela: "transferencia_bancaria",
+        descricao: tr.observacao ?? "Transferência enviada",
+        data: tr.data,
+        valor: -Number(tr.valor),
+        conciliado: !!tr.conciliado_origem,
+        ponta: "origem",
+      });
+    }
+    if (tr.conta_destino_id === contaId) {
+      t.push({
+        id: tr.id,
+        tabela: "transferencia_bancaria",
+        descricao: tr.observacao ?? "Transferência recebida",
+        data: tr.data,
+        valor: Number(tr.valor),
+        conciliado: !!tr.conciliado_destino,
+        ponta: "destino",
+      });
+    }
+  }
+  return [...p, ...r, ...t];
 }
 
 /**

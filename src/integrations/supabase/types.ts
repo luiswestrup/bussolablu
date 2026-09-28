@@ -539,6 +539,7 @@ export type Database = {
           hash: string
           id: string
           status: string
+          transferencia_bancaria_id: string | null
           updated_at: string
           valor: number
         }
@@ -554,6 +555,7 @@ export type Database = {
           hash: string
           id?: string
           status?: string
+          transferencia_bancaria_id?: string | null
           updated_at?: string
           valor: number
         }
@@ -569,6 +571,7 @@ export type Database = {
           hash?: string
           id?: string
           status?: string
+          transferencia_bancaria_id?: string | null
           updated_at?: string
           valor?: number
         }
@@ -599,6 +602,13 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extrato_bancario_linha_transferencia_bancaria_id_fkey"
+            columns: ["transferencia_bancaria_id"]
+            isOneToOne: false
+            referencedRelation: "transferencia_bancaria"
             referencedColumns: ["id"]
           },
         ]
@@ -1102,6 +1112,10 @@ export type Database = {
       }
       transferencia_bancaria: {
         Row: {
+          conciliado_destino: boolean
+          conciliado_destino_em: string | null
+          conciliado_origem: boolean
+          conciliado_origem_em: string | null
           conta_destino_id: string
           conta_origem_id: string
           conta_pagar_id: string | null
@@ -1115,6 +1129,10 @@ export type Database = {
           valor: number
         }
         Insert: {
+          conciliado_destino?: boolean
+          conciliado_destino_em?: string | null
+          conciliado_origem?: boolean
+          conciliado_origem_em?: string | null
           conta_destino_id: string
           conta_origem_id: string
           conta_pagar_id?: string | null
@@ -1128,6 +1146,10 @@ export type Database = {
           valor: number
         }
         Update: {
+          conciliado_destino?: boolean
+          conciliado_destino_em?: string | null
+          conciliado_origem?: boolean
+          conciliado_origem_em?: string | null
           conta_destino_id?: string
           conta_origem_id?: string
           conta_pagar_id?: string | null
