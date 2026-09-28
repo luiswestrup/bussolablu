@@ -233,6 +233,33 @@ export function ImportarExtrato({
     (l) => l.conta_bancaria_id === contaId && l.status === "pendente",
   );
 
+  /**
+   * Linhas já importadas que dividem o mesmo lançamento do sistema com outra linha.
+   * Cada movimento do banco precisa do seu próprio título; a 1ª fica com o título
+   * existente e as demais aparecem aqui para serem lançadas.
+   */
+  const ligacoesRepetidas = useMemo(() => {
+    const daConta = linhasSalvas.filter(
+      (l) => l.conta_bancaria_id === contaId && (l.conta_pagar_id || l.conta_receber_id),
+    );
+    const contagem = new Map<string, number>();
+    for (const l of daConta) {
+      const chave = l.conta_pagar_id ? `p:${l.conta_pagar_id}` : `r:${l.conta_receber_id}`;
+      contagem.set(chave, (contagem.get(chave) ?? 0) + 1);
+    }
+    const vistos = new Set<string>();
+    return daConta.filter((l) => {
+      const chave = l.conta_pagar_id ? `p:${l.conta_pagar_id}` : `r:${l.conta_receber_id}`;
+      if ((contagem.get(chave) ?? 0) < 2) return false;
+      if (!vistos.has(chave)) {
+        vistos.add(chave);
+        return false; // a primeira linha mantém o título já existente
+      }
+      return true;
+    });
+  }, [linhasSalvas, contaId]);
+
+
   const rotuloCandidato = (c: Candidato) =>
     `${dataBR(c.data)} · ${brl(c.valor)} · ${c.descricao}`;
 
@@ -446,7 +473,58 @@ export function ImportarExtrato({
             </Table>
           </div>
         )}
+
+        {!!ligacoesRepetidas.length && (
+          <div className="space-y-2 rounded-md border border-destructive/40 p-3">
+            <p className="flex items-center gap-2 text-sm font-medium text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              Movimentos do extrato ligados a um lançamento já usado (
+              {ligacoesRepetidas.length})
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Cada movimento do banco precisa do seu próprio lançamento. Use “Lançar no
+              sistema” para criar o que falta.
+            </p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Histórico</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead>Resolver</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {ligacoesRepetidas.map((l) => (
+                  <TableRow key={l.id}>
+                    <TableCell className="whitespace-nowrap">{dataBR(l.data)}</TableCell>
+                    <TableCell>{l.descricao}</TableCell>
+                    <TableCell
+                      className={cn(
+                        "text-right tabular-nums",
+                        Number(l.valor) < 0 ? "text-destructive" : "text-success",
+                      )}
+                    >
+                      {brl(Number(l.valor))}
+                    </TableCell>
+                    <TableCell>
+                      {!!empresaDaConta && (
+                        <LancarDoExtrato
+                          linha={l}
+                          contaBancariaId={contaId}
+                          empresaId={empresaDaConta}
+                          onCriado={(v) => vincularLinhaSalva(l, v)}
+                        />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </CardContent>
+
     </Card>
   );
 }
