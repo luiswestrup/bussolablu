@@ -137,7 +137,7 @@ export function LancarDoExtrato({
     try {
       const agora = new Date().toISOString();
       if (tipo === "transferencia") {
-        await inserirRetornando<{ id: string }>(
+        const nova = await inserirRetornando<{ id: string }>(
           "transferencia_bancaria",
           {
             empresa_id: empresaId,
@@ -146,11 +146,16 @@ export function LancarDoExtrato({
             valor: valorNum,
             data,
             observacao: observacao.trim() || descricao.trim() || null,
+            // A ponta desta conta já nasce conferida com a linha do extrato.
+            conciliado_origem: saida,
+            conciliado_origem_em: saida ? agora : null,
+            conciliado_destino: !saida,
+            conciliado_destino_em: saida ? null : agora,
           },
           "id",
         );
         await queryClient.invalidateQueries({ queryKey: ["transferencia_bancaria"] });
-        await onCriado({ tabela: "transferencia", id: null });
+        await onCriado({ tabela: "transferencia_bancaria", id: nova.id });
       } else if (tipo === "pagar") {
         const novo = await inserirRetornando<{ id: string }>(
           "conta_pagar",
