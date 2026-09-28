@@ -129,28 +129,32 @@ export function ImportarExtrato({
           return true;
         })
         .map((r) => {
-        const manual = manuais[r.linha.hash];
-        const unico = manual
-          ? manual.tabela === "transferencia"
-            ? null
-            : { tabela: manual.tabela, id: manual.id }
-          : r.candidatos.length === 1
-            ? { tabela: r.candidatos[0]!.tabela, id: r.candidatos[0]!.id }
-            : null;
-        return {
-          empresa_id: conta.empresa_id,
-          conta_bancaria_id: contaId,
-          data: r.linha.data,
-          valor: r.linha.valor,
-          descricao: r.linha.descricao,
-          fitid: r.linha.fitid,
-          hash: r.linha.hash,
-          status: unico || manual ? "conciliado" : "pendente",
-          conta_pagar_id: unico?.tabela === "conta_pagar" ? unico.id : null,
-          conta_receber_id: unico?.tabela === "conta_receber" ? unico.id : null,
-        };
-      });
-      await inserirVarios("extrato_bancario_linha", registros);
+          const manual = manuais[r.linha.hash];
+          const unico = manual
+            ? manual.tabela === "transferencia"
+              ? null
+              : { tabela: manual.tabela, id: manual.id }
+            : r.candidatos.length === 1
+              ? { tabela: r.candidatos[0]!.tabela, id: r.candidatos[0]!.id }
+              : null;
+          return {
+            empresa_id: conta.empresa_id,
+            conta_bancaria_id: contaId,
+            data: r.linha.data,
+            valor: r.linha.valor,
+            descricao: r.linha.descricao,
+            fitid: r.linha.fitid,
+            hash: r.linha.hash,
+            status: unico || manual ? "conciliado" : "pendente",
+            conta_pagar_id: unico?.tabela === "conta_pagar" ? unico.id : null,
+            conta_receber_id: unico?.tabela === "conta_receber" ? unico.id : null,
+          };
+        });
+      await inserirIgnorandoDuplicados(
+        "extrato_bancario_linha",
+        registros,
+        "conta_bancaria_id,hash",
+      );
 
       const marca = { conciliado: true, conciliado_em: new Date().toISOString() };
       for (const t of ["conta_pagar", "conta_receber"] as const) {
