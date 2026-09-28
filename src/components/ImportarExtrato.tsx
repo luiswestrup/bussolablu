@@ -25,7 +25,7 @@ import { brl, dataBR } from "@/lib/format";
 import { useEmpresa } from "@/lib/empresa";
 import {
   atualizarEmLote,
-  inserirVarios,
+  inserirIgnorandoDuplicados,
   tabela,
   useContasBancarias,
   useExtratoLinhas,
