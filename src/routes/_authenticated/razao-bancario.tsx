@@ -165,8 +165,9 @@ function RazaoBancarioPage() {
             `Transferência ${entrada ? "recebida de" : "enviada para"} ${outra?.banco ?? "outra conta"}`,
           classificacao: "Transferência entre contas",
           valor: entrada ? Number(t.valor) : -Number(t.valor),
-          conciliado: false,
-          conciliavel: false,
+          conciliado: entrada ? !!t.conciliado_destino : !!t.conciliado_origem,
+          conciliavel: true,
+          ponta: (entrada ? "destino" : "origem") as "origem" | "destino",
         };
       });
     return [...saidas, ...entradas, ...transf].sort(
