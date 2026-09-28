@@ -121,7 +121,14 @@ export function ImportarExtrato({
     if (!conta) return;
     setSalvando(true);
     try {
-      const registros = resultados.map((r) => {
+      const vistos = new Set<string>();
+      const registros = resultados
+        .filter((r) => {
+          if (vistos.has(r.linha.hash)) return false;
+          vistos.add(r.linha.hash);
+          return true;
+        })
+        .map((r) => {
         const manual = manuais[r.linha.hash];
         const unico = manual
           ? manual.tabela === "transferencia"
