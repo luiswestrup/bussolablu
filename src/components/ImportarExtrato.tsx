@@ -233,6 +233,33 @@ export function ImportarExtrato({
     (l) => l.conta_bancaria_id === contaId && l.status === "pendente",
   );
 
+  /**
+   * Linhas já importadas que dividem o mesmo lançamento do sistema com outra linha.
+   * Cada movimento do banco precisa do seu próprio título; a 1ª fica com o título
+   * existente e as demais aparecem aqui para serem lançadas.
+   */
+  const ligacoesRepetidas = useMemo(() => {
+    const daConta = linhasSalvas.filter(
+      (l) => l.conta_bancaria_id === contaId && (l.conta_pagar_id || l.conta_receber_id),
+    );
+    const contagem = new Map<string, number>();
+    for (const l of daConta) {
+      const chave = l.conta_pagar_id ? `p:${l.conta_pagar_id}` : `r:${l.conta_receber_id}`;
+      contagem.set(chave, (contagem.get(chave) ?? 0) + 1);
+    }
+    const vistos = new Set<string>();
+    return daConta.filter((l) => {
+      const chave = l.conta_pagar_id ? `p:${l.conta_pagar_id}` : `r:${l.conta_receber_id}`;
+      if ((contagem.get(chave) ?? 0) < 2) return false;
+      if (!vistos.has(chave)) {
+        vistos.add(chave);
+        return false; // a primeira linha mantém o título já existente
+      }
+      return true;
+    });
+  }, [linhasSalvas, contaId]);
+
+
   const rotuloCandidato = (c: Candidato) =>
     `${dataBR(c.data)} · ${brl(c.valor)} · ${c.descricao}`;
 
