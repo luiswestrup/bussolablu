@@ -74,6 +74,8 @@ type LinhaRazao = {
   valor: number;
   conciliado: boolean;
   conciliavel: boolean;
+  /** Para transferências: qual ponta desta conta (saída ou entrada). */
+  ponta?: "origem" | "destino";
 };
 
 const diaAnterior = (iso: string) => {
