@@ -122,6 +122,12 @@ export type TransferenciaBancaria = {
   conta_pagar_id: string | null;
   /** Agrupa as duas pontas de um repasse entre empresas. */
   grupo_intercompany: string | null;
+  /** Conciliada no extrato da conta de origem (saída). */
+  conciliado_origem: boolean;
+  conciliado_origem_em: string | null;
+  /** Conciliada no extrato da conta de destino (entrada). */
+  conciliado_destino: boolean;
+  conciliado_destino_em: string | null;
 };
 
 
@@ -248,7 +254,7 @@ export const useTransferencias = (escopo?: Escopo) =>
   useTabela<TransferenciaBancaria>(
     "transferencia_bancaria",
     escopo,
-    "id, conta_origem_id, conta_destino_id, valor, data, observacao, conta_pagar_id, grupo_intercompany",
+    "id, conta_origem_id, conta_destino_id, valor, data, observacao, conta_pagar_id, grupo_intercompany, conciliado_origem, conciliado_origem_em, conciliado_destino, conciliado_destino_em",
     "data",
   );
 
@@ -283,13 +289,14 @@ export type ExtratoLinha = {
   status: "pendente" | "conciliado" | "ignorado";
   conta_pagar_id: string | null;
   conta_receber_id: string | null;
+  transferencia_bancaria_id: string | null;
 };
 
 export const useExtratoLinhas = (escopo?: Escopo) =>
   useTabela<ExtratoLinha>(
     "extrato_bancario_linha",
     escopo,
-    "id, conta_bancaria_id, data, valor, descricao, fitid, hash, status, conta_pagar_id, conta_receber_id",
+    "id, conta_bancaria_id, data, valor, descricao, fitid, hash, status, conta_pagar_id, conta_receber_id, transferencia_bancaria_id",
     "data",
   );
 
