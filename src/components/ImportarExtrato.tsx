@@ -31,6 +31,7 @@ import {
   useExtratoLinhas,
   usePagar,
   useReceber,
+  useTransferencias,
   type ContaPagar,
   type ContaReceber,
   type ExtratoLinha,
