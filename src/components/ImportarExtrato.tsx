@@ -65,9 +65,18 @@ export function ImportarExtrato({
   const empresaDaConta = contas.find((c) => c.id === contaId)?.empresa_id ?? "";
 
   const candidatos = useMemo(
-    () => (contaId ? candidatosDaConta(contaId, pagar, receber) : []),
-    [contaId, pagar, receber],
+    () => (contaId ? candidatosDaConta(contaId, pagar, receber, transferencias) : []),
+    [contaId, pagar, receber, transferencias],
   );
+
+  /** Marca a ponta certa da transferência como conciliada. */
+  async function marcarTransferencia(id: string, valorLinha: number) {
+    const campo = valorLinha < 0 ? "conciliado_origem" : "conciliado_destino";
+    const quando = valorLinha < 0 ? "conciliado_origem_em" : "conciliado_destino_em";
+    await tabela("transferencia_bancaria")
+      .update({ [campo]: true, [quando]: new Date().toISOString() })
+      .eq("id", id);
+  }
 
   const hashesExistentes = useMemo(
     () => new Set(linhasSalvas.filter((l) => l.conta_bancaria_id === contaId).map((l) => l.hash)),
