@@ -306,6 +306,23 @@ export async function inserirVarios(
   if (error) throw new Error(error.message);
 }
 
+/** INSERT em lote ignorando registros que já existem na chave única informada. */
+export async function inserirIgnorandoDuplicados(
+  nome: string,
+  valores: Record<string, unknown>[],
+  chave: string,
+): Promise<void> {
+  if (!valores.length) return;
+  const alvo = supabase.from(nome as never) as unknown as {
+    upsert: (
+      v: Record<string, unknown>[],
+      o: { onConflict: string; ignoreDuplicates: boolean },
+    ) => PromiseLike<{ error: { message: string } | null }>;
+  };
+  const { error } = await alvo.upsert(valores, { onConflict: chave, ignoreDuplicates: true });
+  if (error) throw new Error(error.message);
+}
+
 
 
 /** Cheque só afeta o caixa quando compensado; cancelado nunca entra. */
