@@ -473,7 +473,58 @@ export function ImportarExtrato({
             </Table>
           </div>
         )}
+
+        {!!ligacoesRepetidas.length && (
+          <div className="space-y-2 rounded-md border border-destructive/40 p-3">
+            <p className="flex items-center gap-2 text-sm font-medium text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              Movimentos do extrato ligados a um lançamento já usado (
+              {ligacoesRepetidas.length})
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Cada movimento do banco precisa do seu próprio lançamento. Use “Lançar no
+              sistema” para criar o que falta.
+            </p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Histórico</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead>Resolver</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {ligacoesRepetidas.map((l) => (
+                  <TableRow key={l.id}>
+                    <TableCell className="whitespace-nowrap">{dataBR(l.data)}</TableCell>
+                    <TableCell>{l.descricao}</TableCell>
+                    <TableCell
+                      className={cn(
+                        "text-right tabular-nums",
+                        Number(l.valor) < 0 ? "text-destructive" : "text-success",
+                      )}
+                    >
+                      {brl(Number(l.valor))}
+                    </TableCell>
+                    <TableCell>
+                      {!!empresaDaConta && (
+                        <LancarDoExtrato
+                          linha={l}
+                          contaBancariaId={contaId}
+                          empresaId={empresaDaConta}
+                          onCriado={(v) => vincularLinhaSalva(l, v)}
+                        />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </CardContent>
+
     </Card>
   );
 }
