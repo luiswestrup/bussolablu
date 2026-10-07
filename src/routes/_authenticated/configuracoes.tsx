@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeftRight, Pencil, Plus, Trash2 } from "lucide-react";
@@ -1153,45 +1153,12 @@ function ContasBancarias() {
           <p className="text-xs text-muted-foreground">
             Movimentação interna: não entra em receitas nem despesas.
           </p>
-          <div className="mt-3">
-            {transferencias.length === 0 ? (
-              <SecaoVazia texto="Nenhuma transferência registrada." />
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Origem → Destino</TableHead>
-                    <TableHead className="text-right">Valor</TableHead>
-                    <TableHead>Observação</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transferencias.map((t) => (
-                    <TableRow key={t.id}>
-                      <TableCell>{dataBR(t.data)}</TableCell>
-                      <TableCell className="font-medium">
-                        {nomeConta(t.conta_origem_id)} → {nomeConta(t.conta_destino_id)}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">{brl(Number(t.valor))}</TableCell>
-                      <TableCell className="text-muted-foreground">{t.observacao ?? "—"}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          title="Excluir transferência"
-                          onClick={() => excluirTransferencia.mutate(t.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
+          <p className="mt-2 text-sm">
+            {transferencias.length} transferência(s) registradas.{" "}
+            <Link to="/transferencias" className="font-medium text-primary underline">
+              Ver e filtrar na tela de Transferências
+            </Link>
+          </p>
         </div>
 
         <Dialog open={!!editandoConta} onOpenChange={(o) => !o && setEditandoConta(null)}>

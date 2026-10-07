@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import { brl, dataBR } from "@/lib/format";
 import { useEmpresa } from "@/lib/empresa";
 import {
@@ -61,6 +62,8 @@ export function ImportarExtrato({
   const [salvando, setSalvando] = useState(false);
   // Linhas da prévia que o usuário lançou manualmente no sistema (chave = hash).
   const [manuais, setManuais] = useState<Record<string, VinculoCriado>>({});
+  // Hashes do arquivo que já existem no banco (consultado direto, sem limite de linhas).
+  const [jaNoBanco, setJaNoBanco] = useState<Set<string>>(new Set());
 
   const empresaDaConta = contas.find((c) => c.id === contaId)?.empresa_id ?? "";
 
@@ -83,7 +86,10 @@ export function ImportarExtrato({
     [linhasSalvas, contaId],
   );
 
-  const novas = useMemo(() => lidas.filter((l) => !hashesExistentes.has(l.hash)), [lidas, hashesExistentes]);
+  const novas = useMemo(
+    () => lidas.filter((l) => !hashesExistentes.has(l.hash) && !jaNoBanco.has(l.hash)),
+    [lidas, hashesExistentes, jaNoBanco],
+  );
   const resultados = useMemo(() => casarLinhas(novas, candidatos), [novas, candidatos]);
   const automaticos = resultados.filter((r) => r.candidatos.length === 1);
   const lancados = resultados.filter((r) => r.candidatos.length !== 1 && manuais[r.linha.hash]);
@@ -121,9 +127,61 @@ export function ImportarExtrato({
       toast.error("Nenhum lançamento encontrado no arquivo OFX.");
       return;
     }
+    // Confere no banco, para esta conta e o período do arquivo, o que já foi importado.
+    // Compara por data + valor + identificador (FITID ou histórico), contando ocorrências,
+    // para bloquear reimportações mesmo que o código interno da linha tenha mudado.
+    const datas = linhas.map((l) => l.data).sort();
+    const { data: existentes, error } = await supabase
+      .from("extrato_bancario_linha")
+      .select("data, valor, fitid, descricao, hash")
+      .eq("conta_bancaria_id", contaId)
+      .gte("data", datas[0]!)
+      .lte("data", datas[datas.length - 1]!)
+      .limit(10000);
+    if (error) {
+      toast.error(`Não foi possível conferir o que já foi importado: ${error.message}`);
+      return;
+    }
+    const chave = (d: string, v: number, id: string) => `${d}|${Number(v).toFixed(2)}|${id}`;
+    const hashes = new Set<string>();
+    const contagem = new Map<string, number>();
+    for (const e of (existentes ?? []) as {
+      data: string; valor: number; fitid: string | null; descricao: string | null; hash: string;
+    }[]) {
+      hashes.add(e.hash);
+      const k = chave(e.data, e.valor, e.fitid || e.descricao || "");
+      contagem.set(k, (contagem.get(k) ?? 0) + 1);
+    }
+    const repetidas = new Set<string>();
+    for (const l of linhas) {
+      if (hashes.has(l.hash)) {
+        repetidas.add(l.hash);
+        const k = chave(l.data, l.valor, l.fitid || l.descricao);
+        contagem.set(k, (contagem.get(k) ?? 0) - 1);
+      }
+    }
+    for (const l of linhas) {
+      if (repetidas.has(l.hash)) continue;
+      const k = chave(l.data, l.valor, l.fitid || l.descricao);
+      const n = contagem.get(k) ?? 0;
+      if (n > 0) {
+        repetidas.add(l.hash);
+        contagem.set(k, n - 1);
+      }
+    }
+    setJaNoBanco(repetidas);
+    setManuais({});
     setLidas(linhas);
     setNomeArquivo(file.name);
-    toast.success(`${linhas.length} lançamento(s) lidos de ${file.name}.`);
+    if (repetidas.size === linhas.length) {
+      toast.info(`Este arquivo já foi importado: todos os ${linhas.length} lançamentos já estão no sistema.`);
+    } else if (repetidas.size > 0) {
+      toast.warning(
+        `${repetidas.size} lançamento(s) já estavam importados e serão ignorados; ${linhas.length - repetidas.size} novo(s).`,
+      );
+    } else {
+      toast.success(`${linhas.length} lançamento(s) lidos de ${file.name}.`);
+    }
   }
 
   async function importar() {
@@ -191,6 +249,7 @@ export function ImportarExtrato({
       }
       await invalidar();
       setLidas([]);
+      setJaNoBanco(new Set());
       setNomeArquivo("");
       setManuais({});
       if (arquivoRef.current) arquivoRef.current.value = "";
@@ -368,6 +427,18 @@ export function ImportarExtrato({
               {brl(lidas.reduce((s, l) => s + l.valor, 0))} ·{" "}
               {lidas.length - novas.length} já importada(s) antes.
             </p>
+            {lidas.length > 0 && novas.length === 0 && (
+              <div className="rounded-md border border-success/40 bg-success/5 p-3 text-sm text-success">
+                Todos os lançamentos deste arquivo já foram importados para esta conta. Nada será
+                duplicado — não é preciso importar de novo.
+              </div>
+            )}
+            {novas.length > 0 && novas.length < lidas.length && (
+              <div className="rounded-md border border-warning/40 bg-warning/5 p-3 text-sm">
+                {lidas.length - novas.length} lançamento(s) deste arquivo já estavam no sistema e serão
+                ignorados. Apenas {novas.length} novo(s) aparecem abaixo.
+              </div>
+            )}
             <div className="grid gap-2 sm:grid-cols-4">
               <Resumo titulo="Conciliam automaticamente" valor={automaticos.length} tom="ok" />
               <Resumo titulo="Lançados por você" valor={lancados.length} tom="ok" />

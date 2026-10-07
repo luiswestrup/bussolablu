@@ -16,6 +16,7 @@ import {
   ListChecks,
   ChevronsLeft,
   ChevronsRight,
+  ArrowLeftRight,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,6 +51,7 @@ const itens = [
   { to: "/conciliacao", label: "Conciliação", icon: ListChecks },
   { to: "/fluxo-caixa", label: "Fluxo de caixa", icon: Waves },
   { to: "/razao-bancario", label: "Razão bancário", icon: BookOpen },
+  { to: "/transferencias", label: "Transferências", icon: ArrowLeftRight },
   { to: "/importar-notas", label: "Importar NF-e", icon: FileUp },
   { to: "/importar-nfse", label: "Importar NFS-e", icon: FileText },
   { to: "/relatorios", label: "Relatórios", icon: FileBarChart },
