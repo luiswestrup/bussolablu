@@ -169,6 +169,27 @@ export function ImportarExtrato({
         contagem.set(k, n - 1);
       }
     }
+    // Reforço: bancos mudam o FITID e o histórico entre exportações. Compara também
+    // por data + valor, contando quantas ocorrências já existem na conta naquele dia.
+    const porDiaValor = new Map<string, number>();
+    for (const e of (existentes ?? []) as { data: string; valor: number }[]) {
+      const k = `${e.data}|${Number(e.valor).toFixed(2)}`;
+      porDiaValor.set(k, (porDiaValor.get(k) ?? 0) + 1);
+    }
+    for (const l of linhas) {
+      if (!repetidas.has(l.hash)) continue;
+      const k = `${l.data}|${Number(l.valor).toFixed(2)}`;
+      porDiaValor.set(k, (porDiaValor.get(k) ?? 0) - 1);
+    }
+    for (const l of linhas) {
+      if (repetidas.has(l.hash)) continue;
+      const k = `${l.data}|${Number(l.valor).toFixed(2)}`;
+      const n = porDiaValor.get(k) ?? 0;
+      if (n > 0) {
+        repetidas.add(l.hash);
+        porDiaValor.set(k, n - 1);
+      }
+    }
     setJaNoBanco(repetidas);
     setManuais({});
     setLidas(linhas);
