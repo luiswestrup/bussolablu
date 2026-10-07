@@ -24,6 +24,7 @@ import { Route as AuthenticatedPagamentosRouteImport } from './routes/_authentic
 import { Route as AuthenticatedRazaoBancarioRouteImport } from './routes/_authenticated/razao-bancario'
 import { Route as AuthenticatedRecebimentosRouteImport } from './routes/_authenticated/recebimentos'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
+import { Route as AuthenticatedTransferenciasRouteImport } from './routes/_authenticated/transferencias'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -105,6 +106,12 @@ const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
   path: '/relatorios',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTransferenciasRoute =
+  AuthenticatedTransferenciasRouteImport.update({
+    id: '/transferencias',
+    path: '/transferencias',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -121,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/razao-bancario': typeof AuthenticatedRazaoBancarioRoute
   '/recebimentos': typeof AuthenticatedRecebimentosRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/transferencias': typeof AuthenticatedTransferenciasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -137,6 +145,7 @@ export interface FileRoutesByTo {
   '/razao-bancario': typeof AuthenticatedRazaoBancarioRoute
   '/recebimentos': typeof AuthenticatedRecebimentosRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/transferencias': typeof AuthenticatedTransferenciasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -155,6 +164,7 @@ export interface FileRoutesById {
   '/_authenticated/razao-bancario': typeof AuthenticatedRazaoBancarioRoute
   '/_authenticated/recebimentos': typeof AuthenticatedRecebimentosRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/_authenticated/transferencias': typeof AuthenticatedTransferenciasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -173,6 +183,7 @@ export interface FileRouteTypes {
     | '/razao-bancario'
     | '/recebimentos'
     | '/relatorios'
+    | '/transferencias'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -189,6 +200,7 @@ export interface FileRouteTypes {
     | '/razao-bancario'
     | '/recebimentos'
     | '/relatorios'
+    | '/transferencias'
   id:
     | '__root__'
     | '/'
@@ -206,6 +218,7 @@ export interface FileRouteTypes {
     | '/_authenticated/razao-bancario'
     | '/_authenticated/recebimentos'
     | '/_authenticated/relatorios'
+    | '/_authenticated/transferencias'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -321,6 +334,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRelatoriosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/transferencias': {
+      id: '/_authenticated/transferencias'
+      path: '/transferencias'
+      fullPath: '/transferencias'
+      preLoaderRoute: typeof AuthenticatedTransferenciasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -337,6 +357,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRazaoBancarioRoute: typeof AuthenticatedRazaoBancarioRoute
   AuthenticatedRecebimentosRoute: typeof AuthenticatedRecebimentosRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
+  AuthenticatedTransferenciasRoute: typeof AuthenticatedTransferenciasRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -352,6 +373,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRazaoBancarioRoute: AuthenticatedRazaoBancarioRoute,
   AuthenticatedRecebimentosRoute: AuthenticatedRecebimentosRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
+  AuthenticatedTransferenciasRoute: AuthenticatedTransferenciasRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
