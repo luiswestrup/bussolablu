@@ -184,17 +184,16 @@ function TransferenciasPage() {
   function exportar() {
     exportarCSV(
       "transferencias.csv",
-      ["Data", "Empresa", "Origem", "Destino", "Valor", "Tipo", "Conciliação", "Observação"],
-      filtradas.map((t) => [
-        dataBR(t.data),
-        nomeEmpresa(t.empresa_id),
-        nomeConta(t.conta_origem_id),
-        nomeConta(t.conta_destino_id),
-        Number(t.valor).toFixed(2).replace(".", ","),
-        t.grupo_intercompany ? "Entre empresas" : "Interna",
-        situacao(t),
-        t.observacao ?? "",
-      ]),
+      filtradas.map((t) => ({
+        Data: dataBR(t.data),
+        Empresa: nomeEmpresa(t.empresa_id),
+        Origem: nomeConta(t.conta_origem_id),
+        Destino: nomeConta(t.conta_destino_id),
+        Valor: Number(t.valor).toFixed(2).replace(".", ","),
+        Tipo: t.grupo_intercompany ? "Entre empresas" : "Interna",
+        "Conciliação": situacao(t),
+        "Observação": t.observacao ?? "",
+      })),
     );
   }
 
