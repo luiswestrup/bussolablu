@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import { brl, dataBR } from "@/lib/format";
 import { useEmpresa } from "@/lib/empresa";
 import {
@@ -130,7 +131,8 @@ export function ImportarExtrato({
     // Compara por data + valor + identificador (FITID ou histórico), contando ocorrências,
     // para bloquear reimportações mesmo que o código interno da linha tenha mudado.
     const datas = linhas.map((l) => l.data).sort();
-    const { data: existentes, error } = await tabela("extrato_bancario_linha")
+    const { data: existentes, error } = await supabase
+      .from("extrato_bancario_linha")
       .select("data, valor, fitid, descricao, hash")
       .eq("conta_bancaria_id", contaId)
       .gte("data", datas[0]!)
