@@ -114,8 +114,9 @@ function TransferenciasPage() {
   const totalInter = total - totalInterno;
   const aConciliar = filtradas.filter((t) => situacao(t) !== "conciliada").length;
 
-  // ---- Nova transferência ----
+  // ---- Nova transferência / edição ----
   const [aberto, setAberto] = useState(false);
+  const [editando, setEditando] = useState<(typeof transferencias)[number] | null>(null);
   const [tr, setTr] = useState({
     conta_origem_id: "",
     conta_destino_id: "",
@@ -123,11 +124,12 @@ function TransferenciasPage() {
     data: hoje(),
     observacao: "",
   });
-  const contas = contasTodas.filter((c) => c.empresa_id === empresa?.id);
-  const contasOutras = contasTodas.filter((c) => c.empresa_id !== empresa?.id);
+  const empresaForm = editando?.empresa_id ?? empresa?.id;
+  const contas = contasTodas.filter((c) => c.empresa_id === empresaForm);
+  const contasOutras = editando ? [] : contasTodas.filter((c) => c.empresa_id !== empresa?.id);
   const destinoOutra = contasOutras.some((c) => c.id === tr.conta_destino_id);
   const valida =
-    !!empresa &&
+    !!empresaForm &&
     !!tr.conta_origem_id &&
     !!tr.conta_destino_id &&
     tr.conta_origem_id !== tr.conta_destino_id &&
@@ -136,9 +138,54 @@ function TransferenciasPage() {
 
   const invalidar = () => queryClient.invalidateQueries({ queryKey: ["transferencia_bancaria"] });
 
+  const fechar = () => {
+    setAberto(false);
+    setEditando(null);
+    setTr({ conta_origem_id: "", conta_destino_id: "", valor: "", data: hoje(), observacao: "" });
+  };
+
+  const abrirEdicao = (t: (typeof transferencias)[number]) => {
+    setEditando(t);
+    setTr({
+      conta_origem_id: t.conta_origem_id,
+      conta_destino_id: t.conta_destino_id,
+      valor: String(Number(t.valor)),
+      data: t.data,
+      observacao: t.observacao ?? "",
+    });
+    setAberto(true);
+  };
+
   const criar = useMutation({
     mutationFn: async () => {
       if (!valida) throw new Error("Preencha origem, destino, valor e data.");
+      if (editando) {
+        const valor = Number(tr.valor);
+        const mudouValor = Math.abs(valor - Number(editando.valor)) > 0.004 || tr.data !== editando.data;
+        const mudouOrigem = mudouValor || tr.conta_origem_id !== editando.conta_origem_id;
+        const mudouDestino = mudouValor || tr.conta_destino_id !== editando.conta_destino_id;
+        const patch: Record<string, unknown> = {
+          conta_origem_id: tr.conta_origem_id,
+          conta_destino_id: tr.conta_destino_id,
+          valor,
+          data: tr.data,
+          observacao: tr.observacao.trim() || null,
+        };
+        // Se mudou conta/valor/data, a conferência daquela ponta precisa ser refeita.
+        if (mudouOrigem) Object.assign(patch, { conciliado_origem: false, conciliado_origem_em: null });
+        if (mudouDestino) Object.assign(patch, { conciliado_destino: false, conciliado_destino_em: null });
+        const { error } = await tabela("transferencia_bancaria").update(patch).eq("id", editando.id);
+        if (error) throw new Error(error.message);
+        // Repasse entre empresas: mantém valor e data iguais na outra empresa.
+        if (editando.grupo_intercompany && mudouValor) {
+          const { error: e2 } = await tabela("transferencia_bancaria")
+            .update({ valor, data: tr.data, conciliado_origem: false, conciliado_origem_em: null, conciliado_destino: false, conciliado_destino_em: null })
+            .eq("grupo_intercompany", editando.grupo_intercompany)
+            .neq("id", editando.id);
+          if (e2) throw new Error(e2.message);
+        }
+        return;
+      }
       if (destinoOutra) {
         await registrarRepasseEntreEmpresas({
           contas: contasTodas,
@@ -161,10 +208,10 @@ function TransferenciasPage() {
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      setAberto(false);
-      setTr({ conta_origem_id: "", conta_destino_id: "", valor: "", data: hoje(), observacao: "" });
+      const eraEdicao = !!editando;
+      fechar();
       invalidar();
-      toast.success("Transferência registrada.");
+      toast.success(eraEdicao ? "Transferência atualizada." : "Transferência registrada.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
