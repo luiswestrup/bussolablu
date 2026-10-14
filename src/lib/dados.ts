@@ -172,7 +172,17 @@ function useTabela<T>(tabela: string, escopo: Escopo, colunas: string, ordem: st
         order: (
           c: string,
           o: { ascending: boolean },
-        ) => Promise<{ data: unknown; error: { message: string } | null }>;
+        ) => {
+          order: (
+            c: string,
+            o: { ascending: boolean },
+          ) => {
+            range: (
+              de: number,
+              ate: number,
+            ) => Promise<{ data: unknown; error: { message: string } | null }>;
+          };
+        };
       };
     };
   };
@@ -181,12 +191,22 @@ function useTabela<T>(tabela: string, escopo: Escopo, colunas: string, ordem: st
     queryKey: [tabela, alvo.join(",")],
     enabled: alvo.length > 0,
     queryFn: async () => {
-      const { data, error } = await (supabase.from(tabela as never) as unknown as Loose)
-        .select(colunas.includes("empresa_id") ? colunas : `empresa_id, ${colunas}`)
-        .in("empresa_id", alvo)
-        .order(ordem, { ascending: false });
-      if (error) throw new Error(error.message);
-      return (data ?? []) as unknown as T[];
+      // O servidor devolve no máximo 1000 linhas por consulta: busca em blocos.
+      const LOTE = 1000;
+      const todos: unknown[] = [];
+      for (let de = 0; ; de += LOTE) {
+        const { data, error } = await (supabase.from(tabela as never) as unknown as Loose)
+          .select(colunas.includes("empresa_id") ? colunas : `empresa_id, ${colunas}`)
+          .in("empresa_id", alvo)
+          .order(ordem, { ascending: false })
+          .order("id", { ascending: true })
+          .range(de, de + LOTE - 1);
+        if (error) throw new Error(error.message);
+        const bloco = (data ?? []) as unknown[];
+        todos.push(...bloco);
+        if (bloco.length < LOTE) break;
+      }
+      return todos as T[];
     },
   });
 

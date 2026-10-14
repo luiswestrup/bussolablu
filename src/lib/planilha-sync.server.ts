@@ -39,13 +39,30 @@ export async function sincronizarPlanilha(
     erros: [],
   };
 
-  const [{ data: clientesData }, { data: contasData }, { data: registrosData }] = await Promise.all([
-    supabase.from("cliente").select("id, nome").eq("empresa_id", empresaId),
-    supabase.from("conta_bancaria").select("id, banco").eq("empresa_id", empresaId),
-    supabase
-      .from("recebimento_planilha_importado")
-      .select("id, aba, linha_numero, hash_conteudo, conta_receber_id, ignorado")
-      .eq("empresa_id", empresaId),
+  // Busca em blocos de 1000 (limite do servidor por consulta).
+  const tudo = async (nome: string, colunas: string): Promise<unknown[]> => {
+    const linhas: unknown[] = [];
+    for (let de = 0; ; de += 1000) {
+      const { data, error } = await supabase
+        .from(nome as never)
+        .select(colunas)
+        .eq("empresa_id", empresaId)
+        .order("id")
+        .range(de, de + 999);
+      if (error) throw new Error(error.message);
+      const bloco = (data ?? []) as unknown[];
+      linhas.push(...bloco);
+      if (bloco.length < 1000) break;
+    }
+    return linhas;
+  };
+  const [clientesData, contasData, registrosData] = await Promise.all([
+    tudo("cliente", "id, nome"),
+    tudo("conta_bancaria", "id, banco"),
+    tudo(
+      "recebimento_planilha_importado",
+      "id, aba, linha_numero, hash_conteudo, conta_receber_id, ignorado",
+    ),
   ]);
 
   const clientes = (clientesData ?? []) as Cliente[];
