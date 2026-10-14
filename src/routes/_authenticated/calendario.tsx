@@ -43,6 +43,7 @@ type Titulo = {
   status: string;
   vencimento: string;
   empresa_id: string;
+  pago: number;
 };
 
 const MESES = [
@@ -70,6 +71,7 @@ function CalendarioPage() {
   const agora = new Date();
   const [ano, setAno] = useState(agora.getFullYear());
   const [mes, setMes] = useState(agora.getMonth());
+  const [visao, setVisao] = useState<"pagar" | "geral">("pagar");
   const [diaAberto, setDiaAberto] = useState<string | null>(null);
   const hojeISO = hoje();
 
@@ -83,6 +85,7 @@ function CalendarioPage() {
         status: situacao(c.status, c.data_vencimento, hojeISO),
         vencimento: c.data_vencimento,
         empresa_id: c.empresa_id,
+        pago: c.status === "pago" ? Number(c.valor_pago ?? c.valor) : 0,
       })),
       ...receber.map((c) => ({
         id: c.id,
@@ -92,6 +95,7 @@ function CalendarioPage() {
         status: situacao(c.status, c.data_vencimento, hojeISO),
         vencimento: c.data_vencimento,
         empresa_id: c.empresa_id,
+        pago: 0,
       })),
     ],
     [pagar, receber, hojeISO],
@@ -126,7 +130,15 @@ function CalendarioPage() {
       .filter((t) => t.tipo === tipo && t.vencimento.slice(0, 7) === iso(ano, mes, 1).slice(0, 7))
       .reduce((s, t) => s + t.valor, 0);
 
-  const itensDoDia = diaAberto ? (porDia.get(diaAberto) ?? []) : [];
+  const mesISO = iso(ano, mes, 1).slice(0, 7);
+  const pagarMes = titulos.filter((t) => t.tipo === "pagar" && t.vencimento.slice(0, 7) === mesISO);
+  const lancadoMes = pagarMes.reduce((s, t) => s + t.valor, 0);
+  const pagoMes = pagarMes.reduce((s, t) => s + t.pago, 0);
+  const pendenteMes = pagarMes.filter((t) => t.status !== "pago").reduce((s, t) => s + t.valor, 0);
+
+  const itensDoDia = (diaAberto ? (porDia.get(diaAberto) ?? []) : []).filter(
+    (t) => visao === "geral" || t.tipo === "pagar",
+  );
 
   return (
     <AppShell titulo="Calendário financeiro">
@@ -143,6 +155,30 @@ function CalendarioPage() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
+          <div className="flex rounded-md border p-0.5 text-sm">
+            {(["pagar", "geral"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setVisao(v)}
+                className={cn(
+                  "rounded px-3 py-1 transition-colors",
+                  visao === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {v === "pagar" ? "Contas a pagar: lançado x pago" : "Visão geral"}
+              </button>
+            ))}
+          </div>
+          {visao === "pagar" ? (
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <span>Lançado: <strong className="tabular-nums">{brl(lancadoMes)}</strong></span>
+            <span className="text-success">
+              Pago: <strong className="tabular-nums">{brl(pagoMes)}</strong>
+              {lancadoMes > 0 && ` (${Math.round((pagoMes / lancadoMes) * 100)}%)`}
+            </span>
+            <span className="text-destructive">A pagar: <strong className="tabular-nums">{brl(pendenteMes)}</strong></span>
+          </div>
+          ) : (
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <span className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full bg-destructive" /> A pagar:{" "}
@@ -153,6 +189,7 @@ function CalendarioPage() {
               <strong className="tabular-nums">{brl(totalMes("receber"))}</strong>
             </span>
           </div>
+          )}
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium uppercase text-muted-foreground">
@@ -166,7 +203,13 @@ function CalendarioPage() {
             {celulas.map((dia, i) => {
               if (dia === null) return <div key={`v-${i}`} className="min-h-24 rounded-md" />;
               const data = iso(ano, mes, dia);
-              const itens = porDia.get(data) ?? [];
+              const itens = (porDia.get(data) ?? []).filter(
+                (t) => visao === "geral" || t.tipo === "pagar",
+              );
+              const pg = itens.filter((t) => t.tipo === "pagar");
+              const lancDia = pg.reduce((s, t) => s + t.valor, 0);
+              const pagoDia = pg.reduce((s, t) => s + t.pago, 0);
+              const quitado = pg.length > 0 && pg.every((t) => t.status === "pago");
               const aPagar = itens
                 .filter((t) => t.tipo === "pagar")
                 .reduce((s, t) => s + t.valor, 0);
@@ -191,6 +234,25 @@ function CalendarioPage() {
                   >
                     {dia}
                   </span>
+                  {visao === "pagar" ? (
+                  <div className="mt-1 space-y-0.5 text-[11px] tabular-nums">
+                    {lancDia > 0 && (
+                      <>
+                        <div className="truncate text-muted-foreground">L: {brl(lancDia)}</div>
+                        <div className={cn("truncate font-medium", pagoDia > 0 ? "text-success" : "text-muted-foreground")}>
+                          P: {brl(pagoDia)}
+                        </div>
+                        {quitado ? (
+                          <div className="truncate rounded bg-success/12 px-1 text-success">Quitado</div>
+                        ) : (
+                          <div className="truncate rounded bg-destructive/12 px-1 text-destructive">
+                            Falta {brl(pg.filter((t) => t.status !== "pago").reduce((s, t) => s + t.valor, 0))}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  ) : (
                   <div className="mt-1 space-y-1">
                     {aPagar > 0 && (
                       <div className="truncate rounded bg-destructive/12 px-1 py-0.5 text-[11px] font-medium tabular-nums text-destructive">
@@ -203,6 +265,7 @@ function CalendarioPage() {
                       </div>
                     )}
                   </div>
+                  )}
                 </button>
               );
             })}
@@ -233,6 +296,9 @@ function CalendarioPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <StatusBadge status={t.status} />
+                    {t.tipo === "pagar" && t.pago > 0 && (
+                      <span className="text-xs text-success tabular-nums">pago {brl(t.pago)}</span>
+                    )}
                     <span
                       className={cn(
                         "tabular-nums font-semibold",
