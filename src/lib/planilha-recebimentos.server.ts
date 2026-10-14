@@ -192,8 +192,33 @@ export async function acharOuCriarCliente(
   return (data as Cliente).id;
 }
 
-export const acharConta = (contas: ContaBanco[], banco: string) =>
-  contas.find((c) => normal(c.banco) === normal(banco)) ?? null;
+/** Apelidos comuns usados na planilha → palavras que identificam a conta cadastrada. */
+const APELIDOS_BANCO: Record<string, string[]> = {
+  cef: ["cef", "caixa"],
+  caixa: ["cef", "caixa"],
+  itau: ["itau"],
+  bb: ["banco do brasil"],
+};
+
+/**
+ * Casa o banco da planilha com a conta cadastrada: igualdade exata primeiro;
+ * depois apelido/palavra contida (ex.: "CEF" → "Caixa Econômica Federal - CEF").
+ * Só aceita o casamento parcial quando ele aponta para uma única conta.
+ */
+export const acharConta = (contas: ContaBanco[], banco: string) => {
+  const alvo = normal(banco);
+  if (!alvo) return null;
+  const exata = contas.find((c) => normal(c.banco) === alvo);
+  if (exata) return exata;
+  const termos = APELIDOS_BANCO[alvo] ?? [alvo];
+  const palavras = (t: string) => t.split(/[^a-z0-9/]+/).filter(Boolean);
+  const candidatas = contas.filter((c) => {
+    const nome = normal(c.banco);
+    if (/aplica/.test(nome)) return false;
+    return termos.some((t) => (t.includes(" ") ? nome.includes(t) : palavras(nome).includes(t)));
+  });
+  return candidatas.length === 1 ? candidatas[0]! : null;
+};
 
 export function montarObservacao(observacoes: string, dataPasseio: string): string | null {
   const partes = [observacoes.trim()].filter(Boolean);

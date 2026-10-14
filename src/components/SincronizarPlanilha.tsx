@@ -68,6 +68,23 @@ const paraISO = (t: string): string | null => {
   return iso ? iso[0] : null;
 };
 
+const semAcento = (t: string) =>
+  t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+/** "CEF" também encontra "Caixa Econômica Federal - CEF". */
+const contaPorApelido = (contas: { id: string; banco: string }[], banco: string): string => {
+  const alvo = semAcento(banco);
+  if (!alvo) return "";
+  const exata = contas.find((c) => semAcento(c.banco) === alvo);
+  if (exata) return exata.id;
+  const termos = alvo === "cef" || alvo === "caixa" ? ["cef", "caixa"] : [alvo];
+  const cands = contas.filter((c) => {
+    const nome = semAcento(c.banco);
+    return !/aplica/.test(nome) && termos.some((t) => nome.split(/[^a-z0-9/]+/).includes(t));
+  });
+  return cands.length === 1 ? cands[0]!.id : "";
+};
+
 export function SincronizarPlanilha({ empresaId }: { empresaId: string | null }) {
   const sincronizar = useServerFn(sincronizarRecebimentosPlanilha);
   const ignorar = useServerFn(ignorarLinhaPlanilha);
@@ -97,7 +114,7 @@ export function SincronizarPlanilha({ empresaId }: { empresaId: string | null })
             chaveDe(p),
             {
               cliente: p.cliente,
-              conta: contas.find((c) => c.banco.trim().toLowerCase() === p.banco.trim().toLowerCase())?.id ?? "",
+              conta: contaPorApelido(contas, p.banco),
               data: paraISO(p.dataPagamento) ?? hoje(),
               valor: String(soNumero(p.valorTexto) || ""),
             },

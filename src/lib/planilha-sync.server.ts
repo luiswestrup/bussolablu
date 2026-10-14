@@ -53,6 +53,9 @@ export async function sincronizarPlanilha(
   const registros = new Map<string, Registro>(
     ((registrosData ?? []) as Registro[]).map((r) => [`${r.aba}#${r.linha_numero}`, r]),
   );
+  const vinculados = new Set<string>(
+    [...registros.values()].map((r) => r.conta_receber_id).filter((v): v is string => !!v),
+  );
 
   const { data: abasData } = await supabase
     .from("planilha_aba_config")
@@ -188,13 +191,30 @@ export async function sincronizarPlanilha(
             .eq("id", existente.id);
           resultado.atualizadas += 1;
         } else {
-          const { data: criada, error } = await supabase
+          // Antes de criar, reaproveita um título igual já lançado (mesmo cliente,
+          // conta, valor e data) que não esteja ligado a outra linha da planilha.
+          const { data: iguais } = await supabase
             .from("conta_receber")
-            .insert(valores)
             .select("id")
-            .single();
-          if (error) throw new Error(error.message);
-          const contaReceberId = (criada as { id: string }).id;
+            .eq("empresa_id", empresaId)
+            .eq("conta_bancaria_id", contaBanco!.id)
+            .eq("cliente_id", clienteId)
+            .eq("valor", valor)
+            .eq("data_recebimento", dataRecebimento!);
+          const livre = ((iguais ?? []) as { id: string }[]).find((t) => !vinculados.has(t.id));
+          let contaReceberId: string;
+          if (livre) {
+            contaReceberId = livre.id;
+          } else {
+            const { data: criada, error } = await supabase
+              .from("conta_receber")
+              .insert(valores)
+              .select("id")
+              .single();
+            if (error) throw new Error(error.message);
+            contaReceberId = (criada as { id: string }).id;
+          }
+          vinculados.add(contaReceberId);
           if (existente) {
             await supabase
               .from("recebimento_planilha_importado")
