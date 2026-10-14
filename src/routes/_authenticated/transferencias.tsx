@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeftRight, Download, Trash2 } from "lucide-react";
+import { ArrowLeftRight, Download, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Kpi, SecaoVazia } from "@/components/ui-kit";
@@ -384,6 +384,14 @@ function TransferenciasPage() {
                         <Button
                           size="icon"
                           variant="ghost"
+                          title="Editar transferência"
+                          onClick={() => abrirEdicao(t)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
                           title="Excluir transferência"
                           onClick={() => {
                             if (confirm("Excluir esta transferência?")) excluir.mutate(t.id);
@@ -401,10 +409,17 @@ function TransferenciasPage() {
         </Card>
       </div>
 
-      <Dialog open={aberto} onOpenChange={setAberto}>
+      <Dialog open={aberto} onOpenChange={(o) => (o ? setAberto(true) : fechar())}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nova transferência</DialogTitle>
+            <DialogTitle>{editando ? "Editar transferência" : "Nova transferência"}</DialogTitle>
+          </DialogHeader>
+          {editando?.grupo_intercompany && (
+            <p className="text-xs text-muted-foreground">
+              Repasse entre empresas: ao mudar valor ou data, o lançamento da outra empresa é ajustado junto.
+            </p>
+          )}
+          <DialogHeader className="hidden">
           </DialogHeader>
           <div className="space-y-3">
             <div>
@@ -492,7 +507,7 @@ function TransferenciasPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAberto(false)}>
+            <Button variant="outline" onClick={fechar}>
               Cancelar
             </Button>
             <Button onClick={() => criar.mutate()} disabled={!valida || criar.isPending}>
