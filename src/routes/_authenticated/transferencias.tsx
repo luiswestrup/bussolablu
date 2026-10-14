@@ -36,6 +36,7 @@ import { useEmpresa } from "@/lib/empresa";
 import { brl, dataBR, exportarCSV, fimDoMes, inicioDoMes } from "@/lib/format";
 import { tabela, useContasBancarias, useTransferencias } from "@/lib/dados";
 import { registrarRepasseEntreEmpresas } from "@/lib/intercompany";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/transferencias")({
   head: () => ({
@@ -178,7 +179,8 @@ function TransferenciasPage() {
         if (error) throw new Error(error.message);
         // Repasse entre empresas: mantém valor e data iguais na outra empresa.
         if (editando.grupo_intercompany && mudouValor) {
-          const { error: e2 } = await tabela("transferencia_bancaria")
+          const { error: e2 } = await supabase
+            .from("transferencia_bancaria")
             .update({ valor, data: tr.data, conciliado_origem: false, conciliado_origem_em: null, conciliado_destino: false, conciliado_destino_em: null })
             .eq("grupo_intercompany", editando.grupo_intercompany)
             .neq("id", editando.id);
