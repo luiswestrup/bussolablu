@@ -776,6 +776,7 @@ export function ContasView({
               tipo={config.tipoCategoria}
               value={filtroCategoria}
               onChange={setFiltroCategoria}
+              nomeEmpresa={nomeEmpresa}
             />
 
             <div className="flex items-center gap-2">

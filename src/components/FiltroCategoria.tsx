@@ -26,11 +26,14 @@ export function FiltroCategoria({
   tipo,
   value,
   onChange,
+  nomeEmpresa,
 }: {
   categorias: Categoria[];
   tipo: Categoria["tipo"];
   value: string;
   onChange: (v: string) => void;
+  /** Passado na visão consolidada: categorias homônimas de empresas diferentes. */
+  nomeEmpresa?: ((id: string) => string | null | undefined) | undefined;
 }) {
   const [aberto, setAberto] = useState(false);
 
@@ -38,12 +41,22 @@ export function FiltroCategoria({
     .filter((c) => c.tipo === tipo)
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }));
 
+  // Na visão "Todas", a mesma categoria pode existir em mais de uma empresa.
+  const comEmpresa =
+    !!nomeEmpresa && new Set(opcoes.map((c) => c.empresa_id)).size > 1;
+  const comEmpresaDe = (c: Categoria) =>
+    comEmpresa ? ` · ${nomeEmpresa?.(c.empresa_id) ?? ""}` : "";
+
+  const escolhida = categorias.find((c) => c.id === value);
+
   const rotulo =
     value === CATEGORIA_TODAS
       ? "Categoria: todas"
       : value === CATEGORIA_SEM
         ? "Categoria: sem categoria"
-        : (categorias.find((c) => c.id === value)?.nome ?? "Categoria: todas");
+        : escolhida
+          ? `${escolhida.nome}${comEmpresaDe(escolhida)}`
+          : "Categoria: todas";
 
   const escolher = (v: string) => {
     onChange(v);
@@ -85,9 +98,18 @@ export function FiltroCategoria({
                 Sem categoria
               </CommandItem>
               {opcoes.map((c) => (
-                <CommandItem key={c.id} value={c.nome} onSelect={() => escolher(c.id)}>
+                <CommandItem
+                  key={c.id}
+                  value={`${c.nome}${comEmpresaDe(c)}`}
+                  onSelect={() => escolher(c.id)}
+                >
                   <Check className={marca(value === c.id)} />
                   {c.nome}
+                  {comEmpresa && (
+                    <span className="ml-1 text-xs text-muted-foreground">
+                      {comEmpresaDe(c)}
+                    </span>
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>
