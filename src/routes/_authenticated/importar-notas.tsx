@@ -28,7 +28,7 @@ import {
 import { useEmpresa } from "@/lib/empresa";
 import { brl, dataBR, num } from "@/lib/format";
 import { inserirRetornando, selecionar, tabela, useCategorias, useProdutos } from "@/lib/dados";
-import { adicionarDias, parseNFe, type ItemNFe, type NotaFiscal } from "@/lib/nfe";
+import { adicionarDias, analisarFinanceiro, parseNFe, type ItemNFe, type NotaFiscal } from "@/lib/nfe";
 
 export const Route = createFileRoute("/_authenticated/importar-notas")({
   head: () => ({
@@ -63,9 +63,10 @@ type Resumo = {
   titulos: number;
   entradas: number;
   erros: { arquivo: string; motivo: string }[];
+  semFinanceiro: { nota: string; motivo: string }[];
 };
 
-const RESUMO_ZERO: Resumo = { importadas: 0, puladas: 0, titulos: 0, entradas: 0, erros: [] };
+const RESUMO_ZERO: Resumo = { importadas: 0, puladas: 0, titulos: 0, entradas: 0, erros: [], semFinanceiro: [] };
 
 function ImportarNotasPage() {
   const { empresa } = useEmpresa();
@@ -182,7 +183,13 @@ function ImportarNotasPage() {
     const categoriaSugerida = typeof unica === "string" && unica.length > 0;
     const categoriaId = categoriaSugerida ? unica : null;
 
-    if (nota.duplicatas.length > 0) {
+    const fin = analisarFinanceiro(nota);
+    if (!fin.gera) {
+      const motivo = nota.semPagamento && fin.cfops.length === 0
+        ? "nota sem pagamento (tPag 90)"
+        : `CFOP ${fin.cfops.join(", ")} (remessa, bonificação ou devolução)`;
+      acc.semFinanceiro.push({ nota: nota.numeroNota, motivo });
+    } else if (nota.duplicatas.length > 0) {
       const totalDup = nota.duplicatas.length;
       for (const [i, dup] of nota.duplicatas.entries()) {
         await tabela("conta_pagar").insert({
@@ -200,11 +207,11 @@ function ImportarNotasPage() {
         });
         acc.titulos += 1;
       }
-    } else {
+    } else if (fin.valorFaturado > 0) {
       await tabela("conta_pagar").insert({
         empresa_id: empresaId,
         descricao: `NF-e ${nota.numeroNota} — parcela única`,
-        valor: nota.valorTotal,
+        valor: fin.valorFaturado,
         fornecedor_id: fornecedor.id,
         categoria_id: categoriaId,
         categoria_sugerida: categoriaSugerida,
@@ -215,25 +222,6 @@ function ImportarNotasPage() {
         status: "pendente",
       });
       acc.titulos += 1;
-    }
-
-    acc.importadas += 1;
-  }
-
-  async function importarLote() {
-    if (!empresa || arquivos.length === 0) return;
-    setProcessando(true);
-    const acc: Resumo = { ...RESUMO_ZERO, erros: [] };
-    const novosPendentes: Pendente[] = [];
-
-    for (const arquivo of arquivos) {
-      try {
-        const conteudo = await arquivo.text();
-        const nota = parseNFe(arquivo.name, conteudo);
-        await importarNota(nota, empresa.id, acc, novosPendentes);
-      } catch (e) {
-        acc.erros.push({ arquivo: arquivo.name, motivo: (e as Error).message });
-      }
     }
 
     setPendentes((atuais) => [...atuais, ...novosPendentes]);
