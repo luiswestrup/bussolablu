@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Kpi, SecaoVazia } from "@/components/ui-kit";
 import { SeletorCategoria } from "@/components/SeletorCategoria";
+import { CorrigirMovimentosNFe } from "@/components/CorrigirMovimentosNFe";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -482,6 +483,8 @@ function ImportarNotasPage() {
           )}
         </CardContent>
       </Card>
+
+      <CorrigirMovimentosNFe empresaId={empresa?.id} />
 
       <NotasImportadas empresaId={empresa?.id} />
     </AppShell>
