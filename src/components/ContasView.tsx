@@ -15,6 +15,11 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { ChequeBadge, Kpi, SecaoVazia, StatusBadge } from "@/components/ui-kit";
 import { SeletorCategoria } from "@/components/SeletorCategoria";
+import {
+  CATEGORIA_SEM,
+  CATEGORIA_TODAS,
+  FiltroCategoria,
+} from "@/components/FiltroCategoria";
 import { EditarTituloBaixado } from "@/components/EditarTituloBaixado";
 import { ParcelarTitulo } from "@/components/ParcelarTitulo";
 import { Button } from "@/components/ui/button";
@@ -140,6 +145,7 @@ export function ContasView({
   const [pagamentoDe, setPagamentoDe] = useState("");
   const [pagamentoAte, setPagamentoAte] = useState("");
   const [busca, setBusca] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState(CATEGORIA_TODAS);
   const [aberto, setAberto] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -563,6 +569,13 @@ export function ContasView({
               : c.statusCheque === filtroCheque,
         )
         .filter((c) => c.descricao.toLowerCase().includes(busca.trim().toLowerCase()))
+        .filter((c) =>
+          filtroCategoria === CATEGORIA_TODAS
+            ? true
+            : filtroCategoria === CATEGORIA_SEM
+              ? !c.categoria_id
+              : c.categoria_id === filtroCategoria,
+        )
         .filter((c) => (dataDe ? c.data_vencimento >= dataDe : true))
         .filter((c) => (dataAte ? c.data_vencimento <= dataAte : true))
         .filter((c) =>
@@ -577,7 +590,19 @@ export function ContasView({
               pagamentoAte
             : true,
         ),
-    [contas, filtroStatus, filtroCheque, busca, hj, dataDe, dataAte, pagamentoDe, pagamentoAte, config.campoData],
+    [
+      contas,
+      filtroStatus,
+      filtroCheque,
+      busca,
+      filtroCategoria,
+      hj,
+      dataDe,
+      dataAte,
+      pagamentoDe,
+      pagamentoAte,
+      config.campoData,
+    ],
   );
 
   type Registro = (typeof listaFiltrada)[number];
@@ -746,6 +771,13 @@ export function ContasView({
               </SelectContent>
             </Select>
 
+            <FiltroCategoria
+              categorias={categorias}
+              tipo={config.tipoCategoria}
+              value={filtroCategoria}
+              onChange={setFiltroCategoria}
+            />
+
             <div className="flex items-center gap-2">
               <label className="text-xs text-muted-foreground">Venc. de</label>
               <Input
@@ -780,7 +812,11 @@ export function ContasView({
                 onChange={(e) => setPagamentoAte(e.target.value)}
                 className="w-[150px]"
               />
-              {(dataDe || dataAte || pagamentoDe || pagamentoAte) && (
+              {(dataDe ||
+                dataAte ||
+                pagamentoDe ||
+                pagamentoAte ||
+                filtroCategoria !== CATEGORIA_TODAS) && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -789,6 +825,7 @@ export function ContasView({
                     setDataAte("");
                     setPagamentoDe("");
                     setPagamentoAte("");
+                    setFiltroCategoria(CATEGORIA_TODAS);
                   }}
                 >
                   Limpar
