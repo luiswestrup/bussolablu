@@ -224,6 +224,25 @@ function ImportarNotasPage() {
       acc.titulos += 1;
     }
 
+    acc.importadas += 1;
+  }
+
+  async function importarLote() {
+    if (!empresa || arquivos.length === 0) return;
+    setProcessando(true);
+    const acc: Resumo = { ...RESUMO_ZERO, erros: [], semFinanceiro: [] };
+    const novosPendentes: Pendente[] = [];
+
+    for (const arquivo of arquivos) {
+      try {
+        const conteudo = await arquivo.text();
+        const nota = parseNFe(arquivo.name, conteudo);
+        await importarNota(nota, empresa.id, acc, novosPendentes);
+      } catch (e) {
+        acc.erros.push({ arquivo: arquivo.name, motivo: (e as Error).message });
+      }
+    }
+
     setPendentes((atuais) => [...atuais, ...novosPendentes]);
     setResumo(acc);
     setArquivos([]);
