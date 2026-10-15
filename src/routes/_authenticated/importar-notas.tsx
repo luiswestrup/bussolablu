@@ -352,6 +352,21 @@ function ImportarNotasPage() {
               </CardContent>
             </Card>
           )}
+          {resumo.semFinanceiro.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Notas sem contas a pagar (estoque movimentado)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {resumo.semFinanceiro.map((s, i) => (
+                  <p key={`${s.nota}-${i}`} className="text-sm">
+                    <span className="font-medium">NF-e {s.nota}</span>
+                    <span className="text-muted-foreground"> — {s.motivo}</span>
+                  </p>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
