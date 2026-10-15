@@ -137,3 +137,8 @@ export function parseNFe(arquivo: string, xml: string): NotaFiscal {
     semPagamento: tPags.length > 0 && tPags.every((t) => t === "90"),
   };
 }
+
+/** Devolução de compra (1.201/1.202/2.201/2.202): dá saída de estoque. */
+export function cfopDevolucaoCompra(cfop: string): boolean {
+  return ["1201", "1202", "2201", "2202"].includes(cfop);
+}

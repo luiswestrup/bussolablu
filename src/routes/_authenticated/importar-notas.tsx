@@ -28,7 +28,7 @@ import {
 import { useEmpresa } from "@/lib/empresa";
 import { brl, dataBR, num } from "@/lib/format";
 import { inserirRetornando, selecionar, tabela, useCategorias, useProdutos } from "@/lib/dados";
-import { adicionarDias, analisarFinanceiro, parseNFe, type ItemNFe, type NotaFiscal } from "@/lib/nfe";
+import { adicionarDias, analisarFinanceiro, cfopDevolucaoCompra, parseNFe, type ItemNFe, type NotaFiscal } from "@/lib/nfe";
 
 export const Route = createFileRoute("/_authenticated/importar-notas")({
   head: () => ({
@@ -157,7 +157,7 @@ function ImportarNotasPage() {
         await tabela("movimento_estoque").insert({
           empresa_id: empresaId,
           produto_id: vinculo.produto_id,
-          tipo: "entrada",
+          tipo: cfopDevolucaoCompra(item.cfop) ? "saida" : "entrada",
           quantidade: item.quantidade,
           custo_unitario: item.valorUnitario,
           observacao: `NF-e ${nota.numeroNota}`,
@@ -285,7 +285,7 @@ function ImportarNotasPage() {
       await tabela("movimento_estoque").insert({
         empresa_id: empresa.id,
         produto_id: produtoId,
-        tipo: "entrada",
+        tipo: cfopDevolucaoCompra(p.item.cfop) ? "saida" : "entrada",
         quantidade: p.item.quantidade,
         custo_unitario: p.item.valorUnitario,
         observacao: `NF-e ${p.numeroNota}`,
@@ -293,7 +293,7 @@ function ImportarNotasPage() {
 
       setPendentes((atuais) => atuais.filter((x) => x.chave !== p.chave));
       invalidar();
-      toast.success("Item reconhecido e entrada registrada.");
+      toast.success(cfopDevolucaoCompra(p.item.cfop) ? "Item reconhecido e saída registrada." : "Item reconhecido e entrada registrada.");
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
