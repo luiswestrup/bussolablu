@@ -37,7 +37,7 @@ type Achado = {
   semVinculo: number;
 };
 
-export function CorrigirMovimentosNFe({ empresaId }: { empresaId?: string }) {
+export function CorrigirMovimentosNFe({ empresaId }: { empresaId?: string | undefined }) {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [lendo, setLendo] = useState(false);
