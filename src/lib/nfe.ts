@@ -6,6 +6,7 @@ export type ItemNFe = {
   quantidade: number;
   valorUnitario: number;
   valorTotal: number;
+  cfop: string;
 };
 
 export type DuplicataNFe = {
@@ -23,7 +24,31 @@ export type NotaFiscal = {
   emitente: { cnpj: string; nome: string; contato: string | null };
   itens: ItemNFe[];
   duplicatas: DuplicataNFe[];
+  semPagamento: boolean;
 };
+
+/** CFOP que não gera financeiro: remessas/bonificações (x.9xx) e devoluções (x.201/x.202). */
+export function cfopSemFinanceiro(cfop: string): boolean {
+  if (cfop.length !== 4) return false;
+  if (!["1", "2", "5", "6"].includes(cfop[0]!)) return false;
+  const resto = cfop.slice(1);
+  return resto.startsWith("9") || resto === "201" || resto === "202";
+}
+
+/** Valor dos itens que geram financeiro e motivo quando nenhum gera. */
+export function analisarFinanceiro(nota: NotaFiscal): {
+  gera: boolean;
+  valorFaturado: number;
+  cfops: string[];
+} {
+  const semFin = nota.itens.filter((i) => cfopSemFinanceiro(i.cfop));
+  const cfops = [...new Set(semFin.map((i) => `${i.cfop[0]}.${i.cfop.slice(1)}`))];
+  const valorSemFin = semFin.reduce((s, i) => s + i.valorTotal, 0);
+  const todos = semFin.length === nota.itens.length;
+  if (todos || nota.semPagamento) return { gera: false, valorFaturado: 0, cfops };
+  const valorItens = nota.itens.reduce((s, i) => s + i.valorTotal, 0);
+  return { gera: true, valorFaturado: Math.max(0, nota.valorTotal - (semFin.length ? valorSemFin : 0)), cfops: valorItens ? cfops : [] };
+}
 
 export type ArquivoErro = { arquivo: string; motivo: string };
 
@@ -79,6 +104,7 @@ export function parseNFe(arquivo: string, xml: string): NotaFiscal {
       quantidade: numero(texto(prod, "qCom")),
       valorUnitario: numero(texto(prod, "vUnCom")),
       valorTotal: numero(texto(prod, "vProd")),
+      cfop: texto(prod, "CFOP").replace(/\D/g, ""),
     };
   });
   if (itens.length === 0) throw new Error("Nota sem itens (tag det ausente).");
@@ -93,6 +119,7 @@ export function parseNFe(arquivo: string, xml: string): NotaFiscal {
     : [];
 
   const total = infNFe.getElementsByTagName("ICMSTot")[0] ?? null;
+  const tPags = Array.from(infNFe.getElementsByTagName("tPag")).map((e) => e.textContent?.trim() ?? "");
 
   return {
     arquivo,
@@ -107,5 +134,6 @@ export function parseNFe(arquivo: string, xml: string): NotaFiscal {
     },
     itens,
     duplicatas: duplicatas.filter((d) => d.valor > 0),
+    semPagamento: tPags.length > 0 && tPags.every((t) => t === "90"),
   };
 }
